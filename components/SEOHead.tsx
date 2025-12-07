@@ -11,7 +11,7 @@ interface SEOHeadProps {
 export default function SEOHead({
   title = 'UmukoziHR Resume Tailor - AI-Powered Resume & Cover Letter Generator',
   description = 'Generate perfectly tailored resumes and cover letters for any job with AI. ATS-optimized, region-specific formatting (US, EU, Global), and instant PDF downloads. Built for job seekers who want to stand out.',
-  image = 'https://tailor.umukozihr.com/og-image.png',
+  image = 'https://tailor.umukozihr.com/media/og-image.png',
   url = 'https://tailor.umukozihr.com',
   type = 'website'
 }: SEOHeadProps) {
@@ -113,9 +113,9 @@ export default function SEOHead({
       />
 
       {/* Favicons */}
-      <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-      <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-      <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+      <link rel="icon" type="image/png" sizes="32x32" href="/media/favicon-32x32.png" />
+      <link rel="icon" type="image/png" sizes="16x16" href="/media/favicon-16x16.png" />
+      <link rel="apple-touch-icon" sizes="180x180" href="/media/apple-touch-icon.png" />
       <link rel="manifest" href="/site.webmanifest" />
     </Head>
   );

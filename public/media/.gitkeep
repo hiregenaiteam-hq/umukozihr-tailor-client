@@ -1,0 +1,27 @@
+# Media Assets Directory
+
+Place your social sharing images and other media assets here.
+
+## Recommended Image Sizes
+
+### Open Graph Image (og-image)
+- **Dimensions**: 1200 x 630 px
+- **Format**: PNG or JPG
+- **File name**: `og-image.png` or `social-preview.png`
+- **Usage**: Social media previews (Facebook, Twitter, LinkedIn, WhatsApp, Discord)
+
+### Twitter Card Image
+- **Dimensions**: 1200 x 628 px (slightly different aspect ratio)
+- **Format**: PNG or JPG
+- **File name**: `twitter-card.png`
+
+### Favicon/App Icons
+- **Sizes**: 32x32, 16x16, 180x180
+- **Format**: PNG
+- **Files**: `favicon-32x32.png`, `favicon-16x16.png`, `apple-touch-icon.png`
+
+## Current Setup
+
+After adding your screenshot here, update the image path in:
+- `components/SEOHead.tsx` (line 8)
+- Change `image` default from `/og-image.png` to `/media/your-screenshot.png`
