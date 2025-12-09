@@ -54,7 +54,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                   type="text"
                   value={edu.school}
                   onChange={(e) => updateEducation(index, 'school', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="University of California, Berkeley"
                   required
                 />
@@ -68,7 +68,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                   type="text"
                   value={edu.degree}
                   onChange={(e) => updateEducation(index, 'degree', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="Bachelor of Science in Computer Science"
                   required
                 />
@@ -80,7 +80,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                   type="month"
                   value={edu.start}
                   onChange={(e) => updateEducation(index, 'start', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
@@ -90,7 +90,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                   type="month"
                   value={edu.end}
                   onChange={(e) => updateEducation(index, 'end', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
@@ -100,7 +100,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                   type="text"
                   value={edu.gpa || ''}
                   onChange={(e) => updateEducation(index, 'gpa', e.target.value || null)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="3.8/4.0"
                 />
               </div>

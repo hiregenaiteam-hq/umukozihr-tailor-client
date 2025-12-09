@@ -85,7 +85,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                   type="text"
                   value={exp.title}
                   onChange={(e) => updateExperience(expIndex, 'title', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="Senior Software Engineer"
                   required
                 />
@@ -99,7 +99,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                   type="text"
                   value={exp.company}
                   onChange={(e) => updateExperience(expIndex, 'company', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="Tech Corp"
                   required
                 />
@@ -113,7 +113,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                   type="text"
                   value={exp.location}
                   onChange={(e) => updateExperience(expIndex, 'location', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="San Francisco, CA"
                 />
               </div>
@@ -125,7 +125,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                 <select
                   value={exp.employment_type}
                   onChange={(e) => updateExperience(expIndex, 'employment_type', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 >
                   <option value="full-time">Full-time</option>
                   <option value="part-time">Part-time</option>
@@ -143,7 +143,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                   type="month"
                   value={exp.start}
                   onChange={(e) => updateExperience(expIndex, 'start', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 />
               </div>
 
@@ -156,7 +156,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                     type={exp.end === 'present' ? 'text' : 'month'}
                     value={exp.end}
                     onChange={(e) => updateExperience(expIndex, 'end', e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     disabled={exp.end === 'present'}
                   />
                   <button
@@ -181,7 +181,7 @@ export default function ExperienceSection({ data, onChange }: ExperienceSectionP
                     <textarea
                       value={bullet}
                       onChange={(e) => updateBullet(expIndex, bulletIndex, e.target.value)}
-                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                       placeholder="• Built scalable microservices that improved performance by 40%..."
                       rows={2}
                     />
