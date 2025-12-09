@@ -12,6 +12,8 @@ import ReviewSection from '@/components/onboarding/ReviewSection';
 import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
+const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
+const ONBOARDING_STEP_KEY = 'onboarding_step';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -22,7 +24,7 @@ export default function OnboardingPage() {
   const [breakdown, setBreakdown] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
 
-  // Check if user is authenticated
+  // Check if user is authenticated and load saved progress
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -31,7 +33,28 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Try to load existing profile
+    // Try to load from localStorage first (for unsaved progress)
+    const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
+    const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
+
+    if (savedDraft) {
+      try {
+        const parsedProfile = JSON.parse(savedDraft);
+        setProfile(parsedProfile);
+        toast.success('Restored your progress from last session');
+      } catch (error) {
+        console.error('Failed to parse saved draft:', error);
+      }
+    }
+
+    if (savedStep) {
+      const step = parseInt(savedStep, 10);
+      if (step > 1 && step <= STEPS.length) {
+        setCurrentStep(step);
+      }
+    }
+
+    // Try to load existing profile from server (takes priority)
     loadExistingProfile();
   }, []);
 
@@ -41,6 +64,9 @@ export default function OnboardingPage() {
       if (response.data.profile) {
         setProfile(response.data.profile);
         setCompleteness(response.data.completeness);
+        // Clear localStorage draft since server has the data
+        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+        localStorage.removeItem(ONBOARDING_STEP_KEY);
         toast.success('Loaded your existing profile');
       }
     } catch (error: any) {
@@ -69,8 +95,14 @@ export default function OnboardingPage() {
     }
   };
 
-  // Auto-save on blur (debounced)
+  // Auto-save to localStorage (immediate) and server (debounced)
   useEffect(() => {
+    // Save to localStorage immediately
+    if (profile.basics.full_name || profile.basics.email) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
+    }
+
+    // Save to server after 2 seconds of inactivity
     const timeoutId = setTimeout(() => {
       if (profile.basics.full_name) {
         saveProfile(false);
@@ -78,6 +110,11 @@ export default function OnboardingPage() {
     }, 2000);
     return () => clearTimeout(timeoutId);
   }, [profile]);
+
+  // Save current step to localStorage
+  useEffect(() => {
+    localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
+  }, [currentStep]);
 
   // Fetch completeness when user reaches Review step
   useEffect(() => {
@@ -155,6 +192,10 @@ export default function OnboardingPage() {
         console.log('Completeness fetch failed, but profile saved:', completenessError);
         toast.success('Profile saved! Redirecting to app...');
       }
+
+      // Clear localStorage since onboarding is complete
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      localStorage.removeItem(ONBOARDING_STEP_KEY);
 
       // Redirect to main app
       setTimeout(() => {
