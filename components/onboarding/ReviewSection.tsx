@@ -25,14 +25,14 @@ export default function ReviewSection({ profile, completeness, breakdown }: Revi
       <div className="border border-gray-200 rounded-lg p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-3">Basic Information</h3>
         <div className="grid grid-cols-2 gap-4 text-sm">
-          <div><span className="text-gray-600">Name:</span> <span className="font-medium">{profile.basics.full_name || '-'}</span></div>
-          <div><span className="text-gray-600">Email:</span> <span className="font-medium">{profile.basics.email || '-'}</span></div>
-          <div><span className="text-gray-600">Phone:</span> <span className="font-medium">{profile.basics.phone || '-'}</span></div>
-          <div><span className="text-gray-600">Location:</span> <span className="font-medium">{profile.basics.location || '-'}</span></div>
+          <div><span className="text-gray-600">Name:</span> <span className="font-medium text-gray-900">{profile.basics.full_name || '-'}</span></div>
+          <div><span className="text-gray-600">Email:</span> <span className="font-medium text-gray-900">{profile.basics.email || '-'}</span></div>
+          <div><span className="text-gray-600">Phone:</span> <span className="font-medium text-gray-900">{profile.basics.phone || '-'}</span></div>
+          <div><span className="text-gray-600">Location:</span> <span className="font-medium text-gray-900">{profile.basics.location || '-'}</span></div>
         </div>
         {profile.basics.headline && (
           <div className="mt-3 text-sm">
-            <span className="text-gray-600">Headline:</span> <span className="font-medium">{profile.basics.headline}</span>
+            <span className="text-gray-600">Headline:</span> <span className="font-medium text-gray-900">{profile.basics.headline}</span>
           </div>
         )}
       </div>
