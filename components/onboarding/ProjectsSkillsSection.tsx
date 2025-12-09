@@ -320,7 +320,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Certification Name"
             />
             <input
@@ -331,7 +331,7 @@ export function LinksExtrasSection({
                 newData[index].issuer = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Issuer"
             />
             <input
@@ -342,7 +342,7 @@ export function LinksExtrasSection({
                 newData[index].date = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
             />
           </div>
         ))}
@@ -368,7 +368,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Award Name"
             />
             <input
@@ -379,7 +379,7 @@ export function LinksExtrasSection({
                 newData[index].by = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Awarded By"
             />
             <input
@@ -390,7 +390,7 @@ export function LinksExtrasSection({
                 newData[index].date = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
             />
           </div>
         ))}
@@ -416,7 +416,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onLanguagesChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Language"
             />
             <input
@@ -427,7 +427,7 @@ export function LinksExtrasSection({
                 newData[index].level = e.target.value;
                 onLanguagesChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white"
+              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Level (e.g., Native, C2, Fluent)"
             />
           </div>
