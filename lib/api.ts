@@ -6,36 +6,31 @@ function getApiBaseUrl(): string {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
   }
-  
+
   // Client-side detection using window.location
   if (typeof window !== 'undefined') {
     const hostname = window.location.hostname;
-    
-    // Production: main Vercel domain
-    if (hostname === 'umukozihr-tailor.vercel.app') {
+
+    // Production: custom domain or main Vercel domain
+    if (hostname === 'tailor.umukozihr.com' || hostname === 'umukozihr-tailor.vercel.app') {
       return 'https://umukozihr-tailor-api.onrender.com';
     }
-    
+
     // Preview deployments on Vercel (e.g., umukozihr-tailor-xxx.vercel.app)
     if (hostname.endsWith('.vercel.app')) {
       return 'https://umukozihr-tailor-api-staging.onrender.com';
     }
-    
-    // Local development
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      return 'http://localhost:8000';
-    }
   }
-  
-  // Server-side rendering fallback
+
+  // Server-side rendering fallback - always use production
   if (process.env.VERCEL_ENV === 'production') {
     return 'https://umukozihr-tailor-api.onrender.com';
   } else if (process.env.VERCEL_ENV === 'preview') {
     return 'https://umukozihr-tailor-api-staging.onrender.com';
   }
-  
-  // Default to localhost for development
-  return 'http://localhost:8000';
+
+  // Default to production Render URL (no localhost)
+  return 'https://umukozihr-tailor-api.onrender.com';
 }
 
 // Create axios instance with dynamic baseURL

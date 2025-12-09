@@ -16,8 +16,8 @@ function getApiBaseUrl() {
     return 'https://umukozihr-tailor-api-staging.onrender.com';
   }
   
-  // Default to localhost for development
-  return 'http://localhost:8000';
+  // Default to production Render URL (no localhost)
+  return 'https://umukozihr-tailor-api.onrender.com';
 }
 
 const nextConfig = {
