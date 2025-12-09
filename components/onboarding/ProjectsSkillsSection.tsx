@@ -64,7 +64,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                   type="text"
                   value={proj.name}
                   onChange={(e) => updateProject(index, 'name', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="AI Resume Tailor"
                 />
               </div>
@@ -75,7 +75,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                   type="url"
                   value={proj.url}
                   onChange={(e) => updateProject(index, 'url', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="https://github.com/..."
                 />
               </div>
@@ -108,7 +108,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                       e.currentTarget.value = '';
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="Type technology and press Enter (e.g., React, Python, AWS)"
                 />
               </div>
@@ -124,7 +124,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                       newData[index].bullets[bIndex] = e.target.value;
                       onChange(newData);
                     }}
-                    className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                     placeholder="Key achievement or feature..."
                     rows={2}
                   />
@@ -198,7 +198,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
                   type="text"
                   value={skill.name}
                   onChange={(e) => updateSkill(index, 'name', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                   placeholder="Python"
                 />
               </div>
@@ -208,7 +208,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
                 <select
                   value={skill.level}
                   onChange={(e) => updateSkill(index, 'level', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 >
                   <option value="beginner">Beginner</option>
                   <option value="intermediate">Intermediate</option>
@@ -242,7 +242,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
                     e.currentTarget.value = '';
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 placeholder="Press Enter to add (e.g., FastAPI, Django, Flask)"
               />
             </div>

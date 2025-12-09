@@ -42,7 +42,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="text"
             value={data.full_name}
             onChange={(e) => handleChange('full_name', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="John Doe"
             required
           />
@@ -56,7 +56,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="text"
             value={data.headline}
             onChange={(e) => handleChange('headline', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="Senior Software Engineer | AI Specialist"
           />
         </div>
@@ -68,7 +68,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
           <textarea
             value={data.summary}
             onChange={(e) => handleChange('summary', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="A brief summary of your professional experience and expertise..."
             rows={4}
           />
@@ -82,7 +82,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="email"
             value={data.email}
             onChange={(e) => handleChange('email', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="john@example.com"
             required
           />
@@ -96,7 +96,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="tel"
             value={data.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="+1 (555) 123-4567"
           />
         </div>
@@ -109,7 +109,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="text"
             value={data.location}
             onChange={(e) => handleChange('location', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="San Francisco, CA"
           />
         </div>
@@ -122,7 +122,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
             type="url"
             value={data.website}
             onChange={(e) => handleChange('website', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
             placeholder="https://johndoe.com"
           />
         </div>
@@ -140,7 +140,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
                 type="url"
                 value={link}
                 onChange={(e) => handleLinkChange(index, e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
                 placeholder="https://linkedin.com/in/johndoe"
               />
               <button
