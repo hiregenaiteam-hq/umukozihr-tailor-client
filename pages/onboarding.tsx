@@ -79,6 +79,27 @@ export default function OnboardingPage() {
     return () => clearTimeout(timeoutId);
   }, [profile]);
 
+  // Fetch completeness when user reaches Review step
+  useEffect(() => {
+    if (currentStep === 7) {
+      fetchCompleteness();
+    }
+  }, [currentStep]);
+
+  const fetchCompleteness = async () => {
+    try {
+      const response = await profileApi.getCompleteness();
+      setCompleteness(response.data.completeness);
+      setBreakdown(response.data.breakdown);
+    } catch (error: any) {
+      console.log('Could not fetch completeness:', error);
+      // Set to 0 if profile doesn't exist yet
+      if (error.response?.status === 404) {
+        setCompleteness(0);
+      }
+    }
+  };
+
   const handleNext = async () => {
     // Validate current step
     if (currentStep === 1 && (!profile.basics.full_name || !profile.basics.email)) {
@@ -111,27 +132,37 @@ export default function OnboardingPage() {
   };
 
   const handleFinish = async () => {
-    await saveProfile(true);
-
-    // Fetch completeness
     try {
-      const response = await profileApi.getCompleteness();
-      setCompleteness(response.data.completeness);
-      setBreakdown(response.data.breakdown);
+      // Save profile first
+      await saveProfile(true);
 
-      if (response.data.completeness < 50) {
-        toast('Profile saved! Consider adding more details for better results', { icon: '⚠️' });
-      } else {
-        toast.success('Profile complete! Redirecting to app...');
+      // Small delay to ensure save completes
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      // Try to fetch completeness
+      try {
+        const response = await profileApi.getCompleteness();
+        setCompleteness(response.data.completeness);
+        setBreakdown(response.data.breakdown);
+
+        if (response.data.completeness < 50) {
+          toast('Profile saved! Consider adding more details for better results', { icon: '⚠️' });
+        } else {
+          toast.success('Profile complete! Redirecting to app...');
+        }
+      } catch (completenessError: any) {
+        // If completeness fetch fails, just show generic success
+        console.log('Completeness fetch failed, but profile saved:', completenessError);
+        toast.success('Profile saved! Redirecting to app...');
       }
 
       // Redirect to main app
       setTimeout(() => {
         router.push('/app');
       }, 1500);
-    } catch (error) {
-      console.error('Error fetching completeness:', error);
-      router.push('/app');
+    } catch (error: any) {
+      console.error('Error saving profile:', error);
+      toast.error('Failed to save profile. Please try again.');
     }
   };
 
