@@ -102,14 +102,19 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                 <input
                   type="text"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
+                    if (e.key === 'Enter' || e.key === ',') {
                       e.preventDefault();
-                      addStack(index, e.currentTarget.value);
-                      e.currentTarget.value = '';
+                      const value = e.currentTarget.value.trim();
+                      if (value) {
+                        // Split by comma and add each tech separately
+                        const techs = value.split(',').map(t => t.trim()).filter(t => t);
+                        techs.forEach(tech => addStack(index, tech));
+                        e.currentTarget.value = '';
+                      }
                     }
                   }}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                  placeholder="Type technology and press Enter (e.g., React, Python, AWS)"
+                  placeholder="Type technologies separated by commas or press Enter (e.g., React, Python, AWS)"
                 />
               </div>
 
@@ -236,14 +241,19 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
               <input
                 type="text"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' || e.key === ',') {
                     e.preventDefault();
-                    addKeyword(index, e.currentTarget.value);
-                    e.currentTarget.value = '';
+                    const value = e.currentTarget.value.trim();
+                    if (value) {
+                      // Split by comma and add each keyword separately
+                      const keywords = value.split(',').map(k => k.trim()).filter(k => k);
+                      keywords.forEach(keyword => addKeyword(index, keyword));
+                      e.currentTarget.value = '';
+                    }
                   }
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
-                placeholder="Press Enter to add (e.g., FastAPI, Django, Flask)"
+                placeholder="Type keywords separated by commas or press Enter (e.g., FastAPI, Django, Flask)"
               />
             </div>
 
