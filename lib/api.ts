@@ -120,7 +120,7 @@ export const profile = {
 
   // v1.3: Get completeness score
   getCompleteness: () =>
-    api.get('/me/completeness'),
+    api.get('/profile/me/completeness'),
 
   // Legacy v1.2: Save profile to file (deprecated)
   save: (profileData: any) =>
