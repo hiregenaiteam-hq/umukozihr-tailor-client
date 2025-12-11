@@ -123,7 +123,7 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
                 type="url"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
                 placeholder="https://linkedin.com/jobs/view/..."
               />
               <button
@@ -153,7 +153,7 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
                 placeholder="Google"
               />
             </div>
@@ -166,7 +166,7 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
                 placeholder="Senior Software Engineer"
               />
             </div>
@@ -176,7 +176,7 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value as 'US' | 'EU' | 'GL')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
               >
                 <option value="US">🇺🇸 United States</option>
                 <option value="EU">🇪🇺 Europe</option>
@@ -192,7 +192,7 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
             <textarea
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm bg-white text-gray-900 placeholder:text-gray-500"
               placeholder="Paste the full job description here..."
               rows={10}
             />
