@@ -73,15 +73,37 @@ export default function AppPage() {
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
-        // Check if there's local draft data
+        // Check if there's local draft data we can recover
         const savedDraft = localStorage.getItem('onboarding_draft');
         if (savedDraft) {
           try {
             const parsedProfile = JSON.parse(savedDraft);
-            if (parsedProfile.basics?.full_name) {
-              toast('You have unsaved profile data. Redirecting to complete setup...', { icon: '📋' });
+            // If we have substantial data, try to save it to server first!
+            if (parsedProfile.basics?.full_name && parsedProfile.basics?.email) {
+              toast.loading('Recovering your saved profile...');
+              try {
+                // Try to sync localStorage data to server
+                const syncResponse = await profileApi.update(parsedProfile);
+                toast.dismiss();
+                toast.success('Profile recovered successfully!');
+                // Now reload with the synced data
+                setProfile(parsedProfile);
+                setCompleteness(syncResponse.data.completeness);
+                try {
+                  const compResponse = await profileApi.getCompleteness();
+                  setBreakdown(compResponse.data.breakdown);
+                } catch (e) {
+                  // Completeness fetch failed, but profile is loaded
+                }
+                setIsLoading(false);
+                return; // Don't redirect - we recovered!
+              } catch (syncError: any) {
+                toast.dismiss();
+                console.error('Failed to sync profile:', syncError);
+                toast('Could not sync profile. Redirecting to complete setup...', { icon: '⚠️' });
+              }
             } else {
-              toast('Please complete your profile to get started.', { icon: '👋' });
+              toast('You have partial progress saved. Complete your profile to continue.', { icon: '📋' });
             }
           } catch (e) {
             toast('Please complete your profile to get started.', { icon: '👋' });
