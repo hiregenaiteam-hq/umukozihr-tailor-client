@@ -73,11 +73,26 @@ export default function AppPage() {
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
-        toast.error('No profile found. Redirecting to onboarding...');
+        // Check if there's local draft data
+        const savedDraft = localStorage.getItem('onboarding_draft');
+        if (savedDraft) {
+          try {
+            const parsedProfile = JSON.parse(savedDraft);
+            if (parsedProfile.basics?.full_name) {
+              toast('You have unsaved profile data. Redirecting to complete setup...', { icon: '📋' });
+            } else {
+              toast('Please complete your profile to get started.', { icon: '👋' });
+            }
+          } catch (e) {
+            toast('Please complete your profile to get started.', { icon: '👋' });
+          }
+        } else {
+          toast('Please complete your profile to get started.', { icon: '👋' });
+        }
         router.push('/onboarding');
       } else {
         console.error('Error loading profile:', error);
-        toast.error('Failed to load profile');
+        toast.error('Failed to load profile. Please try again.');
       }
     } finally {
       setIsLoading(false);

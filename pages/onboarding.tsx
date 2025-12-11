@@ -33,15 +33,20 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Try to load from localStorage first (for unsaved progress)
+      // Try to load from localStorage first (for unsaved progress)
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
     const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
+    let hasLocalDraft = false;
 
     if (savedDraft) {
       try {
         const parsedProfile = JSON.parse(savedDraft);
-        setProfile(parsedProfile);
-        toast.success('Restored your progress from last session');
+        // Only use localStorage if it has meaningful data
+        if (parsedProfile.basics?.full_name || parsedProfile.experience?.length > 0) {
+          setProfile(parsedProfile);
+          hasLocalDraft = true;
+          toast.success('Restored your progress from last session');
+        }
       } catch (error) {
         console.error('Failed to parse saved draft:', error);
       }
@@ -54,23 +59,32 @@ export default function OnboardingPage() {
       }
     }
 
-    // Try to load existing profile from server (takes priority)
-    loadExistingProfile();
+    // Try to load existing profile from server (only replaces if server has better data)
+    loadExistingProfile(hasLocalDraft);
   }, []);
 
-  const loadExistingProfile = async () => {
+  const loadExistingProfile = async (hasLocalDraft: boolean = false) => {
     try {
       const response = await profileApi.get();
       if (response.data.profile) {
-        setProfile(response.data.profile);
-        setCompleteness(response.data.completeness);
-        // Clear localStorage draft since server has the data
-        localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-        localStorage.removeItem(ONBOARDING_STEP_KEY);
-        toast.success('Loaded your existing profile');
+        // Only replace localStorage data if server profile has more content
+        const serverProfile = response.data.profile;
+        const serverHasData = serverProfile.basics?.full_name || serverProfile.experience?.length > 0;
+        
+        if (!hasLocalDraft || serverHasData) {
+          setProfile(serverProfile);
+          setCompleteness(response.data.completeness);
+          // Only clear localStorage if server data is valid
+          if (serverHasData) {
+            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+            localStorage.removeItem(ONBOARDING_STEP_KEY);
+          }
+          toast.success('Loaded your existing profile');
+        }
       }
     } catch (error: any) {
       // 404 means no profile yet, which is expected for onboarding
+      // Keep localStorage data intact
       if (error.response?.status !== 404) {
         console.error('Error loading profile:', error);
       }
@@ -97,14 +111,13 @@ export default function OnboardingPage() {
 
   // Auto-save to localStorage (immediate) and server (debounced)
   useEffect(() => {
-    // Save to localStorage immediately
-    if (profile.basics.full_name || profile.basics.email) {
-      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
-    }
+    // Save to localStorage immediately for ANY changes (crash protection)
+    const profileData = JSON.stringify(profile);
+    localStorage.setItem(ONBOARDING_STORAGE_KEY, profileData);
 
-    // Save to server after 2 seconds of inactivity
+    // Save to server after 2 seconds of inactivity (only if substantial data exists)
     const timeoutId = setTimeout(() => {
-      if (profile.basics.full_name) {
+      if (profile.basics.full_name && profile.basics.email) {
         saveProfile(false);
       }
     }, 2000);
@@ -318,10 +331,28 @@ export default function OnboardingPage() {
           )}
         </div>
 
-        {/* Skip Option */}
+        {/* Skip Option - save to localStorage first */}
         <div className="text-center mt-4">
           <button
-            onClick={() => router.push('/app')}
+            onClick={async () => {
+              // Force save to localStorage before leaving
+              localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
+              localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
+              
+              // Try to save to server, but don't block navigation
+              if (profile.basics.full_name && profile.basics.email) {
+                try {
+                  await saveProfile(false);
+                  toast.success('Progress saved! You can continue later.');
+                } catch (e) {
+                  toast('Progress saved locally. Server sync pending.', { icon: '📋' });
+                }
+              } else {
+                toast('Progress saved locally. Complete basics to sync.', { icon: '📋' });
+              }
+              
+              router.push('/app');
+            }}
             className="text-sm text-gray-500 hover:text-gray-700 underline"
           >
             Skip for now (not recommended)
