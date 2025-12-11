@@ -155,3 +155,26 @@ export const history = {
   regenerate: (runId: string) =>
     api.post(`/history/${runId}/regenerate`)
 };
+
+// Admin endpoints (v1.3 final)
+export const admin = {
+  // Get dashboard analytics
+  getDashboard: () =>
+    api.get('/admin/dashboard'),
+  
+  // List all users
+  getUsers: (page: number = 1, pageSize: number = 20) =>
+    api.get('/admin/users', { params: { page, page_size: pageSize } }),
+  
+  // List all generation runs
+  getGenerations: (page: number = 1, pageSize: number = 20, status?: string) =>
+    api.get('/admin/generations', { params: { page, page_size: pageSize, status } }),
+  
+  // List system errors
+  getErrors: (page: number = 1, pageSize: number = 20, level: string = 'ERROR') =>
+    api.get('/admin/errors', { params: { page, page_size: pageSize, level } }),
+  
+  // Make user admin
+  makeAdmin: (userId: string) =>
+    api.post(`/admin/users/${userId}/make-admin`)
+};
