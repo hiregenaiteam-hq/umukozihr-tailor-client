@@ -9,11 +9,12 @@ import JDComposer from '@/components/JDComposer';
 import RunCard from '@/components/RunCard';
 import JobCard from '@/components/JobCard';
 import ThemeToggle from '@/components/ThemeToggle';
+import ShareButtons from '@/components/ShareButtons';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2
 } from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
@@ -424,6 +425,11 @@ export default function AppPage() {
                     <p className="text-stone-500 text-sm">No skills added yet</p>
                   )}
                 </div>
+              </div>
+
+              {/* Share Profile */}
+              <div className="md:col-span-2">
+                <ShareButtons />
               </div>
             </div>
           </div>

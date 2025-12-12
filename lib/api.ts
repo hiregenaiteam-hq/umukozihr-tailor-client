@@ -178,3 +178,24 @@ export const admin = {
   makeAdmin: (userId: string) =>
     api.post(`/admin/users/${userId}/make-admin`)
 };
+
+// v1.4 Public Profile & Share endpoints
+export const publicProfile = {
+  // Fetch public profile by username (NO AUTH required)
+  get: (username: string) =>
+    api.get(`/p/${username}`),
+};
+
+export const share = {
+  // Get share links and settings
+  getLinks: () =>
+    api.get('/profile/share'),
+  
+  // Get current share settings
+  getSettings: () =>
+    api.get('/profile/share/settings'),
+  
+  // Update privacy settings
+  updateSettings: (isPublic: boolean) =>
+    api.put('/profile/share', { is_public: isPublic }),
+};
