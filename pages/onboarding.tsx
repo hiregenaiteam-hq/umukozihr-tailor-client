@@ -59,41 +59,41 @@ export default function OnboardingPage() {
       return;
     }
 
-    // Check if user is editing existing profile
     const isEditMode = router.query.edit === 'true';
-    
-    // Check if this is a fresh signup (no profile on server yet)
-    // We'll determine this in loadExistingProfile
-    
-    // Restore draft from localStorage (but only skip choice if coming back mid-session)
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
     const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
     let hasLocalDraft = false;
+    let restoredStep = 1;
 
+    // Restore draft data if exists
     if (savedDraft) {
       try {
         const parsedProfile = JSON.parse(savedDraft);
-        if (parsedProfile.basics?.full_name || parsedProfile.experience?.length > 0) {
+        if (parsedProfile.basics || parsedProfile.experience?.length > 0) {
           setProfile(parsedProfile);
           hasLocalDraft = true;
-          // Only skip choice if user already made progress (step > 1)
-          if (savedStep && parseInt(savedStep, 10) > 1) {
-            setShowChoice(false);
-            toast.success('Restored your progress from last session');
-          }
         }
       } catch (error) {
         console.error('Failed to parse saved draft:', error);
       }
     }
 
+    // Restore step position
     if (savedStep) {
       const step = parseInt(savedStep, 10);
-      if (step > 1 && step <= STEPS.length) {
+      if (step >= 1 && step <= STEPS.length) {
+        restoredStep = step;
         setCurrentStep(step);
-        setShowChoice(false); // Skip choice only if past step 1
       }
     }
+
+    // Decision: show choice screen or skip to form?
+    // Skip choice ONLY if: step > 1 (user already started filling)
+    if (restoredStep > 1) {
+      setShowChoice(false);
+      toast.success('Restored your progress from last session');
+    }
+    // If step === 1 with draft, still show choice (user can pick "Fill Manually" to see their data)
 
     loadExistingProfile(hasLocalDraft, isEditMode);
   }, [router.query.edit]);
@@ -189,6 +189,11 @@ export default function OnboardingPage() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
+  };
+
+  // Go back to choice screen from step 1 (keeps data)
+  const goToChoice = () => {
+    setShowChoice(true);
   };
 
   // Handle resume file upload
@@ -510,14 +515,23 @@ export default function OnboardingPage() {
 
         {/* Navigation buttons */}
         <div className="mt-8 flex justify-between items-center">
-          <button
-            onClick={prevStep}
-            disabled={currentStep === 1}
-            className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-          >
-            <ChevronLeft className="w-5 h-5" />
-            Back
-          </button>
+          {currentStep === 1 ? (
+            <button
+              onClick={goToChoice}
+              className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Change Method
+            </button>
+          ) : (
+            <button
+              onClick={prevStep}
+              className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white transition-colors"
+            >
+              <ChevronLeft className="w-5 h-5" />
+              Back
+            </button>
+          )}
 
           {currentStep < STEPS.length ? (
             <button

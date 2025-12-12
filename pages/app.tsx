@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { profile as profileApi, generation as generationApi, history as historyApi } from '@/lib/api';
+import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi } from '@/lib/api';
 import { config } from '@/lib/config';
 import { ProfileV3, HistoryItem } from '@/lib/types';
 import CompletenessBar from '@/components/CompletenessBar';
@@ -14,7 +14,7 @@ import {
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload
 } from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
@@ -56,6 +56,10 @@ export default function AppPage() {
   const [historyPage, setHistoryPage] = useState(1);
   const [historyTotal, setHistoryTotal] = useState(0);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Profile upload state
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
+  const profileFileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -195,6 +199,73 @@ export default function AppPage() {
     const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`;
     window.open(fullUrl, '_blank');
     toast.success(`Opening ${filename}...`);
+  };
+
+  // Handle resume upload to update profile
+  const handleProfileResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large. Maximum size is 10MB.');
+      return;
+    }
+
+    const validExtensions = ['.pdf', '.docx', '.txt'];
+    const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    if (!validExtensions.includes(extension)) {
+      toast.error('Invalid file type. Please upload PDF, DOCX, or TXT.');
+      return;
+    }
+
+    setIsUploadingResume(true);
+    try {
+      toast.loading('Extracting profile data...', { id: 'profile-upload' });
+      const response = await uploadApi.resume(file);
+      
+      if (response.data.success && response.data.profile) {
+        const extracted = response.data.profile;
+        const updatedProfile: ProfileV3 = {
+          ...profile!,
+          basics: {
+            full_name: extracted.basics?.full_name || profile?.basics.full_name || '',
+            headline: extracted.basics?.headline || '',
+            summary: extracted.basics?.summary || '',
+            location: extracted.basics?.location || '',
+            email: extracted.basics?.email || profile?.basics.email || '',
+            phone: extracted.basics?.phone || '',
+            website: extracted.basics?.website || '',
+            links: extracted.basics?.links || [],
+          },
+          skills: extracted.skills || [],
+          experience: extracted.experience || [],
+          education: extracted.education || [],
+          projects: extracted.projects || [],
+          certifications: extracted.certifications || [],
+          awards: extracted.awards || [],
+          languages: extracted.languages || [],
+          preferences: profile?.preferences || { regions: ['US'], templates: ['minimal'] },
+        };
+        
+        // Save to server
+        const saveResponse = await profileApi.update(updatedProfile);
+        setProfile(updatedProfile);
+        setCompleteness(saveResponse.data.completeness);
+        
+        const confidence = Math.round((response.data.extraction_confidence || 0) * 100);
+        toast.success(`Profile updated from resume! (${confidence}% confidence)`, { id: 'profile-upload' });
+      } else {
+        toast.error(response.data.message || 'Failed to extract profile', { id: 'profile-upload' });
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to upload resume', { id: 'profile-upload' });
+    } finally {
+      setIsUploadingResume(false);
+      if (profileFileInputRef.current) {
+        profileFileInputRef.current.value = '';
+      }
+    }
   };
 
   if (isLoading) {
@@ -343,6 +414,25 @@ export default function AppPage() {
                   <Settings className="h-4 w-4" />
                   Edit Profile
                 </button>
+                <button
+                  onClick={() => profileFileInputRef.current?.click()}
+                  disabled={isUploadingResume}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  {isUploadingResume ? (
+                    <div className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="h-4 w-4" />
+                  )}
+                  {isUploadingResume ? 'Uploading...' : 'Upload Resume'}
+                </button>
+                <input
+                  ref={profileFileInputRef}
+                  type="file"
+                  accept=".pdf,.docx,.txt"
+                  onChange={handleProfileResumeUpload}
+                  className="hidden"
+                />
               </div>
               
               {/* Progress */}
