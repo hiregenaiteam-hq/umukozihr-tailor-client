@@ -61,8 +61,11 @@ export default function OnboardingPage() {
 
     // Check if user is editing existing profile
     const isEditMode = router.query.edit === 'true';
-
-    // Restore draft from localStorage
+    
+    // Check if this is a fresh signup (no profile on server yet)
+    // We'll determine this in loadExistingProfile
+    
+    // Restore draft from localStorage (but only skip choice if coming back mid-session)
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
     const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
     let hasLocalDraft = false;
@@ -73,8 +76,11 @@ export default function OnboardingPage() {
         if (parsedProfile.basics?.full_name || parsedProfile.experience?.length > 0) {
           setProfile(parsedProfile);
           hasLocalDraft = true;
-          setShowChoice(false); // Skip choice if draft exists
-          toast.success('Restored your progress from last session');
+          // Only skip choice if user already made progress (step > 1)
+          if (savedStep && parseInt(savedStep, 10) > 1) {
+            setShowChoice(false);
+            toast.success('Restored your progress from last session');
+          }
         }
       } catch (error) {
         console.error('Failed to parse saved draft:', error);
@@ -85,7 +91,7 @@ export default function OnboardingPage() {
       const step = parseInt(savedStep, 10);
       if (step > 1 && step <= STEPS.length) {
         setCurrentStep(step);
-        setShowChoice(false); // Skip choice if step exists
+        setShowChoice(false); // Skip choice only if past step 1
       }
     }
 
