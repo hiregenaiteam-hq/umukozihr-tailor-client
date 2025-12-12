@@ -70,6 +70,17 @@ export default function OnboardingPage() {
       try {
         const parsedProfile = JSON.parse(savedDraft);
         if (parsedProfile.basics || parsedProfile.experience?.length > 0) {
+          // Sanitize skills to ensure valid levels before setting state
+          if (parsedProfile.skills) {
+            parsedProfile.skills = parsedProfile.skills.map((skill: any) => ({
+              ...skill,
+              name: skill.name || '',
+              level: ['beginner', 'intermediate', 'expert'].includes(skill.level?.toLowerCase()?.trim()) 
+                ? skill.level.toLowerCase().trim() 
+                : 'intermediate',
+              keywords: skill.keywords || [],
+            }));
+          }
           setProfile(parsedProfile);
           hasLocalDraft = true;
         }
@@ -102,12 +113,26 @@ export default function OnboardingPage() {
     try {
       const response = await profileApi.get();
       if (response.data?.profile) {
+        const serverProfile = response.data.profile;
+        
+        // Sanitize skills from server profile
+        if (serverProfile.skills) {
+          serverProfile.skills = serverProfile.skills.map((skill: any) => ({
+            ...skill,
+            name: skill.name || '',
+            level: ['beginner', 'intermediate', 'expert'].includes(skill.level?.toLowerCase()?.trim()) 
+              ? skill.level.toLowerCase().trim() 
+              : 'intermediate',
+            keywords: skill.keywords || [],
+          }));
+        }
+        
         // If we have a server profile and no local draft, use server version
         if (!hasLocalDraft) {
-          setProfile(response.data.profile);
+          setProfile(serverProfile);
           setCompleteness(response.data.completeness || 0);
           // If profile has data, skip choice screen
-          if (response.data.profile.basics?.full_name) {
+          if (serverProfile.basics?.full_name) {
             setShowChoice(false);
           }
         }
@@ -227,6 +252,17 @@ export default function OnboardingPage() {
       if (response.data.success && response.data.profile) {
         // Map extracted data to ProfileV3 structure
         const extracted = response.data.profile;
+        
+        // Sanitize skills to ensure valid levels
+        const sanitizedSkills = (extracted.skills || []).map((skill: any) => ({
+          ...skill,
+          name: skill.name || '',
+          level: ['beginner', 'intermediate', 'expert'].includes(skill.level?.toLowerCase()?.trim()) 
+            ? skill.level.toLowerCase().trim() 
+            : 'intermediate',
+          keywords: skill.keywords || [],
+        }));
+        
         setProfile(prev => ({
           ...prev,
           basics: {
@@ -239,7 +275,7 @@ export default function OnboardingPage() {
             website: extracted.basics?.website || '',
             links: extracted.basics?.links || [],
           },
-          skills: extracted.skills || [],
+          skills: sanitizedSkills,
           experience: extracted.experience || [],
           education: extracted.education || [],
           projects: extracted.projects || [],

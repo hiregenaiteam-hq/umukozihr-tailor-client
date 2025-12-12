@@ -225,6 +225,17 @@ export default function AppPage() {
       
       if (response.data.success && response.data.profile) {
         const extracted = response.data.profile;
+        
+        // Sanitize skills to ensure valid levels
+        const sanitizedSkills = (extracted.skills || []).map((skill: any) => ({
+          ...skill,
+          name: skill.name || '',
+          level: ['beginner', 'intermediate', 'expert'].includes(skill.level?.toLowerCase()?.trim()) 
+            ? skill.level.toLowerCase().trim() 
+            : 'intermediate',
+          keywords: skill.keywords || [],
+        }));
+        
         const updatedProfile: ProfileV3 = {
           ...profile!,
           basics: {
@@ -237,7 +248,7 @@ export default function AppPage() {
             website: extracted.basics?.website || '',
             links: extracted.basics?.links || [],
           },
-          skills: extracted.skills || [],
+          skills: sanitizedSkills,
           experience: extracted.experience || [],
           education: extracted.education || [],
           projects: extracted.projects || [],
