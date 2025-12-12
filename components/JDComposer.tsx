@@ -192,9 +192,9 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
                   onChange={(e) => setRegion(e.target.value as 'US' | 'EU' | 'GL')}
                   className="select-glass pl-12"
                 >
-                  <option value="US">Ì∑∫Ì∑∏ United States</option>
-                  <option value="EU">Ì∑™Ì∑∫ Europe</option>
-                  <option value="GL">Ìºç Global</option>
+                  <option value="US">US - United States</option>
+                  <option value="EU">EU - Europe</option>
+                  <option value="GL">GL - Global</option>
                 </select>
               </div>
             </div>

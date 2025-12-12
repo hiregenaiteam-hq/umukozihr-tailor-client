@@ -24,10 +24,10 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
 
   const getRegionFlag = (region: string) => {
     switch (region) {
-      case 'US': return 'í·ºí·¸';
-      case 'EU': return 'í·ªí·º';
-      case 'GL': return 'í¼';
-      default: return 'í¼';
+      case 'US': return 'US';
+      case 'EU': return 'EU';
+      case 'GL': return 'GL';
+      default: return 'GL';
     }
   };
 
