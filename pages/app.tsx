@@ -9,7 +9,12 @@ import JDComposer from '@/components/JDComposer';
 import RunCard from '@/components/RunCard';
 import JobCard from '@/components/JobCard';
 import ThemeToggle from '@/components/ThemeToggle';
-import { User, FileText, History, LogOut, Settings } from 'lucide-react';
+import { 
+  User, FileText, History, LogOut, Settings, 
+  Sparkles, ChevronRight, Briefcase, MapPin, 
+  GraduationCap, Code, Play, Trash2, Download,
+  Clock, CheckCircle, AlertCircle, Zap, Shield
+} from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
 
@@ -21,6 +26,16 @@ interface JobQueue {
   jd_text: string;
 }
 
+// Floating orb for background
+function FloatingOrb({ className, delay = 0 }: { className: string; delay?: number }) {
+  return (
+    <div 
+      className={`floating-orb floating-orb-orange ${className}`}
+      style={{ animationDelay: `${delay}s` }}
+    />
+  );
+}
+
 export default function AppPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<Tab>('generate');
@@ -28,6 +43,7 @@ export default function AppPage() {
   const [completeness, setCompleteness] = useState(0);
   const [breakdown, setBreakdown] = useState<any>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   // Generate tab state
   const [jobQueue, setJobQueue] = useState<JobQueue[]>([]);
@@ -40,15 +56,14 @@ export default function AppPage() {
   const [historyTotal, setHistoryTotal] = useState(0);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Auth check and profile load
   useEffect(() => {
+    setMounted(true);
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('Please log in');
       router.push('/');
       return;
     }
-
     loadProfile();
     loadHistory();
   }, []);
@@ -59,12 +74,8 @@ export default function AppPage() {
       const response = await profileApi.get();
       setProfile(response.data.profile);
       setCompleteness(response.data.completeness);
-
-      // Get breakdown
       const compResponse = await profileApi.getCompleteness();
       setBreakdown(compResponse.data.breakdown);
-
-      // Check if profile is complete enough
       if (response.data.completeness < 50) {
         toast('Your profile is incomplete. Consider completing it for better results!', {
           icon: '⚠️',
@@ -73,47 +84,35 @@ export default function AppPage() {
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
-        // Check if there's local draft data we can recover
         const savedDraft = localStorage.getItem('onboarding_draft');
         if (savedDraft) {
           try {
             const parsedProfile = JSON.parse(savedDraft);
-            // If we have substantial data, try to save it to server first!
             if (parsedProfile.basics?.full_name && parsedProfile.basics?.email) {
               toast.loading('Recovering your saved profile...');
               try {
-                // Try to sync localStorage data to server
                 const syncResponse = await profileApi.update(parsedProfile);
                 toast.dismiss();
                 toast.success('Profile recovered successfully!');
-                // Now reload with the synced data
                 setProfile(parsedProfile);
                 setCompleteness(syncResponse.data.completeness);
                 try {
                   const compResponse = await profileApi.getCompleteness();
                   setBreakdown(compResponse.data.breakdown);
-                } catch (e) {
-                  // Completeness fetch failed, but profile is loaded
-                }
+                } catch (e) {}
                 setIsLoading(false);
-                return; // Don't redirect - we recovered!
+                return;
               } catch (syncError: any) {
                 toast.dismiss();
-                console.error('Failed to sync profile:', syncError);
                 toast('Could not sync profile. Redirecting to complete setup...', { icon: '⚠️' });
               }
-            } else {
-              toast('You have partial progress saved. Complete your profile to continue.', { icon: '📋' });
             }
           } catch (e) {
-            toast('Please complete your profile to get started.', { icon: '👋' });
+            toast('Please complete your profile to get started.', { icon: '���' });
           }
-        } else {
-          toast('Please complete your profile to get started.', { icon: '👋' });
         }
         router.push('/onboarding');
       } else {
-        console.error('Error loading profile:', error);
         toast.error('Failed to load profile. Please try again.');
       }
     } finally {
@@ -156,207 +155,275 @@ export default function AppPage() {
       toast.error('Please add at least one job to the queue');
       return;
     }
-
     if (!profile) {
-      console.error('❌ Generate failed: Profile not loaded');
       toast.error('Profile not loaded');
       return;
     }
 
-    console.log('🚀 Starting document generation...', {
-      jobQueueLength: jobQueue.length,
-      jobs: jobQueue.map(j => ({ company: j.company, title: j.title, region: j.region })),
-      profileLoaded: !!profile
-    });
-
     setIsGenerating(true);
     try {
-      // Note: Backend will use database profile for authenticated users
-      // We pass null as profile (backend loads from database for authenticated users)
-      console.log('📡 Calling generation API with null profile (backend will load from DB)...');
       const response = await generationApi.generate(null, jobQueue);
-
-      console.log('✅ Generation successful!', {
-        runId: response.data.run_id,
-        artifactsCount: response.data.artifacts?.length || 0,
-        bundlePath: response.data.bundle_path
-      });
-
       setCurrentRun(response.data);
-      setJobQueue([]); // Clear queue after successful generation
+      setJobQueue([]);
       toast.success('Documents generated successfully!');
-
-      // Reload history
       loadHistory();
     } catch (error: any) {
-      console.error('❌ Error generating documents:', {
-        message: error.message,
-        status: error.response?.status,
-        statusText: error.response?.statusText,
-        detail: error.response?.data?.detail,
-        fullError: error
-      });
       toast.error(error.response?.data?.detail || 'Failed to generate documents');
     } finally {
       setIsGenerating(false);
-      console.log('🏁 Generation process ended');
     }
   };
 
   const handleRegenerate = async (runId: string) => {
+    toast.loading('Regenerating...');
     try {
-      toast.loading('Regenerating...');
       const response = await historyApi.regenerate(runId);
+      setCurrentRun(response.data);
       toast.dismiss();
-      toast.success(response.data.message);
-      loadHistory(); // Reload history
-    } catch (error) {
+      toast.success('Regenerated successfully!');
+      loadHistory();
+      setActiveTab('generate');
+    } catch (error: any) {
       toast.dismiss();
-      console.error('Error regenerating:', error);
-      toast.error('Failed to regenerate');
+      toast.error(error.response?.data?.detail || 'Regeneration failed');
     }
   };
 
   const handleDownload = (url: string, filename: string) => {
-    const link = document.createElement('a');
-    link.href = `${config.apiUrl}${url}`;
-    link.download = filename;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    toast.success(`Downloading ${filename}`);
+    // Open the artifact URL directly
+    const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`;
+    window.open(fullUrl, '_blank');
+    toast.success(`Opening ${filename}...`);
   };
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0c0a09] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading your profile...</p>
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-orange-500 animate-spin" />
+            <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-orange-400" />
+          </div>
+          <p className="text-stone-400">Loading your workspace...</p>
         </div>
       </div>
     );
   }
 
+  const tabs = [
+    { id: 'profile' as Tab, label: 'Profile', icon: User },
+    { id: 'generate' as Tab, label: 'Generate', icon: FileText },
+    { id: 'history' as Tab, label: 'History', icon: History }
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-neutral-900">
+    <div className={`min-h-screen bg-[#0c0a09] relative transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Background */}
+      <div className="fixed inset-0 bg-mesh pointer-events-none" />
+      <FloatingOrb className="w-[500px] h-[500px] -top-32 -right-32" delay={0} />
+      <FloatingOrb className="w-[400px] h-[400px] bottom-0 -left-20" delay={3} />
+
       {/* Header */}
-      <div className="bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+      <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex justify-between items-center">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-neutral-50">UmukoziHR Resume Tailor</h1>
-              {profile && (
-                <p className="text-sm text-gray-600 dark:text-neutral-300">Welcome, {profile.basics.full_name}</p>
-              )}
+            <div className="flex items-center gap-4">
+              <div className="neu-raised w-10 h-10 rounded-xl flex items-center justify-center">
+                <FileText className="h-5 w-5 text-orange-400" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gradient">Resume Tailor</h1>
+                <p className="text-xs text-stone-500">AI-Powered Documents</p>
+              </div>
             </div>
+
             <div className="flex items-center gap-3">
+              {(profile as any)?.is_admin && (
+                <button
+                  onClick={() => router.push('/admin')}
+                  className="btn-ghost flex items-center gap-2"
+                >
+                  <Shield className="h-4 w-4" />
+                  <span className="hidden md:inline">Admin</span>
+                </button>
+              )}
               <ThemeToggle />
               <button
-                onClick={() => router.push('/onboarding')}
-                className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-neutral-700 rounded-lg transition-colors flex items-center gap-2"
-              >
-                <Settings size={18} />
-                Edit Profile
-              </button>
-              <button
                 onClick={handleLogout}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors flex items-center gap-2"
+                className="btn-icon"
               >
-                <LogOut size={18} />
-                Logout
+                <LogOut className="h-5 w-5" />
               </button>
             </div>
           </div>
         </div>
-      </div>
+      </header>
+
+      {/* Profile Completeness Banner */}
+      {completeness < 80 && (
+        <div className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border-b border-orange-500/20">
+          <div className="max-w-7xl mx-auto px-6 py-3">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center">
+                  <AlertCircle className="h-4 w-4 text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-sm text-white">Profile {completeness}% complete</p>
+                  <p className="text-xs text-stone-400">Complete your profile for better tailored resumes</p>
+                </div>
+              </div>
+              <button
+                onClick={() => router.push('/onboarding')}
+                className="text-sm text-orange-400 hover:text-orange-300 font-medium flex items-center gap-1"
+              >
+                Complete <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-neutral-800 border-b border-gray-200 dark:border-neutral-700">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex gap-8">
-            <button
-              onClick={() => setActiveTab('profile')}
-              className={`px-4 py-3 font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'profile'
-                  ? 'text-orange-600 border-b-2 border-orange-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <User size={18} />
-              Profile
-            </button>
-            <button
-              onClick={() => setActiveTab('generate')}
-              className={`px-4 py-3 font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'generate'
-                  ? 'text-orange-600 border-b-2 border-orange-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <FileText size={18} />
-              Generate
-            </button>
-            <button
-              onClick={() => setActiveTab('history')}
-              className={`px-4 py-3 font-medium transition-colors flex items-center gap-2 ${
-                activeTab === 'history'
-                  ? 'text-orange-600 border-b-2 border-orange-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <History size={18} />
-              History ({historyTotal})
-            </button>
+      <div className="glass-subtle border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="flex gap-1">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex items-center gap-2 px-6 py-4 font-medium transition-all relative ${
+                  activeTab === tab.id
+                    ? 'text-orange-400'
+                    : 'text-stone-400 hover:text-white'
+                }`}
+              >
+                <tab.icon className="h-4 w-4" />
+                <span>{tab.label}</span>
+                {activeTab === tab.id && (
+                  <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
+                )}
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Content */}
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         {/* Profile Tab */}
         {activeTab === 'profile' && profile && (
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Profile Overview</h2>
-              <CompletenessBar
-                completeness={completeness}
-                breakdown={breakdown}
-                showBreakdown={true}
-              />
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div><span className="text-gray-600">Name:</span> <span className="font-medium">{profile.basics.full_name}</span></div>
-                <div><span className="text-gray-600">Email:</span> <span className="font-medium">{profile.basics.email}</span></div>
-                <div><span className="text-gray-600">Phone:</span> <span className="font-medium">{profile.basics.phone || '-'}</span></div>
-                <div><span className="text-gray-600">Location:</span> <span className="font-medium">{profile.basics.location || '-'}</span></div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Experience ({profile.experience.length})</h3>
-              <div className="space-y-3">
-                {profile.experience.map((exp, idx) => (
-                  <div key={idx} className="pb-3 border-b border-gray-200 last:border-0">
-                    <div className="font-medium text-gray-900">{exp.title}</div>
-                    <div className="text-gray-600">{exp.company} • {exp.start} - {exp.end}</div>
+          <div className="space-y-6 animate-fade-in-up">
+            {/* Profile Header */}
+            <div className="glass-card p-8">
+              <div className="flex flex-col md:flex-row md:items-center gap-6">
+                <div className="neu-raised w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold text-gradient">
+                  {profile.basics.full_name?.charAt(0) || '?'}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-2xl font-bold text-white mb-1">
+                    {profile.basics.full_name || 'Complete Your Profile'}
+                  </h2>
+                  <p className="text-stone-400 mb-3">{profile.basics.email}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {profile.preferences.regions.map((region) => (
+                      <span key={region} className="badge badge-orange">
+                        <MapPin className="h-3 w-3 mr-1" />
+                        {region}
+                      </span>
+                    ))}
                   </div>
-                ))}
+                </div>
+                <button
+                  onClick={() => router.push('/onboarding')}
+                  className="btn-secondary flex items-center gap-2"
+                >
+                  <Settings className="h-4 w-4" />
+                  Edit Profile
+                </button>
+              </div>
+              
+              {/* Progress */}
+              <div className="mt-6 pt-6 border-t border-white/10">
+                <div className="flex justify-between text-sm mb-2">
+                  <span className="text-stone-400">Profile Completeness</span>
+                  <span className="text-orange-400 font-medium">{completeness}%</span>
+                </div>
+                <div className="progress-bar">
+                  <div className="progress-bar-fill" style={{ width: `${completeness}%` }} />
+                </div>
               </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">Skills ({profile.skills.length})</h3>
-              <div className="flex flex-wrap gap-2">
-                {profile.skills.map((skill, idx) => (
-                  <span key={idx} className="px-3 py-1 bg-orange-100 text-orange-800 rounded-full text-sm">
-                    {skill.name}
-                  </span>
-                ))}
+            {/* Profile Sections */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Experience */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Briefcase className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Experience ({profile.experience?.length || 0})
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {profile.experience?.slice(0, 3).map((exp, idx) => (
+                    <div key={idx} className="glass-subtle p-3 rounded-lg">
+                      <p className="font-medium text-white">{exp.title}</p>
+                      <p className="text-sm text-stone-400">{exp.company}</p>
+                    </div>
+                  ))}
+                  {(!profile.experience || profile.experience.length === 0) && (
+                    <p className="text-stone-500 text-sm">No experience added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Education */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Education ({profile.education?.length || 0})
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {profile.education?.slice(0, 3).map((edu, idx) => (
+                    <div key={idx} className="glass-subtle p-3 rounded-lg">
+                      <p className="font-medium text-white">{edu.degree}</p>
+                      <p className="text-sm text-stone-400">{edu.school}</p>
+                    </div>
+                  ))}
+                  {(!profile.education || profile.education.length === 0) && (
+                    <p className="text-stone-500 text-sm">No education added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Skills */}
+              <div className="glass-card p-6 md:col-span-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Code className="h-5 w-5 text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Skills ({profile.skills?.length || 0})
+                  </h3>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {profile.skills?.map((skill, idx) => (
+                    <span key={idx} className="badge badge-green">
+                      {skill.name}
+                    </span>
+                  ))}
+                  {(!profile.skills || profile.skills.length === 0) && (
+                    <p className="text-stone-500 text-sm">No skills added yet</p>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -364,11 +431,19 @@ export default function AppPage() {
 
         {/* Generate Tab */}
         {activeTab === 'generate' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in-up">
             {/* Left: JD Input */}
             <div className="space-y-6">
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-xl font-semibold text-gray-900 mb-4">Add Job Descriptions</h2>
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="neu-raised w-12 h-12 rounded-xl flex items-center justify-center">
+                    <Zap className="h-6 w-6 text-orange-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">Add Job Descriptions</h2>
+                    <p className="text-sm text-stone-400">Paste job postings to tailor your resume</p>
+                  </div>
+                </div>
                 <JDComposer
                   onAddJob={handleAddJob}
                   defaultRegion={profile?.preferences.regions[0] || 'US'}
@@ -377,22 +452,32 @@ export default function AppPage() {
 
               {/* Job Queue */}
               {jobQueue.length > 0 && (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Job Queue ({jobQueue.length})
+                <div className="glass-card p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-full bg-orange-500/20 flex items-center justify-center text-sm text-orange-400">
+                      {jobQueue.length}
+                    </span>
+                    Jobs in Queue
                   </h3>
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {jobQueue.map((job, idx) => (
-                      <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div 
+                        key={idx} 
+                        className="glass-subtle p-4 rounded-xl flex justify-between items-center group hover:border-orange-500/30 transition-all"
+                      >
                         <div>
-                          <div className="font-medium text-gray-900">{job.title}</div>
-                          <div className="text-sm text-gray-600">{job.company}</div>
+                          <div className="font-medium text-white">{job.title}</div>
+                          <div className="text-sm text-stone-400 flex items-center gap-2">
+                            <span>{job.company}</span>
+                            <span className="w-1 h-1 rounded-full bg-stone-600" />
+                            <span className="badge badge-orange text-xs">{job.region}</span>
+                          </div>
                         </div>
                         <button
                           onClick={() => handleRemoveJob(idx)}
-                          className="text-red-600 hover:bg-red-50 px-3 py-1 rounded"
+                          className="opacity-0 group-hover:opacity-100 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-all"
                         >
-                          Remove
+                          <Trash2 className="h-4 w-4" />
                         </button>
                       </div>
                     ))}
@@ -401,17 +486,33 @@ export default function AppPage() {
                   <button
                     onClick={handleGenerate}
                     disabled={isGenerating}
-                    className="w-full mt-4 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    className="btn-primary w-full mt-6 flex items-center justify-center gap-3"
                   >
-                    {isGenerating ? 'Generating...' : `Generate ${jobQueue.length} Resume${jobQueue.length > 1 ? 's' : ''}`}
+                    {isGenerating ? (
+                      <>
+                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        <span>Generating...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Play className="h-5 w-5" />
+                        <span>Generate {jobQueue.length} Resume{jobQueue.length > 1 ? 's' : ''}</span>
+                      </>
+                    )}
                   </button>
                 </div>
               )}
             </div>
 
             {/* Right: Results */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Generated Documents</h2>
+            <div className="glass-card p-6">
+              <h2 className="text-xl font-semibold text-white mb-6 flex items-center gap-3">
+                <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-green-400" />
+                </div>
+                Generated Documents
+              </h2>
+              
               {currentRun && currentRun.artifacts ? (
                 <div className="space-y-4">
                   {currentRun.artifacts.map((artifact: any, idx: number) => (
@@ -419,9 +520,13 @@ export default function AppPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-500 text-center py-8">
-                  No documents generated yet. Add jobs and click Generate!
-                </p>
+                <div className="text-center py-16">
+                  <div className="neu-raised w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                    <FileText className="h-10 w-10 text-stone-600" />
+                  </div>
+                  <p className="text-stone-400 mb-2">No documents generated yet</p>
+                  <p className="text-sm text-stone-500">Add jobs and click Generate to get started!</p>
+                </div>
               )}
             </div>
           </div>
@@ -429,19 +534,25 @@ export default function AppPage() {
 
         {/* History Tab */}
         {activeTab === 'history' && (
-          <div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Generation History ({historyTotal} total runs)
-              </h2>
-              <p className="text-gray-600 text-sm">
-                View and re-generate past resumes. Re-generation uses your current profile version.
-              </p>
+          <div className="animate-fade-in-up">
+            <div className="glass-card p-6 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="neu-raised w-12 h-12 rounded-xl flex items-center justify-center">
+                    <Clock className="h-6 w-6 text-orange-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">Generation History</h2>
+                    <p className="text-sm text-stone-400">{historyTotal} total runs</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {isLoadingHistory ? (
-              <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600 mx-auto"></div>
+              <div className="text-center py-16">
+                <div className="w-12 h-12 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-stone-400">Loading history...</p>
               </div>
             ) : historyItems.length > 0 ? (
               <>
@@ -456,23 +567,22 @@ export default function AppPage() {
                   ))}
                 </div>
 
-                {/* Pagination */}
                 {historyTotal > 10 && (
-                  <div className="flex justify-center gap-2 mt-6">
+                  <div className="flex justify-center gap-3 mt-8">
                     <button
                       onClick={() => loadHistory(historyPage - 1)}
                       disabled={historyPage === 1}
-                      className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                      className="btn-secondary px-6 disabled:opacity-50"
                     >
                       Previous
                     </button>
-                    <span className="px-4 py-2">
+                    <span className="flex items-center px-4 text-stone-400">
                       Page {historyPage} of {Math.ceil(historyTotal / 10)}
                     </span>
                     <button
                       onClick={() => loadHistory(historyPage + 1)}
                       disabled={historyPage >= Math.ceil(historyTotal / 10)}
-                      className="px-4 py-2 bg-gray-200 rounded-lg disabled:opacity-50"
+                      className="btn-secondary px-6 disabled:opacity-50"
                     >
                       Next
                     </button>
@@ -480,12 +590,15 @@ export default function AppPage() {
                 )}
               </>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <History size={48} className="mx-auto text-gray-300 mb-4" />
-                <p className="text-gray-600">No generation history yet</p>
+              <div className="glass-card p-16 text-center">
+                <div className="neu-raised w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <History className="h-10 w-10 text-stone-600" />
+                </div>
+                <p className="text-stone-400 mb-2">No generation history yet</p>
+                <p className="text-sm text-stone-500 mb-6">Generate your first resume to see it here</p>
                 <button
                   onClick={() => setActiveTab('generate')}
-                  className="mt-4 px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700"
+                  className="btn-primary"
                 >
                   Generate Your First Resume
                 </button>
@@ -493,7 +606,7 @@ export default function AppPage() {
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

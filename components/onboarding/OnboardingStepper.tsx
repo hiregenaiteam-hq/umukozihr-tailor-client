@@ -1,11 +1,5 @@
 import React from 'react';
-import { Check } from 'lucide-react';
-
-interface Step {
-  id: number;
-  name: string;
-  completed: boolean;
-}
+import { Check, Circle } from 'lucide-react';
 
 interface OnboardingStepperProps {
   currentStep: number;
@@ -13,55 +7,64 @@ interface OnboardingStepperProps {
   completedSteps: number[];
 }
 
-export default function OnboardingStepper({
-  currentStep,
-  steps,
-  completedSteps
-}: OnboardingStepperProps) {
+export default function OnboardingStepper({ currentStep, steps, completedSteps }: OnboardingStepperProps) {
   return (
-    <div className="w-full py-6">
-      <div className="flex items-center justify-between">
+    <div className="mb-8">
+      {/* Desktop Stepper */}
+      <div className="hidden md:flex items-center justify-center">
         {steps.map((step, index) => {
           const stepNumber = index + 1;
-          const isActive = stepNumber === currentStep;
           const isCompleted = completedSteps.includes(stepNumber);
+          const isCurrent = currentStep === stepNumber;
+          const isPast = stepNumber < currentStep;
 
           return (
-            <React.Fragment key={stepNumber}>
-              {/* Step circle */}
+            <React.Fragment key={step}>
               <div className="flex flex-col items-center">
+                {/* Step Circle */}
                 <div
                   className={`
-                    w-10 h-10 rounded-full flex items-center justify-center font-semibold text-sm
-                    transition-all duration-200
-                    ${
-                      isCompleted
-                        ? 'bg-green-500 text-white'
-                        : isActive
-                        ? 'bg-blue-600 text-white ring-4 ring-blue-200'
-                        : 'bg-gray-200 text-gray-500'
+                    relative w-10 h-10 rounded-full flex items-center justify-center
+                    transition-all duration-300
+                    ${isCompleted || isPast
+                      ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30'
+                      : isCurrent
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/30 ring-4 ring-orange-500/20'
+                        : 'glass-subtle text-stone-500'
                     }
                   `}
                 >
-                  {isCompleted ? <Check size={20} /> : stepNumber}
+                  {isCompleted || isPast ? (
+                    <Check className="h-5 w-5" />
+                  ) : (
+                    <span className="text-sm font-semibold">{stepNumber}</span>
+                  )}
+                  {isCurrent && (
+                    <div className="absolute inset-0 rounded-full animate-pulse-glow" />
+                  )}
                 </div>
+                
+                {/* Step Label */}
                 <span
                   className={`
-                    mt-2 text-xs font-medium text-center max-w-[80px]
-                    ${isActive ? 'text-blue-600' : 'text-gray-500'}
+                    mt-2 text-xs font-medium transition-colors
+                    ${isCurrent ? 'text-orange-400' : isPast || isCompleted ? 'text-white' : 'text-stone-500'}
                   `}
                 >
                   {step}
                 </span>
               </div>
 
-              {/* Connector line */}
+              {/* Connector Line */}
               {index < steps.length - 1 && (
-                <div className="flex-1 h-1 mx-2 mb-8">
+                <div className="w-12 lg:w-20 h-0.5 mx-2 -mt-6">
                   <div
                     className={`
-                      h-full rounded transition-all duration-300
-                      ${isCompleted ? 'bg-green-500' : 'bg-gray-200'}
+                      h-full rounded-full transition-all duration-500
+                      ${stepNumber < currentStep
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-500'
+                        : 'bg-white/10'
+                      }
                     `}
                   />
                 </div>
@@ -69,6 +72,22 @@ export default function OnboardingStepper({
             </React.Fragment>
           );
         })}
+      </div>
+
+      {/* Mobile Progress */}
+      <div className="md:hidden">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm text-stone-400">
+            Step {currentStep} of {steps.length}
+          </span>
+          <span className="text-sm font-medium text-gradient">{steps[currentStep - 1]}</span>
+        </div>
+        <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-orange-500 to-amber-500 rounded-full transition-all duration-500"
+            style={{ width: `${(currentStep / steps.length) * 100}%` }}
+          />
+        </div>
       </div>
     </div>
   );

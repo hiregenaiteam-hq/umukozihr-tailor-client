@@ -1,5 +1,5 @@
 import React from 'react';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Sparkles } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function ThemeToggle() {
@@ -8,15 +8,21 @@ export default function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg bg-gray-100 dark:bg-neutral-800 hover:bg-gray-200 dark:hover:bg-neutral-700 transition-colors"
+      className="relative group btn-icon overflow-hidden"
       aria-label="Toggle theme"
       title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      {theme === 'light' ? (
-        <Moon size={20} className="text-gray-700 dark:text-gray-300" />
-      ) : (
-        <Sun size={20} className="text-orange-500" />
-      )}
+      {/* Glow effect */}
+      <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-amber-500/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg" />
+      
+      {/* Icon */}
+      <div className="relative transition-transform duration-300 group-hover:scale-110">
+        {theme === 'light' ? (
+          <Moon className="h-5 w-5 text-stone-400 group-hover:text-orange-400 transition-colors" />
+        ) : (
+          <Sun className="h-5 w-5 text-orange-400 group-hover:text-amber-300 transition-colors" />
+        )}
+      </div>
     </button>
   );
 }

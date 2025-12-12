@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { auth } from '../lib/api';
 import toast from 'react-hot-toast';
-import { Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { Mail, Lock, UserPlus, LogIn, Sparkles, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 interface LoginFormProps {
   onLogin: (token: string) => void;
@@ -14,10 +14,12 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     password: ''
   });
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.email || !formData.password) {
       toast.error('Please fill in all fields');
       return;
@@ -29,26 +31,23 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
     );
 
     try {
-      const response = isLogin 
+      const response = isLogin
         ? await auth.login(formData.email, formData.password)
         : await auth.signup(formData.email, formData.password);
 
       const { access_token } = response.data;
-      
-      // Store token
       localStorage.setItem('token', access_token);
-      
+
       toast.success(
-        isLogin ? '✅ Welcome back!' : '🎉 Account created successfully!',
+        isLogin ? 'Welcome back!' : 'Account created successfully!',
         { id: loadingToast }
       );
-      
+
       onLogin(access_token);
-      
+
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail || 
+      const errorMessage = error?.response?.data?.detail ||
         (isLogin ? 'Login failed' : 'Signup failed');
-      
       toast.error(errorMessage, { id: loadingToast });
     } finally {
       setLoading(false);
@@ -56,112 +55,159 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   };
 
   return (
-    <div className="max-w-md mx-auto">
-      <div className="bg-white rounded-lg shadow-lg p-8">
-        <div className="text-center mb-8">
-          <div className="p-3 bg-orange-500 rounded-xl mx-auto w-fit mb-4">
-            {isLogin ? (
-              <LogIn className="w-8 h-8 text-white" />
-            ) : (
-              <UserPlus className="w-8 h-8 text-white" />
-            )}
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            {isLogin ? 'Welcome Back' : 'Create Account'}
-          </h2>
-          <p className="text-gray-600">
-            {isLogin 
-              ? 'Sign in to access your resume tailor' 
-              : 'Join to start tailoring your resumes'
-            }
-          </p>
-        </div>
+    <div className="w-full">
+      {/* Toggle Buttons */}
+      <div className="flex gap-2 p-1.5 bg-white/5 rounded-2xl mb-8">
+        <button
+          type="button"
+          onClick={() => setIsLogin(true)}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+            isLogin
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25'
+              : 'text-stone-400 hover:text-white'
+          }`}
+        >
+          <LogIn className="h-4 w-4" />
+          <span>Sign In</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setIsLogin(false)}
+          className={`flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-xl font-medium transition-all duration-300 ${
+            !isLogin
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25'
+              : 'text-stone-400 hover:text-white'
+          }`}
+        >
+          <UserPlus className="h-4 w-4" />
+          <span>Sign Up</span>
+        </button>
+      </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Email Address
-            </label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Email Field */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-stone-300">
+            Email Address
+          </label>
+          <div className={`relative group transition-all duration-300 ${
+            focusedField === 'email' ? 'scale-[1.02]' : ''
+          }`}>
+            <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${
+              focusedField === 'email' 
+                ? 'opacity-100 bg-gradient-to-r from-orange-500/20 to-amber-500/20 blur-xl' 
+                : 'opacity-0'
+            }`} />
             <div className="relative">
-              <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Mail className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
+                focusedField === 'email' ? 'text-orange-400' : 'text-stone-500'
+              }`} />
               <input
                 type="email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                onFocus={() => setFocusedField('email')}
+                onBlur={() => setFocusedField(null)}
+                className="input-glass pl-12 pr-4"
                 placeholder="your@email.com"
                 required
               />
             </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Password
-            </label>
+        {/* Password Field */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-stone-300">
+            Password
+          </label>
+          <div className={`relative group transition-all duration-300 ${
+            focusedField === 'password' ? 'scale-[1.02]' : ''
+          }`}>
+            <div className={`absolute inset-0 rounded-xl transition-opacity duration-300 ${
+              focusedField === 'password' 
+                ? 'opacity-100 bg-gradient-to-r from-orange-500/20 to-amber-500/20 blur-xl' 
+                : 'opacity-0'
+            }`} />
             <div className="relative">
-              <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+              <Lock className={`absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 transition-colors duration-300 ${
+                focusedField === 'password' ? 'text-orange-400' : 'text-stone-500'
+              }`} />
               <input
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                className="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-gray-900 placeholder:text-gray-400"
+                onFocus={() => setFocusedField('password')}
+                onBlur={() => setFocusedField(null)}
+                className="input-glass pl-12 pr-12"
                 placeholder="Enter your password"
                 required
                 minLength={6}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 transform -translate-y-1/2 text-stone-500 hover:text-orange-400 transition-colors"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full py-3 px-4 rounded-lg font-semibold text-white transition-colors ${
-              loading
-                ? 'bg-gray-400 cursor-not-allowed'
-                : 'bg-orange-500 hover:bg-orange-600'
-            }`}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center">
-                <svg className="animate-spin h-5 w-5 mr-3" viewBox="0 0 24 24">
-                  <circle 
-                    className="opacity-25" 
-                    cx="12" cy="12" r="10" 
-                    stroke="currentColor" 
-                    strokeWidth="4" 
-                    fill="none" 
-                  />
-                  <path 
-                    className="opacity-75" 
-                    fill="currentColor" 
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" 
-                  />
-                </svg>
-                {isLogin ? 'Signing In...' : 'Creating Account...'}
-              </span>
-            ) : (
-              <>
-                {isLogin ? 'Sign In' : 'Create Account'}
-              </>
-            )}
-          </button>
-        </form>
-
-        <div className="mt-6 text-center">
-          <p className="text-gray-600">
-            {isLogin ? "Don't have an account?" : "Already have an account?"}
-            {' '}
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-orange-500 hover:text-orange-600 font-semibold"
-            >
-              {isLogin ? 'Sign up' : 'Sign in'}
-            </button>
-          </p>
+          {!isLogin && (
+            <p className="text-xs text-stone-500 mt-1">
+              Must be at least 6 characters
+            </p>
+          )}
         </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          disabled={loading}
+          className={`btn-primary w-full flex items-center justify-center gap-3 group ${
+            loading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle
+                  className="opacity-25"
+                  cx="12" cy="12" r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                  fill="none"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span>{isLogin ? 'Signing In...' : 'Creating Account...'}</span>
+            </>
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5" />
+              <span>{isLogin ? 'Sign In' : 'Create Account'}</span>
+              <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+            </>
+          )}
+        </button>
+      </form>
+
+      {/* Divider */}
+      <div className="relative my-8">
+        <div className="divider" />
+        <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#1c1917] px-4 text-sm text-stone-500">
+          or continue with
+        </span>
       </div>
+
+      {/* Social hint */}
+      <p className="text-center text-stone-500 text-sm">
+        More login options coming soon
+      </p>
     </div>
   );
 }

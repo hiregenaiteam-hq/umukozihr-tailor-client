@@ -3,41 +3,105 @@ import { useRouter } from "next/router";
 import { profile as profileApi } from "../lib/api";
 import LoginForm from "../components/LoginForm";
 import ThemeToggle from "../components/ThemeToggle";
-import { FileText, Zap, Target, CheckCircle } from "lucide-react";
+import { FileText, Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock } from "lucide-react";
+import Image from "next/image";
+
+// Floating orb component
+function FloatingOrb({ className, delay = 0, color = "orange" }: { className: string; delay?: number; color?: "orange" | "amber" | "gold" }) {
+  const colorClass = {
+    orange: "floating-orb-orange",
+    amber: "floating-orb-amber", 
+    gold: "floating-orb-gold"
+  }[color];
+  
+  return (
+    <div 
+      className={`floating-orb ${colorClass} ${className}`}
+      style={{ animationDelay: `${delay}s` }}
+    />
+  );
+}
+
+// Animated counter
+function AnimatedCounter({ end, suffix = "" }: { end: number; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  
+  useEffect(() => {
+    const duration = 2000;
+    const steps = 60;
+    const increment = end / steps;
+    let current = 0;
+    
+    const timer = setInterval(() => {
+      current += increment;
+      if (current >= end) {
+        setCount(end);
+        clearInterval(timer);
+      } else {
+        setCount(Math.floor(current));
+      }
+    }, duration / steps);
+    
+    return () => clearInterval(timer);
+  }, [end]);
+  
+  return <>{count.toLocaleString()}{suffix}</>;
+}
+
+// Feature card
+function FeatureCard({ icon: Icon, title, description, delay }: { 
+  icon: React.ElementType; 
+  title: string; 
+  description: string;
+  delay: number;
+}) {
+  return (
+    <div 
+      className="glass-card p-8 text-center group animate-fade-in-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      <div className="neu-raised w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-6 group-hover:animate-pulse-glow transition-all duration-300">
+        <Icon className="h-8 w-8 text-orange-400 group-hover:text-orange-300 transition-colors" />
+      </div>
+      <h3 className="text-xl font-semibold text-white mb-3 group-hover:text-gradient transition-all">
+        {title}
+      </h3>
+      <p className="text-stone-400 leading-relaxed">
+        {description}
+      </p>
+    </div>
+  );
+}
 
 export default function Home() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     checkAuthAndRedirect();
   }, []);
 
   const checkAuthAndRedirect = async () => {
     const token = localStorage.getItem('token');
-
+    
     if (!token) {
-      // No token, stay on landing/login page
       setIsCheckingAuth(false);
       return;
     }
 
-    // Token exists, check if profile exists
     try {
       const response = await profileApi.get();
       if (response.data.profile) {
-        // Profile exists, redirect to /app
         router.push('/app');
       } else {
-        // No profile, redirect to onboarding
         router.push('/onboarding');
       }
     } catch (error: any) {
       if (error.response?.status === 404) {
-        // No profile found, redirect to onboarding
         router.push('/onboarding');
       } else {
-        // Other error, token might be invalid
         localStorage.removeItem('token');
         setIsCheckingAuth(false);
       }
@@ -45,137 +109,185 @@ export default function Home() {
   };
 
   const handleLogin = async (token: string) => {
-    // After login, check if profile exists
-    console.log('handleLogin called with token:', token ? 'present' : 'missing');
-
-    // Small delay to ensure token is properly stored
     await new Promise(resolve => setTimeout(resolve, 100));
-
+    
     try {
-      console.log('Checking for existing profile...');
       const response = await profileApi.get();
-      console.log('Profile response:', response.data);
-
       if (response.data && response.data.profile) {
-        console.log('Profile exists, redirecting to /app');
         await router.push('/app');
       } else {
-        console.log('No profile data, redirecting to /onboarding');
         await router.push('/onboarding');
       }
     } catch (error: any) {
-      console.log('Profile check error:', error);
-      console.log('Error status:', error.response?.status);
-      console.log('Error data:', error.response?.data);
-
-      // For 404 or any error, redirect to onboarding (new user flow)
-      console.log('Redirecting to /onboarding for new user');
       await router.push('/onboarding');
     }
   };
 
   if (isCheckingAuth) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#0c0a09] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="relative w-16 h-16 mx-auto mb-6">
+            <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
+            <div className="absolute inset-0 rounded-full border-2 border-t-orange-500 animate-spin" />
+            <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-orange-400" />
+          </div>
+          <p className="text-stone-400">Loading...</p>
         </div>
       </div>
     );
   }
 
+  const features = [
+    {
+      icon: FileText,
+      title: "Smart Tailoring",
+      description: "AI analyzes job descriptions and highlights your most relevant experience for each application"
+    },
+    {
+      icon: Zap,
+      title: "Lightning Fast",
+      description: "Generate professional PDFs and LaTeX files in seconds with our optimized engine"
+    },
+    {
+      icon: Target,
+      title: "Region-Specific",
+      description: "Templates optimized for US, EU, and Global job markets with cultural nuances"
+    }
+  ];
+
+  const stats = [
+    { value: 15000, suffix: "+", label: "Resumes Created" },
+    { value: 98, suffix: "%", label: "Success Rate" },
+    { value: 30, suffix: "s", label: "Avg Generation" }
+  ];
+
+  const benefits = [
+    { icon: CheckCircle, text: "Profile Once, Reuse Forever" },
+    { icon: Shield, text: "ATS-Optimized Output" },
+    { icon: Clock, text: "Save Hours Per Application" }
+  ];
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-amber-100 dark:from-neutral-900 dark:to-neutral-800">
-      {/* Theme Toggle - Top Right */}
-      <div className="absolute top-4 right-4">
+    <div className={`min-h-screen bg-[#0c0a09] relative overflow-hidden transition-opacity duration-500 ${mounted ? 'opacity-100' : 'opacity-0'}`}>
+      {/* Background elements */}
+      <div className="fixed inset-0 bg-mesh pointer-events-none" />
+      <FloatingOrb className="w-[600px] h-[600px] -top-40 -left-40" delay={0} color="orange" />
+      <FloatingOrb className="w-[500px] h-[500px] top-1/2 -right-32" delay={2} color="amber" />
+      <FloatingOrb className="w-[400px] h-[400px] bottom-20 left-1/4" delay={4} color="gold" />
+
+      {/* Theme Toggle */}
+      <div className="absolute top-6 right-6 z-50">
         <ThemeToggle />
       </div>
 
       {/* Hero Section */}
-      <div className="container mx-auto px-4 py-16">
+      <div className="relative z-10 container mx-auto px-6 pt-20 pb-16">
         <div className="max-w-6xl mx-auto">
-          {/* Header */}
-          <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold text-gray-900 dark:text-neutral-50 mb-4">
-              UmukoziHR Resume Tailor
+          {/* Logo & Header */}
+          <div className="text-center mb-16 animate-fade-in-down">
+            <div className="inline-flex items-center gap-3 mb-8 glass-subtle px-6 py-3 rounded-full">
+              <div className="relative">
+                <div className="absolute inset-0 bg-orange-500/30 rounded-xl blur-lg" />
+                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
+                  <FileText className="h-5 w-5 text-white" />
+                </div>
+              </div>
+              <span className="text-xl font-bold text-gradient">UmukoziHR Resume Tailor</span>
+            </div>
+            
+            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
+              <span className="text-white">AI-Powered </span>
+              <span className="text-gradient">Resume</span>
+              <br />
+              <span className="text-gradient-gold">& Cover Letter</span>
+              <span className="text-white"> Generation</span>
             </h1>
-            <p className="text-xl text-gray-700 dark:text-neutral-300 mb-2">
-              AI-Powered Resume & Cover Letter Generation
+            
+            <p className="text-xl text-stone-400 max-w-2xl mx-auto mb-8">
+              Tailor your resume to any job posting in seconds. Stand out from the crowd with 
+              perfectly matched applications.
             </p>
-            <p className="text-gray-600 dark:text-neutral-400">
-              Tailor your resume to any job posting in seconds
-            </p>
-          </div>
 
-          {/* Features */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 text-center">
-              <div className="bg-orange-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FileText className="text-orange-600" size={32} />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-neutral-50 mb-2">
-                Smart Tailoring
-              </h3>
-              <p className="text-gray-600 dark:text-neutral-400 text-sm">
-                AI analyzes job descriptions and highlights your most relevant experience
-              </p>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 text-center">
-              <div className="bg-green-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="text-green-600" size={32} />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-neutral-50 mb-2">
-                Lightning Fast
-              </h3>
-              <p className="text-gray-600 dark:text-neutral-400 text-sm">
-                Generate professional PDFs and LaTeX files in seconds
-              </p>
-            </div>
-
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-md p-6 text-center">
-              <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Target className="text-purple-600" size={32} />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-neutral-50 mb-2">
-                Region-Specific
-              </h3>
-              <p className="text-gray-600 dark:text-neutral-400 text-sm">
-                Templates optimized for US, EU, and Global job markets
-              </p>
+            {/* Stats row */}
+            <div className="flex flex-wrap justify-center gap-8 md:gap-16 mb-12">
+              {stats.map((stat, index) => (
+                <div 
+                  key={stat.label}
+                  className="text-center animate-fade-in-up"
+                  style={{ animationDelay: `${300 + index * 100}ms` }}
+                >
+                  <div className="text-3xl md:text-4xl font-bold text-gradient mb-1">
+                    <AnimatedCounter end={stat.value} suffix={stat.suffix} />
+                  </div>
+                  <p className="text-sm text-stone-500">{stat.label}</p>
+                </div>
+              ))}
             </div>
           </div>
 
-          {/* Login Form */}
-          <div className="max-w-md mx-auto">
-            <div className="bg-white dark:bg-neutral-800 rounded-lg shadow-lg p-8">
-              <h2 className="text-2xl font-bold text-gray-900 dark:text-neutral-50 mb-6 text-center">
-                Get Started
-              </h2>
+          {/* Features Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+            {features.map((feature, index) => (
+              <FeatureCard
+                key={feature.title}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                delay={400 + index * 150}
+              />
+            ))}
+          </div>
+
+          {/* Login Form Section */}
+          <div 
+            className="max-w-md mx-auto animate-fade-in-up"
+            style={{ animationDelay: '800ms' }}
+          >
+            <div className="glass-heavy p-8 rounded-3xl relative">
+              {/* Gradient accent line */}
+              <div className="absolute top-0 left-8 right-8 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent rounded-full" />
+              
+              <div className="text-center mb-8">
+                <div className="neu-raised w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <Sparkles className="h-7 w-7 text-orange-400" />
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-2">
+                  Get Started
+                </h2>
+                <p className="text-stone-400">
+                  Create your account or sign in to continue
+                </p>
+              </div>
+              
               <LoginForm onLogin={handleLogin} />
             </div>
           </div>
 
-          {/* Footer Info */}
-          <div className="mt-12 text-center">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-                <CheckCircle className="text-green-600" size={16} />
-                Profile Once, Reuse Forever
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-                <CheckCircle className="text-green-600" size={16} />
-                ATS-Optimized Output
-              </div>
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-700 dark:text-neutral-300">
-                <CheckCircle className="text-green-600" size={16} />
-                Overleaf Integration
-              </div>
+          {/* Benefits Footer */}
+          <div 
+            className="mt-16 animate-fade-in-up"
+            style={{ animationDelay: '1000ms' }}
+          >
+            <div className="flex flex-wrap justify-center gap-6 md:gap-12">
+              {benefits.map((benefit, index) => (
+                <div 
+                  key={benefit.text}
+                  className="flex items-center gap-3 text-stone-400 hover:text-white transition-colors group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-green-500/10 flex items-center justify-center group-hover:bg-green-500/20 transition-colors">
+                    <benefit.icon className="h-4 w-4 text-green-400" />
+                  </div>
+                  <span className="text-sm font-medium">{benefit.text}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </div>
+
+      {/* Bottom gradient fade */}
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-[#0c0a09] to-transparent pointer-events-none" />
     </div>
   );
 }

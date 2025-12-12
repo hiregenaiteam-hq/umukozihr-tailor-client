@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { jd as jdApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Link2, FileText, Plus } from 'lucide-react';
+import { Link2, FileText, Plus, Globe, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
 
 interface JobInput {
   id: string;
@@ -39,12 +39,11 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
         setCompany(response.data.company || '');
         setTitle(response.data.title || '');
         toast.success('Job description extracted successfully!');
-        setInputMode('text'); // Switch to text mode to edit
+        setInputMode('text');
       } else {
         toast.error(response.data.message || 'Failed to fetch job description');
       }
     } catch (error) {
-      console.error('Error fetching JD:', error);
       toast.error('Failed to fetch job description. Please paste manually.');
     } finally {
       setIsFetching(false);
@@ -52,23 +51,18 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
   };
 
   const handleAddJob = () => {
-    // Validation
-    if (!company.trim()) {
-      toast.error('Please enter a company name');
+    if (!company.trim() || !title.trim() || !jdText.trim()) {
+      toast.error('Please fill in all required fields');
       return;
     }
-    if (!title.trim()) {
-      toast.error('Please enter a job title');
-      return;
-    }
+
     if (jdText.trim().length < 50) {
       toast.error('Job description must be at least 50 characters');
       return;
     }
 
-    // Create job object
     const job: JobInput = {
-      id: `${company}-${title}`.replace(/\s+/g, '_'),
+      id: `${company}_${title}_${Date.now()}`.replace(/\s+/g, '_'),
       region,
       company: company.trim(),
       title: title.trim(),
@@ -76,8 +70,6 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
     };
 
     onAddJob(job);
-
-    // Reset form
     setCompany('');
     setTitle('');
     setJdText('');
@@ -86,56 +78,71 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Input Mode Toggle */}
-      <div className="flex gap-2 border-b border-gray-200">
+      <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
         <button
           onClick={() => setInputMode('text')}
-          className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all ${
             inputMode === 'text'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25'
+              : 'text-stone-400 hover:text-white'
           }`}
         >
-          <FileText size={18} />
-          Paste JD Text
+          <FileText className="h-4 w-4" />
+          Paste Text
         </button>
         <button
           onClick={() => setInputMode('url')}
-          className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${
+          className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg font-medium transition-all ${
             inputMode === 'url'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-gray-600 hover:text-gray-900'
+              ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25'
+              : 'text-stone-400 hover:text-white'
           }`}
         >
-          <Link2 size={18} />
-          Paste Job Link
+          <Link2 className="h-4 w-4" />
+          Paste Link
         </button>
       </div>
 
       {/* URL Input Mode */}
       {inputMode === 'url' && (
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Job Posting URL</label>
+            <label className="block text-sm font-medium text-stone-300 mb-2">
+              Job Posting URL
+            </label>
             <div className="flex gap-2">
-              <input
-                type="url"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
-                placeholder="https://linkedin.com/jobs/view/..."
-              />
+              <div className="flex-1 relative group">
+                <Link2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500 group-focus-within:text-orange-400 transition-colors" />
+                <input
+                  type="url"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="input-glass pl-12"
+                  placeholder="https://linkedin.com/jobs/view/..."
+                />
+              </div>
               <button
                 onClick={handleFetchFromUrl}
                 disabled={isFetching}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="btn-primary flex items-center gap-2 whitespace-nowrap"
               >
-                {isFetching ? 'Fetching...' : 'Fetch'}
+                {isFetching ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Fetching...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Fetch
+                  </>
+                )}
               </button>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              We'll try to extract the job details automatically. If it fails, you can paste manually.
+            <p className="text-xs text-stone-500 mt-2">
+              We'll extract job details automatically. If it fails, paste manually.
             </p>
           </div>
         </div>
@@ -144,74 +151,88 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
       {/* Text Input Mode */}
       {inputMode === 'text' && (
         <div className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Company */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-stone-300 mb-2">
+                Company <span className="text-orange-400">*</span>
               </label>
               <input
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
+                className="input-glass"
                 placeholder="Google"
               />
             </div>
 
+            {/* Job Title */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Job Title <span className="text-red-500">*</span>
+              <label className="block text-sm font-medium text-stone-300 mb-2">
+                Job Title <span className="text-orange-400">*</span>
               </label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900 placeholder:text-gray-500"
+                className="input-glass"
                 placeholder="Senior Software Engineer"
               />
             </div>
 
+            {/* Region */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Region</label>
-              <select
-                value={region}
-                onChange={(e) => setRegion(e.target.value as 'US' | 'EU' | 'GL')}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-900"
-              >
-                <option value="US">üá∫üá∏ United States</option>
-                <option value="EU">üá™üá∫ Europe</option>
-                <option value="GL">üåç Global</option>
-              </select>
+              <label className="block text-sm font-medium text-stone-300 mb-2">
+                Region
+              </label>
+              <div className="relative">
+                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500" />
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value as 'US' | 'EU' | 'GL')}
+                  className="select-glass pl-12"
+                >
+                  <option value="US">Ì∑∫Ì∑∏ United States</option>
+                  <option value="EU">Ì∑™Ì∑∫ Europe</option>
+                  <option value="GL">Ìºç Global</option>
+                </select>
+              </div>
             </div>
           </div>
 
+          {/* Job Description */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Job Description <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-stone-300 mb-2">
+              Job Description <span className="text-orange-400">*</span>
             </label>
             <textarea
               value={jdText}
               onChange={(e) => setJdText(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm bg-white text-gray-900 placeholder:text-gray-500"
+              className="textarea-glass font-mono text-sm"
               placeholder="Paste the full job description here..."
-              rows={10}
+              rows={8}
             />
-            <div className="flex justify-between items-center mt-1">
-              <p className="text-xs text-gray-500">
+            <div className="flex justify-between items-center mt-2">
+              <p className="text-xs text-stone-500">
                 Minimum 50 characters ({jdText.length} / 50)
               </p>
               {jdText.length >= 50 && (
-                <span className="text-xs text-green-600 font-medium">‚úì Valid</span>
+                <span className="text-xs text-green-400 font-medium flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-400" />
+                  Valid
+                </span>
               )}
             </div>
           </div>
 
+          {/* Add Button */}
           <button
             onClick={handleAddJob}
-            className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
+            className="btn-primary w-full flex items-center justify-center gap-3 group"
           >
-            <Plus size={20} />
-            Add Job to Queue
+            <Plus className="h-5 w-5" />
+            <span>Add Job to Queue</span>
+            <ArrowRight className="h-5 w-5 opacity-0 group-hover:opacity-100 -translate-x-2 group-hover:translate-x-0 transition-all" />
           </button>
         </div>
       )}

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/router';
+import { useState, useEffect } from "react";
+import { useRouter } from "next/router";
 import toast from 'react-hot-toast';
 import { profile as profileApi } from '@/lib/api';
 import { ProfileV3, createEmptyProfile } from '@/lib/types';
@@ -9,11 +9,32 @@ import ExperienceSection from '@/components/onboarding/ExperienceSection';
 import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
-import { ChevronLeft, ChevronRight, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
 const ONBOARDING_STEP_KEY = 'onboarding_step';
+
+// Step descriptions for display
+const STEP_DESCRIPTIONS: { [key: string]: string } = {
+  'Basics': 'Basic info',
+  'Experience': 'Work history',
+  'Education': 'Academic background',
+  'Projects': 'Your portfolio',
+  'Skills': 'Your expertise',
+  'Extras': 'Additional info',
+  'Review': 'Final check'
+};
+
+function FloatingOrb({ className, delay = 0, color = "orange" }: { className?: string; delay?: number; color?: string }) {
+  const colorClass = color === "amber" ? "bg-amber-500/20" : color === "gold" ? "bg-yellow-500/15" : "bg-orange-500/20";
+  return (
+    <div 
+      className={`absolute rounded-full blur-3xl animate-float pointer-events-none ${colorClass} ${className}`}
+      style={{ animationDelay: `${delay}s` }}
+    />
+  );
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -21,11 +42,12 @@ export default function OnboardingPage() {
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [profile, setProfile] = useState<ProfileV3>(createEmptyProfile());
   const [completeness, setCompleteness] = useState(0);
-  const [breakdown, setBreakdown] = useState<any>({});
   const [isSaving, setIsSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Check if user is authenticated and load saved progress
   useEffect(() => {
+    setMounted(true);
     const token = localStorage.getItem('token');
     if (!token) {
       toast.error('Please log in to continue');
@@ -33,7 +55,7 @@ export default function OnboardingPage() {
       return;
     }
 
-      // Try to load from localStorage first (for unsaved progress)
+    // Restore draft from localStorage
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
     const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
     let hasLocalDraft = false;
@@ -41,7 +63,6 @@ export default function OnboardingPage() {
     if (savedDraft) {
       try {
         const parsedProfile = JSON.parse(savedDraft);
-        // Only use localStorage if it has meaningful data
         if (parsedProfile.basics?.full_name || parsedProfile.experience?.length > 0) {
           setProfile(parsedProfile);
           hasLocalDraft = true;
@@ -59,164 +80,90 @@ export default function OnboardingPage() {
       }
     }
 
-    // Try to load existing profile from server (only replaces if server has better data)
     loadExistingProfile(hasLocalDraft);
   }, []);
 
   const loadExistingProfile = async (hasLocalDraft: boolean = false) => {
     try {
       const response = await profileApi.get();
-      if (response.data.profile) {
-        // Only replace localStorage data if server profile has more content
-        const serverProfile = response.data.profile;
-        const serverHasData = serverProfile.basics?.full_name || serverProfile.experience?.length > 0;
-        
-        if (!hasLocalDraft || serverHasData) {
-          setProfile(serverProfile);
-          setCompleteness(response.data.completeness);
-          // Only clear localStorage if server data is valid
-          if (serverHasData) {
-            localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-            localStorage.removeItem(ONBOARDING_STEP_KEY);
-          }
-          toast.success('Loaded your existing profile');
+      if (response.data?.profile) {
+        // If we have a server profile and no local draft, use server version
+        if (!hasLocalDraft) {
+          setProfile(response.data.profile);
+        }
+        // If server profile is more complete, redirect to app
+        if (response.data.completeness > 80) {
+          router.push('/app');
+          return;
         }
       }
     } catch (error: any) {
-      // 404 means no profile yet, which is expected for onboarding
-      // Keep localStorage data intact
+      // 404 means no profile yet - that's fine for onboarding
       if (error.response?.status !== 404) {
         console.error('Error loading profile:', error);
       }
+    } finally {
+      setLoading(false);
     }
   };
 
-  const saveProfile = async (showToast = true) => {
+  // Auto-save draft to localStorage
+  useEffect(() => {
+    if (mounted && profile.basics?.full_name) {
+      localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
+      localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
+    }
+  }, [profile, currentStep, mounted]);
+
+  const updateProfile = (section: keyof ProfileV3, data: any) => {
+    setProfile(prev => ({ ...prev, [section]: data }));
+  };
+
+  const saveAndContinue = async () => {
     setIsSaving(true);
     try {
       const response = await profileApi.update(profile);
       setCompleteness(response.data.completeness);
-      if (showToast) {
-        toast.success('Profile saved!');
+      if (!completedSteps.includes(currentStep)) {
+        setCompletedSteps([...completedSteps, currentStep]);
       }
+      nextStep();
+      toast.success('Progress saved!');
     } catch (error) {
-      console.error('Error saving profile:', error);
-      if (showToast) {
-        toast.error('Failed to save profile');
-      }
+      console.error('Error saving:', error);
+      toast.error('Failed to save. Your progress is stored locally.');
+      // Still allow navigation even if save fails
+      nextStep();
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Auto-save to localStorage (immediate) and server (debounced)
-  useEffect(() => {
-    // Save to localStorage immediately for ANY changes (crash protection)
-    const profileData = JSON.stringify(profile);
-    localStorage.setItem(ONBOARDING_STORAGE_KEY, profileData);
-
-    // Save to server after 2 seconds of inactivity (only if substantial data exists)
-    const timeoutId = setTimeout(() => {
-      if (profile.basics.full_name && profile.basics.email) {
-        saveProfile(false);
-      }
-    }, 2000);
-    return () => clearTimeout(timeoutId);
-  }, [profile]);
-
-  // Save current step to localStorage
-  useEffect(() => {
-    localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
-  }, [currentStep]);
-
-  // Fetch completeness when user reaches Review step
-  useEffect(() => {
-    if (currentStep === 7) {
-      fetchCompleteness();
-    }
-  }, [currentStep]);
-
-  const fetchCompleteness = async () => {
+  const completeOnboarding = async () => {
+    setIsSaving(true);
     try {
-      const response = await profileApi.getCompleteness();
-      setCompleteness(response.data.completeness);
-      setBreakdown(response.data.breakdown);
-    } catch (error: any) {
-      console.log('Could not fetch completeness:', error);
-      // Set to 0 if profile doesn't exist yet
-      if (error.response?.status === 404) {
-        setCompleteness(0);
-      }
+      await profileApi.update(profile);
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
+      localStorage.removeItem(ONBOARDING_STEP_KEY);
+      toast.success('Profile complete! Redirecting...');
+      router.push('/app');
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      toast.error('Failed to save profile. Please try again.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleNext = async () => {
-    // Validate current step
-    if (currentStep === 1 && (!profile.basics.full_name || !profile.basics.email)) {
-      toast.error('Please fill in your name and email');
-      return;
-    }
-
-    if (currentStep === 2 && profile.experience.length === 0) {
-      toast.error('Please add at least one work experience');
-      return;
-    }
-
-    // Mark step as completed
-    if (!completedSteps.includes(currentStep)) {
-      setCompletedSteps([...completedSteps, currentStep]);
-    }
-
-    // Save before moving to next step
-    await saveProfile(false);
-
+  const nextStep = () => {
     if (currentStep < STEPS.length) {
       setCurrentStep(currentStep + 1);
     }
   };
 
-  const handlePrevious = () => {
+  const prevStep = () => {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
-    }
-  };
-
-  const handleFinish = async () => {
-    try {
-      // Save profile first
-      await saveProfile(true);
-
-      // Small delay to ensure save completes
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      // Try to fetch completeness
-      try {
-        const response = await profileApi.getCompleteness();
-        setCompleteness(response.data.completeness);
-        setBreakdown(response.data.breakdown);
-
-        if (response.data.completeness < 50) {
-          toast('Profile saved! Consider adding more details for better results', { icon: '⚠️' });
-        } else {
-          toast.success('Profile complete! Redirecting to app...');
-        }
-      } catch (completenessError: any) {
-        // If completeness fetch fails, just show generic success
-        console.log('Completeness fetch failed, but profile saved:', completenessError);
-        toast.success('Profile saved! Redirecting to app...');
-      }
-
-      // Clear localStorage since onboarding is complete
-      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
-      localStorage.removeItem(ONBOARDING_STEP_KEY);
-
-      // Redirect to main app
-      setTimeout(() => {
-        router.push('/app');
-      }, 1500);
-    } catch (error: any) {
-      console.error('Error saving profile:', error);
-      toast.error('Failed to save profile. Please try again.');
     }
   };
 
@@ -226,35 +173,35 @@ export default function OnboardingPage() {
         return (
           <BasicsSection
             data={profile.basics}
-            onChange={(basics) => setProfile({ ...profile, basics })}
+            onChange={(data) => updateProfile('basics', data)}
           />
         );
       case 2:
         return (
           <ExperienceSection
             data={profile.experience}
-            onChange={(experience) => setProfile({ ...profile, experience })}
+            onChange={(data) => updateProfile('experience', data)}
           />
         );
       case 3:
         return (
           <EducationSection
             data={profile.education}
-            onChange={(education) => setProfile({ ...profile, education })}
+            onChange={(data) => updateProfile('education', data)}
           />
         );
       case 4:
         return (
           <ProjectsSection
             data={profile.projects}
-            onChange={(projects) => setProfile({ ...profile, projects })}
+            onChange={(data) => updateProfile('projects', data)}
           />
         );
       case 5:
         return (
           <SkillsSection
             data={profile.skills}
-            onChange={(skills) => setProfile({ ...profile, skills })}
+            onChange={(data) => updateProfile('skills', data)}
           />
         );
       case 6:
@@ -263,102 +210,152 @@ export default function OnboardingPage() {
             certifications={profile.certifications}
             awards={profile.awards}
             languages={profile.languages}
-            onCertificationsChange={(certifications) => setProfile({ ...profile, certifications })}
-            onAwardsChange={(awards) => setProfile({ ...profile, awards })}
-            onLanguagesChange={(languages) => setProfile({ ...profile, languages })}
+            onCertificationsChange={(data) => updateProfile('certifications', data)}
+            onAwardsChange={(data) => updateProfile('awards', data)}
+            onLanguagesChange={(data) => updateProfile('languages', data)}
           />
         );
       case 7:
-        return <ReviewSection profile={profile} completeness={completeness} breakdown={breakdown} />;
+        return (
+          <ReviewSection
+            profile={profile}
+            completeness={completeness}
+          />
+        );
       default:
         return null;
     }
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-stone-950 flex items-center justify-center">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-full border-4 border-orange-500/30 border-t-orange-500 animate-spin" />
+          <div className="absolute inset-0 w-16 h-16 rounded-full bg-orange-500/20 blur-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to UmukoziHR!</h1>
-          <p className="text-gray-600">Let's set up your profile to generate amazing tailored resumes</p>
+    <div className="min-h-screen bg-gradient-to-br from-stone-950 via-stone-900 to-stone-950 relative overflow-hidden">
+      {/* Floating orbs */}
+      <FloatingOrb className="w-96 h-96 -top-48 -left-48" delay={0} color="orange" />
+      <FloatingOrb className="w-80 h-80 top-1/3 -right-40" delay={2} color="amber" />
+      <FloatingOrb className="w-64 h-64 bottom-20 left-1/4" delay={4} color="gold" />
+
+      {/* Header */}
+      <header className="relative z-10 border-b border-white/5">
+        <div className="max-w-6xl mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+                <span className="text-white font-bold text-lg">U</span>
+              </div>
+              <div>
+                <h1 className="text-white font-semibold">UmukoziHR Tailor</h1>
+                <p className="text-stone-500 text-xs">Profile Setup</p>
+              </div>
+            </div>
+
+            {isSaving && (
+              <div className="flex items-center gap-2 text-orange-400 text-sm">
+                <div className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+                <span>Saving...</span>
+              </div>
+            )}
+          </div>
+        </div>
+      </header>
+
+      {/* Main content */}
+      <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
+        {/* Stepper */}
+        <div className="mb-12">
+          <OnboardingStepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
         </div>
 
-        {/* Stepper */}
-        <OnboardingStepper
-          currentStep={currentStep}
-          steps={STEPS}
-          completedSteps={completedSteps}
-        />
+        {/* Step content */}
+        <div className="glass-card rounded-3xl p-8 md:p-12">
+          <div className="mb-8">
+            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+              {STEPS[currentStep - 1]}
+            </h2>
+            <p className="text-stone-400">
+              {STEP_DESCRIPTIONS[STEPS[currentStep - 1]]}
+            </p>
+          </div>
 
-        {/* Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 mb-6">
           {renderStep()}
         </div>
 
-        {/* Navigation */}
-        <div className="flex justify-between items-center">
-          <button
-            onClick={handlePrevious}
-            disabled={currentStep === 1}
-            className="px-6 py-3 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-          >
-            <ChevronLeft size={20} />
-            Previous
-          </button>
+        {/* Progress indicator */}
+        <div className="mt-8 flex items-center justify-center gap-2">
+          {STEPS.map((step, index) => (
+            <div
+              key={step}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                index + 1 === currentStep
+                  ? "w-8 bg-gradient-to-r from-orange-500 to-amber-500"
+                  : index + 1 < currentStep
+                  ? "w-4 bg-orange-500/50"
+                  : "w-4 bg-stone-700"
+              }`}
+            />
+          ))}
+        </div>
 
-          <div className="text-sm text-gray-600">
-            Step {currentStep} of {STEPS.length}
-            {isSaving && <span className="ml-2 text-orange-600">Saving...</span>}
-          </div>
+        {/* Navigation buttons */}
+        <div className="mt-8 flex justify-between items-center">
+          <button
+            onClick={prevStep}
+            disabled={currentStep === 1}
+            className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+          >
+            <ChevronLeft className="w-5 h-5" />
+            Back
+          </button>
 
           {currentStep < STEPS.length ? (
             <button
-              onClick={handleNext}
-              className="px-6 py-3 bg-orange-600 text-white rounded-lg font-medium hover:bg-orange-700 transition-colors flex items-center gap-2"
+              onClick={saveAndContinue}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50"
             >
-              Next
-              <ChevronRight size={20} />
+              {isSaving ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  Continue
+                  <ChevronRight className="w-5 h-5" />
+                </>
+              )}
             </button>
           ) : (
             <button
-              onClick={handleFinish}
-              className="px-8 py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center gap-2"
+              onClick={completeOnboarding}
+              disabled={isSaving}
+              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50"
             >
-              <CheckCircle size={20} />
-              Finish & Continue
+              {isSaving ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Saving...
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="w-5 h-5" />
+                  Complete Profile
+                </>
+              )}
             </button>
           )}
         </div>
-
-        {/* Skip Option - save to localStorage first */}
-        <div className="text-center mt-4">
-          <button
-            onClick={async () => {
-              // Force save to localStorage before leaving
-              localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
-              localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
-              
-              // Try to save to server, but don't block navigation
-              if (profile.basics.full_name && profile.basics.email) {
-                try {
-                  await saveProfile(false);
-                  toast.success('Progress saved! You can continue later.');
-                } catch (e) {
-                  toast('Progress saved locally. Server sync pending.', { icon: '📋' });
-                }
-              } else {
-                toast('Progress saved locally. Complete basics to sync.', { icon: '📋' });
-              }
-              
-              router.push('/app');
-            }}
-            className="text-sm text-gray-500 hover:text-gray-700 underline"
-          >
-            Skip for now (not recommended)
-          </button>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
