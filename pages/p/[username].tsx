@@ -448,18 +448,37 @@ export default function PublicProfilePage() {
                 <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                   <h2 className="text-lg font-semibold text-white mb-4">Links</h2>
                   <div className="space-y-2">
-                    {profile.basics.links.map((link, idx) => (
-                      <a
-                        key={idx}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                        {new URL(link).hostname.replace('www.', '')}
-                      </a>
-                    ))}
+                    {profile.basics.links
+                      .filter((link) => {
+                        // Filter out invalid URLs
+                        if (!link || typeof link !== 'string' || link.trim() === '') return false;
+                        try {
+                          new URL(link);
+                          return true;
+                        } catch {
+                          return false;
+                        }
+                      })
+                      .map((link, idx) => {
+                        let hostname = link;
+                        try {
+                          hostname = new URL(link).hostname.replace('www.', '');
+                        } catch {
+                          // Fallback to the link itself
+                        }
+                        return (
+                          <a
+                            key={idx}
+                            href={link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                            {hostname}
+                          </a>
+                        );
+                      })}
                   </div>
                 </div>
               )}
