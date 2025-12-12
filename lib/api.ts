@@ -199,3 +199,17 @@ export const share = {
   updateSettings: (isPublic: boolean) =>
     api.put('/profile/share', { is_public: isPublic }),
 };
+
+// v1.5 Resume Upload endpoint
+export const upload = {
+  // Upload resume file (PDF, DOCX, TXT) and extract profile data
+  resume: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/profile/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+};

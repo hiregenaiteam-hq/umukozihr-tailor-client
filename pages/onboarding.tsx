@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/router";
 import toast from 'react-hot-toast';
-import { profile as profileApi } from '@/lib/api';
+import { profile as profileApi, upload as uploadApi } from '@/lib/api';
 import { ProfileV3, createEmptyProfile } from '@/lib/types';
 import OnboardingStepper from '@/components/onboarding/OnboardingStepper';
 import BasicsSection from '@/components/onboarding/BasicsSection';
@@ -9,7 +9,7 @@ import ExperienceSection from '@/components/onboarding/ExperienceSection';
 import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
-import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
@@ -45,6 +45,10 @@ export default function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showChoice, setShowChoice] = useState(true); // New: show Upload/Manual choice
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -69,6 +73,7 @@ export default function OnboardingPage() {
         if (parsedProfile.basics?.full_name || parsedProfile.experience?.length > 0) {
           setProfile(parsedProfile);
           hasLocalDraft = true;
+          setShowChoice(false); // Skip choice if draft exists
           toast.success('Restored your progress from last session');
         }
       } catch (error) {
@@ -80,6 +85,7 @@ export default function OnboardingPage() {
       const step = parseInt(savedStep, 10);
       if (step > 1 && step <= STEPS.length) {
         setCurrentStep(step);
+        setShowChoice(false); // Skip choice if step exists
       }
     }
 
@@ -94,11 +100,19 @@ export default function OnboardingPage() {
         if (!hasLocalDraft) {
           setProfile(response.data.profile);
           setCompleteness(response.data.completeness || 0);
+          // If profile has data, skip choice screen
+          if (response.data.profile.basics?.full_name) {
+            setShowChoice(false);
+          }
         }
         // If server profile is complete and NOT in edit mode, redirect to app
         if (response.data.completeness > 80 && !isEditMode) {
           router.push('/app');
           return;
+        }
+        // If in edit mode, skip choice screen
+        if (isEditMode) {
+          setShowChoice(false);
         }
       }
     } catch (error: any) {
@@ -170,6 +184,161 @@ export default function OnboardingPage() {
       setCurrentStep(currentStep - 1);
     }
   };
+
+  // Handle resume file upload
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error('File too large. Maximum size is 10MB.');
+      return;
+    }
+
+    // Validate file type
+    const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
+    const validExtensions = ['.pdf', '.docx', '.txt'];
+    const extension = file.name.toLowerCase().slice(file.name.lastIndexOf('.'));
+    
+    if (!validTypes.includes(file.type) && !validExtensions.includes(extension)) {
+      toast.error('Invalid file type. Please upload PDF, DOCX, or TXT.');
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadWarnings([]);
+    
+    try {
+      toast.loading('Extracting profile data...', { id: 'upload' });
+      const response = await uploadApi.resume(file);
+      
+      if (response.data.success && response.data.profile) {
+        // Map extracted data to ProfileV3 structure
+        const extracted = response.data.profile;
+        setProfile(prev => ({
+          ...prev,
+          basics: {
+            full_name: extracted.basics?.full_name || '',
+            headline: extracted.basics?.headline || '',
+            summary: extracted.basics?.summary || '',
+            location: extracted.basics?.location || '',
+            email: extracted.basics?.email || '',
+            phone: extracted.basics?.phone || '',
+            website: extracted.basics?.website || '',
+            links: extracted.basics?.links || [],
+          },
+          skills: extracted.skills || [],
+          experience: extracted.experience || [],
+          education: extracted.education || [],
+          projects: extracted.projects || [],
+          certifications: extracted.certifications || [],
+          awards: extracted.awards || [],
+          languages: extracted.languages || [],
+        }));
+        
+        // Show confidence info
+        const confidence = Math.round((response.data.extraction_confidence || 0) * 100);
+        if (response.data.warnings?.length > 0) {
+          setUploadWarnings(response.data.warnings);
+        }
+        
+        toast.success(`Profile extracted! (${confidence}% confidence)`, { id: 'upload' });
+        setShowChoice(false); // Move to form review
+      } else {
+        toast.error(response.data.message || 'Failed to extract profile', { id: 'upload' });
+      }
+    } catch (error: any) {
+      console.error('Upload error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to upload resume', { id: 'upload' });
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  // Render the choice screen
+  const renderChoiceScreen = () => (
+    <div className="glass-card rounded-3xl p-8 md:p-12">
+      <div className="text-center mb-10">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+          <FileText className="w-8 h-8 text-white" />
+        </div>
+        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
+          Let's Build Your Profile
+        </h2>
+        <p className="text-stone-400 max-w-md mx-auto">
+          Upload your existing resume for instant extraction, or fill in your details manually.
+        </p>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
+        {/* Upload Option */}
+        <div
+          onClick={() => fileInputRef.current?.click()}
+          className={`group relative p-6 rounded-2xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+        >
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+            onChange={handleFileUpload}
+            className="hidden"
+          />
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
+              {isUploading ? (
+                <div className="w-6 h-6 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+              ) : (
+                <Upload className="w-6 h-6 text-orange-400" />
+              )}
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              {isUploading ? 'Extracting...' : 'Upload Resume'}
+            </h3>
+            <p className="text-sm text-stone-400">
+              PDF, DOCX, or TXT (max 10MB)
+            </p>
+            <p className="text-xs text-stone-500 mt-2">
+              Works with LinkedIn exports too!
+            </p>
+          </div>
+        </div>
+
+        {/* Manual Option */}
+        <div
+          onClick={() => setShowChoice(false)}
+          className="group relative p-6 rounded-2xl border-2 border-stone-700 hover:border-amber-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300"
+        >
+          <div className="text-center">
+            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
+              <PenLine className="w-6 h-6 text-amber-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-white mb-2">
+              Fill Manually
+            </h3>
+            <p className="text-sm text-stone-400">
+              Enter your details step by step
+            </p>
+            <p className="text-xs text-stone-500 mt-2">
+              Takes about 5-10 minutes
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Decorative sparkle */}
+      <div className="flex justify-center mt-8">
+        <div className="flex items-center gap-2 text-stone-500 text-sm">
+          <Sparkles className="w-4 h-4 text-orange-400" />
+          <span>AI-powered extraction saves you time</span>
+        </div>
+      </div>
+    </div>
+  );
 
   const renderStep = () => {
     switch (currentStep) {
@@ -275,10 +444,33 @@ export default function OnboardingPage() {
 
       {/* Main content */}
       <main className="relative z-10 max-w-4xl mx-auto px-6 py-12">
-        {/* Stepper */}
-        <div className="mb-12">
-          <OnboardingStepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
-        </div>
+        {showChoice ? (
+          /* Upload/Manual Choice Screen */
+          renderChoiceScreen()
+        ) : (
+          /* Regular Onboarding Flow */
+          <>
+            {/* Extraction warnings banner */}
+            {uploadWarnings.length > 0 && (
+              <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="text-amber-400 font-medium text-sm">Some fields may need review:</p>
+                    <ul className="mt-1 text-stone-400 text-sm list-disc list-inside">
+                      {uploadWarnings.map((warning, i) => (
+                        <li key={i}>{warning}</li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Stepper */}
+            <div className="mb-12">
+              <OnboardingStepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
+            </div>
 
         {/* Step content */}
         <div className="glass-card rounded-3xl p-8 md:p-12">
@@ -359,6 +551,8 @@ export default function OnboardingPage() {
             </button>
           )}
         </div>
+          </>
+        )}
       </main>
     </div>
   );
