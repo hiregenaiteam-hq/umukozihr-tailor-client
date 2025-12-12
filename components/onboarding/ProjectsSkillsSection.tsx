@@ -1,6 +1,27 @@
 import React from 'react';
 import { Project, Skill, Certification, Award, Language } from '@/lib/types';
-import { Plus, Trash2, X } from 'lucide-react';
+import { Plus, Trash2, X, Info } from 'lucide-react';
+
+// Guidance tooltip component
+function SectionGuidance({ title, tips }: { title: string; tips: string[] }) {
+  return (
+    <div className="p-4 glass-subtle rounded-xl border border-orange-500/20 mb-6">
+      <div className="flex items-start gap-3">
+        <div className="w-8 h-8 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+          <Info className="h-4 w-4 text-orange-400" />
+        </div>
+        <div>
+          <h4 className="text-sm font-semibold text-orange-300 mb-1">{title}</h4>
+          <ul className="text-xs text-stone-400 space-y-1">
+            {tips.map((tip, idx) => (
+              <li key={idx}>• {tip}</li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // Projects Section
 interface ProjectsSectionProps {
@@ -39,15 +60,24 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Projects</h2>
-        <p className="text-gray-600">Showcase your notable projects</p>
+        <h2 className="text-2xl font-bold text-gradient mb-2">Projects</h2>
+        <p className="text-stone-400">Showcase your notable projects</p>
       </div>
+
+      <SectionGuidance
+        title="Projects help you stand out"
+        tips={[
+          "One project with name + 2 bullet points = 10% profile score",
+          "Include side projects, hackathons, open source contributions",
+          "Link to live demos or GitHub repos when possible"
+        ]}
+      />
 
       <div className="space-y-4">
         {data.map((proj, index) => (
-          <div key={index} className="p-6 border border-gray-200 rounded-lg bg-gray-50">
+          <div key={index} className="p-6 glass-subtle rounded-xl border border-white/10">
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Project #{index + 1}</h3>
+              <h3 className="text-lg font-semibold text-white">Project #{index + 1}</h3>
               <button
                 type="button"
                 onClick={() => removeProject(index)}
@@ -59,40 +89,40 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
 
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project Name</label>
+                <label className="block text-sm font-medium text-stone-300 mb-1">Project Name</label>
                 <input
                   type="text"
                   value={proj.name}
                   onChange={(e) => updateProject(index, 'name', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  className="input-glass"
                   placeholder="AI Resume Tailor"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Project URL</label>
+                <label className="block text-sm font-medium text-stone-300 mb-1">Project URL</label>
                 <input
                   type="url"
                   value={proj.url}
                   onChange={(e) => updateProject(index, 'url', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  className="input-glass"
                   placeholder="https://github.com/..."
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Tech Stack</label>
+                <label className="block text-sm font-medium text-stone-300 mb-2">Tech Stack</label>
                 <div className="flex flex-wrap gap-2 mb-2">
                   {proj.stack.map((tech, techIndex) => (
                     <span
                       key={techIndex}
-                      className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center gap-1"
+                      className="px-3 py-1 bg-orange-500/20 text-orange-300 rounded-full text-sm flex items-center gap-1 border border-orange-500/30"
                     >
                       {tech}
                       <button
                         type="button"
                         onClick={() => removeStack(index, techIndex)}
-                        className="hover:bg-blue-200 rounded-full p-0.5"
+                        className="hover:bg-orange-500/30 rounded-full p-0.5"
                       >
                         <X size={14} />
                       </button>
@@ -113,13 +143,13 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                       }
                     }
                   }}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  className="input-glass"
                   placeholder="Type technologies separated by commas or press Enter (e.g., React, Python, AWS)"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Description Points</label>
+                <label className="block text-sm font-medium text-stone-300 mb-2">Description Points</label>
                 {proj.bullets.map((bullet, bIndex) => (
                   <textarea
                     key={bIndex}
@@ -129,7 +159,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
                       newData[index].bullets[bIndex] = e.target.value;
                       onChange(newData);
                     }}
-                    className="w-full px-4 py-2 mb-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                    className="textarea-glass mb-2"
                     placeholder="Key achievement or feature..."
                     rows={2}
                   />
@@ -143,7 +173,7 @@ export function ProjectsSection({ data, onChange }: ProjectsSectionProps) {
       <button
         type="button"
         onClick={addProject}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors font-medium flex items-center justify-center gap-2"
+        className="w-full py-3 border-2 border-dashed border-white/20 rounded-xl text-stone-400 hover:border-orange-500/50 hover:text-orange-400 transition-colors font-medium flex items-center justify-center gap-2"
       >
         <Plus size={20} />
         Add Project
@@ -189,31 +219,40 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Skills</h2>
-        <p className="text-gray-600">List your technical and professional skills</p>
+        <h2 className="text-2xl font-bold text-gradient mb-2">Skills</h2>
+        <p className="text-stone-400">List your technical and professional skills</p>
       </div>
+
+      <SectionGuidance
+        title="Skill requirements for best results"
+        tips={[
+          "5+ skills = 10% profile score (3 skills = 7%, 1 skill = 4%)",
+          "Include both technical and soft skills",
+          "Add keywords that match job descriptions you're targeting"
+        ]}
+      />
 
       <div className="space-y-4">
         {data.map((skill, index) => (
-          <div key={index} className="p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div key={index} className="p-4 glass-subtle rounded-xl border border-white/10">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-3">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Skill Name</label>
+                <label className="block text-sm font-medium text-stone-300 mb-1">Skill Name</label>
                 <input
                   type="text"
                   value={skill.name}
                   onChange={(e) => updateSkill(index, 'name', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  className="input-glass"
                   placeholder="Python"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Level</label>
+                <label className="block text-sm font-medium text-stone-300 mb-1">Level</label>
                 <select
                   value={skill.level}
                   onChange={(e) => updateSkill(index, 'level', e.target.value)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                  className="select-glass"
                 >
                   <option value="beginner">Beginner</option>
                   <option value="intermediate">Intermediate</option>
@@ -223,15 +262,15 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Related Keywords</label>
+              <label className="block text-sm font-medium text-stone-300 mb-2">Related Keywords</label>
               <div className="flex flex-wrap gap-2 mb-2">
                 {skill.keywords.map((kw, kwIndex) => (
-                  <span key={kwIndex} className="px-2 py-1 bg-green-100 text-green-800 rounded text-sm flex items-center gap-1">
+                  <span key={kwIndex} className="px-2 py-1 bg-orange-500/20 text-orange-300 rounded text-sm flex items-center gap-1 border border-orange-500/30">
                     {kw}
                     <button
                       type="button"
                       onClick={() => removeKeyword(index, kwIndex)}
-                      className="hover:bg-green-200 rounded-full p-0.5"
+                      className="hover:bg-orange-500/30 rounded-full p-0.5"
                     >
                       <X size={12} />
                     </button>
@@ -252,7 +291,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
                     }
                   }
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                className="input-glass"
                 placeholder="Type keywords separated by commas or press Enter (e.g., FastAPI, Django, Flask)"
               />
             </div>
@@ -261,7 +300,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
               <button
                 type="button"
                 onClick={() => removeSkill(index)}
-                className="mt-2 text-red-600 hover:bg-red-50 px-3 py-1 rounded text-sm"
+                className="mt-2 text-red-400 hover:bg-red-500/20 px-3 py-1 rounded text-sm"
               >
                 Remove Skill
               </button>
@@ -273,7 +312,7 @@ export function SkillsSection({ data, onChange }: SkillsSectionProps) {
       <button
         type="button"
         onClick={addSkill}
-        className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-blue-500 hover:text-blue-600 transition-colors font-medium flex items-center justify-center gap-2"
+        className="w-full py-3 border-2 border-dashed border-white/20 rounded-xl text-stone-400 hover:border-orange-500/50 hover:text-orange-400 transition-colors font-medium flex items-center justify-center gap-2"
       >
         <Plus size={20} />
         Add Skill
@@ -303,15 +342,15 @@ export function LinksExtrasSection({
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Additional Information</h2>
-        <p className="text-gray-600">Certifications, awards, and languages</p>
+        <h2 className="text-2xl font-bold text-gradient mb-2">Additional Information</h2>
+        <p className="text-stone-400">Certifications, awards, and languages</p>
       </div>
 
       {/* Certifications */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Certifications</h3>
+        <h3 className="text-lg font-semibold text-white">Certifications</h3>
         {certifications.map((cert, index) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 glass-subtle rounded-xl border border-white/10">
             <input
               type="text"
               value={cert.name}
@@ -320,7 +359,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Certification Name"
             />
             <input
@@ -331,7 +370,7 @@ export function LinksExtrasSection({
                 newData[index].issuer = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Issuer"
             />
             <input
@@ -342,14 +381,14 @@ export function LinksExtrasSection({
                 newData[index].date = e.target.value;
                 onCertificationsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
             />
           </div>
         ))}
         <button
           type="button"
           onClick={() => onCertificationsChange([...certifications, { name: '', issuer: '', date: '' }])}
-          className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded"
+          className="text-orange-400 hover:bg-orange-500/20 px-4 py-2 rounded"
         >
           + Add Certification
         </button>
@@ -357,9 +396,9 @@ export function LinksExtrasSection({
 
       {/* Awards */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Awards & Achievements</h3>
+        <h3 className="text-lg font-semibold text-white">Awards & Achievements</h3>
         {awards.map((award, index) => (
-          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 p-4 glass-subtle rounded-xl border border-white/10">
             <input
               type="text"
               value={award.name}
@@ -368,7 +407,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Award Name"
             />
             <input
@@ -379,7 +418,7 @@ export function LinksExtrasSection({
                 newData[index].by = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Awarded By"
             />
             <input
@@ -390,14 +429,14 @@ export function LinksExtrasSection({
                 newData[index].date = e.target.value;
                 onAwardsChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
             />
           </div>
         ))}
         <button
           type="button"
           onClick={() => onAwardsChange([...awards, { name: '', by: '', date: '' }])}
-          className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded"
+          className="text-orange-400 hover:bg-orange-500/20 px-4 py-2 rounded"
         >
           + Add Award
         </button>
@@ -405,9 +444,9 @@ export function LinksExtrasSection({
 
       {/* Languages */}
       <div className="space-y-4">
-        <h3 className="text-lg font-semibold text-gray-900">Languages</h3>
+        <h3 className="text-lg font-semibold text-white">Languages</h3>
         {languages.map((lang, index) => (
-          <div key={index} className="grid grid-cols-2 gap-3 p-4 border border-gray-200 rounded-lg bg-gray-50">
+          <div key={index} className="grid grid-cols-2 gap-3 p-4 glass-subtle rounded-xl border border-white/10">
             <input
               type="text"
               value={lang.name}
@@ -416,7 +455,7 @@ export function LinksExtrasSection({
                 newData[index].name = e.target.value;
                 onLanguagesChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Language"
             />
             <input
@@ -427,7 +466,7 @@ export function LinksExtrasSection({
                 newData[index].level = e.target.value;
                 onLanguagesChange(newData);
               }}
-              className="px-3 py-2 border border-gray-300 rounded-lg bg-white text-gray-900 placeholder:text-gray-500"
+              className="input-glass"
               placeholder="Level (e.g., Native, C2, Fluent)"
             />
           </div>
@@ -435,7 +474,7 @@ export function LinksExtrasSection({
         <button
           type="button"
           onClick={() => onLanguagesChange([...languages, { name: '', level: '' }])}
-          className="text-blue-600 hover:bg-blue-50 px-4 py-2 rounded"
+          className="text-orange-400 hover:bg-orange-500/20 px-4 py-2 rounded"
         >
           + Add Language
         </button>

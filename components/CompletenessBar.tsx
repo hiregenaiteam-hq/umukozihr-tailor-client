@@ -37,20 +37,20 @@ export default function CompletenessBar({
       {/* Main progress bar */}
       <div className="mb-2">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-sm font-medium text-gray-700">
+          <span className="text-sm font-medium text-stone-300">
             Profile Completeness
           </span>
-          <span className="text-sm font-bold text-gray-900">
+          <span className="text-sm font-bold text-white">
             {Math.round(completeness)}%
           </span>
         </div>
-        <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-stone-700/50 rounded-full h-3 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${getColor(completeness)}`}
             style={{ width: `${completeness}%` }}
           />
         </div>
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-xs text-stone-400 mt-1">
           {getMessage(completeness)}
         </p>
       </div>
@@ -58,14 +58,14 @@ export default function CompletenessBar({
       {/* Breakdown (optional) */}
       {showBreakdown && breakdown && (
         <div className="mt-4 space-y-2">
-          <p className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+          <p className="text-xs font-semibold text-stone-300 uppercase tracking-wide">
             Section Breakdown
           </p>
           <div className="grid grid-cols-2 gap-2">
             {Object.entries(breakdown).map(([section, score]) => (
               <div key={section} className="flex items-center justify-between text-xs">
-                <span className="capitalize text-gray-600">{section}:</span>
-                <span className="font-medium text-gray-900">{Math.round(score)}%</span>
+                <span className="capitalize text-stone-400">{section}:</span>
+                <span className="font-medium text-white">{Math.round(score as number)}%</span>
               </div>
             ))}
           </div>

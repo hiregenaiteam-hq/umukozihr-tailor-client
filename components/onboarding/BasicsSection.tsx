@@ -29,100 +29,100 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Basic Information</h2>
-        <p className="text-gray-600">Let's start with your personal details</p>
+        <h2 className="text-2xl font-bold text-gradient mb-2">Basic Information</h2>
+        <p className="text-stone-400">Let's start with your personal details</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Full Name <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-300 mb-2">
+            Full Name <span className="text-orange-400">*</span>
           </label>
           <input
             type="text"
             value={data.full_name}
             onChange={(e) => handleChange('full_name', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="John Doe"
             required
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-stone-300 mb-2">
             Professional Headline
           </label>
           <input
             type="text"
             value={data.headline}
             onChange={(e) => handleChange('headline', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="Senior Software Engineer | AI Specialist"
           />
         </div>
 
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-stone-300 mb-2">
             Professional Summary
           </label>
           <textarea
             value={data.summary}
             onChange={(e) => handleChange('summary', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="textarea-glass"
             placeholder="A brief summary of your professional experience and expertise..."
             rows={4}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Email <span className="text-red-500">*</span>
+          <label className="block text-sm font-medium text-stone-300 mb-2">
+            Email <span className="text-orange-400">*</span>
           </label>
           <input
             type="email"
             value={data.email}
             onChange={(e) => handleChange('email', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="john@example.com"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-stone-300 mb-2">
             Phone
           </label>
           <input
             type="tel"
             value={data.phone}
             onChange={(e) => handleChange('phone', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="+1 (555) 123-4567"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-stone-300 mb-2">
             Location
           </label>
           <input
             type="text"
             value={data.location}
             onChange={(e) => handleChange('location', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="San Francisco, CA"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-stone-300 mb-2">
             Website/Portfolio
           </label>
           <input
             type="url"
             value={data.website}
             onChange={(e) => handleChange('website', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+            className="input-glass"
             placeholder="https://johndoe.com"
           />
         </div>
@@ -130,7 +130,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
 
       {/* Social Links */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium text-stone-300 mb-2">
           Social Links (LinkedIn, GitHub, etc.)
         </label>
         <div className="space-y-2">
@@ -140,13 +140,13 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
                 type="url"
                 value={link}
                 onChange={(e) => handleLinkChange(index, e.target.value)}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-900 placeholder:text-gray-500"
+                className="input-glass flex-1"
                 placeholder="https://linkedin.com/in/johndoe"
               />
               <button
                 type="button"
                 onClick={() => removeLink(index)}
-                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                className="px-4 py-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
               >
                 Remove
               </button>
@@ -155,7 +155,7 @@ export default function BasicsSection({ data, onChange }: BasicsSectionProps) {
           <button
             type="button"
             onClick={addLink}
-            className="px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-medium"
+            className="px-4 py-2 text-orange-400 hover:bg-orange-500/10 rounded-lg transition-colors font-medium"
           >
             + Add Link
           </button>

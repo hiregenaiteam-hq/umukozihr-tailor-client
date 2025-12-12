@@ -55,6 +55,9 @@ export default function OnboardingPage() {
       return;
     }
 
+    // Check if user is editing existing profile
+    const isEditMode = router.query.edit === 'true';
+
     // Restore draft from localStorage
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
     const savedStep = localStorage.getItem(ONBOARDING_STEP_KEY);
@@ -80,19 +83,20 @@ export default function OnboardingPage() {
       }
     }
 
-    loadExistingProfile(hasLocalDraft);
-  }, []);
+    loadExistingProfile(hasLocalDraft, isEditMode);
+  }, [router.query.edit]);
 
-  const loadExistingProfile = async (hasLocalDraft: boolean = false) => {
+  const loadExistingProfile = async (hasLocalDraft: boolean = false, isEditMode: boolean = false) => {
     try {
       const response = await profileApi.get();
       if (response.data?.profile) {
         // If we have a server profile and no local draft, use server version
         if (!hasLocalDraft) {
           setProfile(response.data.profile);
+          setCompleteness(response.data.completeness || 0);
         }
-        // If server profile is more complete, redirect to app
-        if (response.data.completeness > 80) {
+        // If server profile is complete and NOT in edit mode, redirect to app
+        if (response.data.completeness > 80 && !isEditMode) {
           router.push('/app');
           return;
         }

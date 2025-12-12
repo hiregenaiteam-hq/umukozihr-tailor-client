@@ -337,7 +337,7 @@ export default function AppPage() {
                   </div>
                 </div>
                 <button
-                  onClick={() => router.push('/onboarding')}
+                  onClick={() => router.push('/onboarding?edit=true')}
                   className="btn-secondary flex items-center gap-2"
                 >
                   <Settings className="h-4 w-4" />
