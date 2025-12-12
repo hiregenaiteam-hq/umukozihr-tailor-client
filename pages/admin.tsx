@@ -7,7 +7,7 @@ import {
   Users, FileText, AlertTriangle, Activity,
   TrendingUp, Clock, CheckCircle, XCircle,
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
-  Globe, Briefcase, Sparkles
+  Globe, Briefcase, Sparkles, DollarSign, Crown
 } from 'lucide-react';
 
 interface DashboardData {
@@ -47,6 +47,16 @@ interface DashboardData {
     errors_by_type: Record<string, number>;
     avg_response_time_ms: number;
     error_rate: number;
+  };
+  subscription: {
+    free_users: number;
+    basic_users: number;
+    pro_users: number;
+    enterprise_users: number;
+    trial_users: number;
+    total_paid: number;
+    monthly_revenue_estimate: number;
+    conversion_rate: number;
   };
   signups_trend: { date: string; count: number }[];
   generations_trend: { date: string; count: number }[];
@@ -353,6 +363,40 @@ export default function AdminPage() {
                 <StatCard title="Error Rate" value={`${system_health.error_rate}%`} icon={Activity} color="purple" />
               </div>
             </section>
+
+            {/* Subscription & Revenue */}
+            {dashboard.subscription && (
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <DollarSign className="h-5 w-5 text-orange-400" />
+                  Subscription & Revenue
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard title="Free Users" value={dashboard.subscription.free_users} icon={Users} color="blue" />
+                  <StatCard title="Paid Users" value={dashboard.subscription.total_paid} subtitle={`${dashboard.subscription.conversion_rate}% conversion`} icon={Crown} color="green" />
+                  <StatCard title="Monthly Revenue" value={`$${dashboard.subscription.monthly_revenue_estimate}`} subtitle="Estimated" icon={DollarSign} color="purple" />
+                  <StatCard title="Trial Users" value={dashboard.subscription.trial_users} icon={Clock} color="orange" />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
+                  <div className="glass-subtle p-4 rounded-xl text-center">
+                    <p className="text-xs text-stone-400 mb-1">Basic</p>
+                    <p className="text-xl font-bold text-blue-400">{dashboard.subscription.basic_users}</p>
+                  </div>
+                  <div className="glass-subtle p-4 rounded-xl text-center">
+                    <p className="text-xs text-stone-400 mb-1">Pro</p>
+                    <p className="text-xl font-bold text-purple-400">{dashboard.subscription.pro_users}</p>
+                  </div>
+                  <div className="glass-subtle p-4 rounded-xl text-center">
+                    <p className="text-xs text-stone-400 mb-1">Enterprise</p>
+                    <p className="text-xl font-bold text-amber-400">{dashboard.subscription.enterprise_users}</p>
+                  </div>
+                  <div className="glass-subtle p-4 rounded-xl text-center">
+                    <p className="text-xs text-stone-400 mb-1">Conversion Rate</p>
+                    <p className="text-xl font-bold text-green-400">{dashboard.subscription.conversion_rate}%</p>
+                  </div>
+                </div>
+              </section>
+            )}
           </div>
         )}
 
