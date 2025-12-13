@@ -21,6 +21,9 @@ function getApiBaseUrl() {
 }
 
 const nextConfig = {
+    // Enable standalone output for Docker deployments
+    output: 'standalone',
+    
     async rewrites() {
       const apiUrl = getApiBaseUrl();
       return [
