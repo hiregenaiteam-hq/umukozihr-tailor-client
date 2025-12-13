@@ -1,7 +1,11 @@
 import toast from 'react-hot-toast';
-import { FileText, Download, ExternalLink, Calendar, MapPin, CheckCircle } from "lucide-react";
+import { FileText, Download, CheckCircle, Calendar, MapPin } from "lucide-react";
 
 export default function JobCard({ data }: { data: any }) {
+  // Check if PDFs were compiled successfully
+  const hasPdfs = data.resume_pdf && data.cover_letter_pdf;
+  const pdfStatus = data.pdf_compilation;
+  
   return (
     <div className="glass-subtle p-5 rounded-xl hover:border-orange-500/20 transition-all group">
       <div className="flex items-start justify-between gap-4">
@@ -33,8 +37,8 @@ export default function JobCard({ data }: { data: any }) {
         </div>
 
         <div className="flex flex-col gap-2">
-          <div className="flex gap-2">
-            {data.resume_pdf && (
+          {hasPdfs ? (
+            <div className="flex gap-2">
               <a
                 href={data.resume_pdf}
                 target="_blank"
@@ -45,8 +49,6 @@ export default function JobCard({ data }: { data: any }) {
                 <Download className="w-4 h-4" />
                 Resume
               </a>
-            )}
-            {data.cover_letter_pdf && (
               <a
                 href={data.cover_letter_pdf}
                 target="_blank"
@@ -57,32 +59,13 @@ export default function JobCard({ data }: { data: any }) {
                 <Download className="w-4 h-4" />
                 Cover
               </a>
-            )}
-          </div>
-          <div className="flex gap-2">
-            {data.resume_tex && (
-              <a
-                href={data.resume_tex}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 px-2 py-1 text-xs text-stone-500 hover:text-orange-400 transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-                .tex
-              </a>
-            )}
-            {data.cover_letter_tex && (
-              <a
-                href={data.cover_letter_tex}
-                target="_blank"
-                rel="noreferrer"
-                className="flex items-center gap-1.5 px-2 py-1 text-xs text-stone-500 hover:text-orange-400 transition-colors"
-              >
-                <ExternalLink className="w-3 h-3" />
-                Cover .tex
-              </a>
-            )}
-          </div>
+            </div>
+          ) : (
+            <div className="text-xs text-stone-500 text-right">
+              <span className="text-amber-400">TEX files only</span>
+              <p className="mt-1">Download ZIP for files</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

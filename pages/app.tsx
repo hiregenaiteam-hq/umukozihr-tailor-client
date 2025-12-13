@@ -622,6 +622,32 @@ export default function AppPage() {
               
               {currentRun && currentRun.artifacts ? (
                 <div className="space-y-4">
+                  {/* Download Bundle Button */}
+                  {currentRun.zip && (
+                    <div className="glass-subtle p-4 rounded-xl border border-green-500/20 bg-green-500/5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                            <Download className="w-5 h-5 text-green-400" />
+                          </div>
+                          <div>
+                            <p className="text-white font-medium">Documents Ready!</p>
+                            <p className="text-xs text-stone-400">
+                              {currentRun.artifacts.length} job{currentRun.artifacts.length > 1 ? 's' : ''} • TEX files included
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => handleDownload(currentRun.zip, 'documents_bundle.zip')}
+                          className="btn-primary flex items-center gap-2"
+                        >
+                          <Download className="h-4 w-4" />
+                          Download ZIP
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                   {currentRun.artifacts.map((artifact: any, idx: number) => (
                     <JobCard key={idx} data={artifact} />
                   ))}
