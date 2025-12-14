@@ -122,6 +122,10 @@ export const profile = {
   getCompleteness: () =>
     api.get('/profile/me/completeness'),
 
+  // v1.5: Delete profile and account permanently
+  delete: () =>
+    api.delete('/profile'),
+
   // Legacy v1.2: Save profile to file (deprecated)
   save: (profileData: any) =>
     api.post('/profile/profile', profileData)

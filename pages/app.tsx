@@ -14,7 +14,7 @@ import {
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle
 } from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
@@ -60,6 +60,10 @@ export default function AppPage() {
   // Profile upload state
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const profileFileInputRef = useRef<HTMLInputElement>(null);
+
+  // Delete profile state
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -202,6 +206,23 @@ export default function AppPage() {
   };
 
   // Handle resume upload to update profile
+  const handleDeleteProfile = async () => {
+    setIsDeleting(true);
+    try {
+      await profileApi.delete();
+      toast.success('Your profile has been deleted');
+      localStorage.removeItem('token');
+      localStorage.removeItem('userProfile');
+      localStorage.removeItem('onboarding_draft');
+      router.push('/');
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to delete profile');
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  };
+
   const handleProfileResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -405,10 +426,10 @@ export default function AppPage() {
                   {profile.basics.full_name?.charAt(0) || '?'}
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-2xl font-bold text-white mb-1">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
                     {profile.basics.full_name || 'Complete Your Profile'}
                   </h2>
-                  <p className="text-stone-400 mb-3">{profile.basics.email}</p>
+                  <p className="text-stone-400 mb-3 text-sm sm:text-base">{profile.basics.email}</p>
                   <div className="flex flex-wrap gap-2">
                     {profile.preferences.regions.map((region) => (
                       <span key={region} className="badge badge-orange">
@@ -418,24 +439,26 @@ export default function AppPage() {
                     ))}
                   </div>
                 </div>
-                <button
-                  onClick={() => router.push('/onboarding?edit=true')}
-                  className="btn-secondary flex items-center gap-2"
-                >
-                  <Settings className="h-4 w-4" />
-                  Edit Profile
-                </button>
+                <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => router.push('/onboarding?edit=true')}
+                    className="btn-secondary flex items-center gap-2 flex-1 sm:flex-none justify-center"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit Profile</span>
+                    <span className="sm:hidden">Edit</span>
+                  </button>
                 <button
                   onClick={() => profileFileInputRef.current?.click()}
                   disabled={isUploadingResume}
-                  className="btn-secondary flex items-center gap-2"
+                  className="btn-secondary flex items-center gap-2 flex-1 sm:flex-none justify-center"
                 >
                   {isUploadingResume ? (
                     <div className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
                   ) : (
                     <Upload className="h-4 w-4" />
                   )}
-                  {isUploadingResume ? 'Uploading...' : 'Upload Resume'}
+                  <span className="hidden sm:inline">{isUploadingResume ? 'Uploading...' : 'Upload Resume'}</span>
                 </button>
                 <input
                   ref={profileFileInputRef}
@@ -444,6 +467,14 @@ export default function AppPage() {
                   onChange={handleProfileResumeUpload}
                   className="hidden"
                 />
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="btn-icon text-red-400 hover:bg-red-500/10 hover:border-red-500/30"
+                  title="Delete Profile"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+                </div>
               </div>
               
               {/* Progress */}
@@ -625,12 +656,12 @@ export default function AppPage() {
                   {/* Download Bundle Button */}
                   {currentRun.zip && (
                     <div className="glass-subtle p-4 rounded-xl border border-green-500/20 bg-green-500/5">
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                         <div className="flex items-center gap-3">
-                          <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                          <div className="neu-flat w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center">
                             <Download className="w-5 h-5 text-green-400" />
                           </div>
-                          <div>
+                          <div className="min-w-0">
                             <p className="text-white font-medium">Documents Ready!</p>
                             <p className="text-xs text-stone-400">
                               {currentRun.artifacts.length} job{currentRun.artifacts.length > 1 ? 's' : ''} • TEX files included
@@ -639,7 +670,7 @@ export default function AppPage() {
                         </div>
                         <button
                           onClick={() => handleDownload(currentRun.zip, 'documents_bundle.zip')}
-                          className="btn-primary flex items-center gap-2"
+                          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
                         >
                           <Download className="h-4 w-4" />
                           Download ZIP
@@ -740,6 +771,49 @@ export default function AppPage() {
           </div>
         )}
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="glass-card p-6 max-w-md w-full animate-scale-in">
+            <div className="flex items-center gap-4 mb-4">
+              <div className="w-12 h-12 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-white">Delete Profile?</h3>
+                <p className="text-sm text-stone-400">This action cannot be undone</p>
+              </div>
+            </div>
+            <p className="text-stone-300 mb-6">
+              Your profile, account, and all generated documents will be permanently deleted.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="btn-secondary flex-1"
+                disabled={isDeleting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProfile}
+                disabled={isDeleting}
+                className="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4" />
+                    Delete Forever
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

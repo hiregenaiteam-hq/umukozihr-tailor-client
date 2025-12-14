@@ -100,6 +100,11 @@
     --neu-shadow-light: rgba(255, 255, 255, 0.8);
   }
 
+  /* Box sizing reset */
+  *, *::before, *::after {
+    box-sizing: border-box;
+  }
+
   * {
     scrollbar-width: thin;
     scrollbar-color: rgba(249, 115, 22, 0.3) transparent;
@@ -938,11 +943,12 @@
 @media (max-width: 768px) {
   .glass-card {
     border-radius: var(--radius-lg);
+    overflow: hidden;
   }
 
   .btn-primary,
   .btn-secondary {
-    padding: 12px 24px;
+    padding: 12px 20px;
     font-size: 14px;
   }
 
@@ -951,6 +957,12 @@
   .select-glass {
     padding: 12px 16px;
     font-size: 14px;
+  }
+
+  /* Prevent horizontal overflow on mobile */
+  .glass-subtle {
+    overflow: hidden;
+    word-break: break-word;
   }
 }
 
