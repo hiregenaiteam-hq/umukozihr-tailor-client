@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
 import toast from 'react-hot-toast';
 import { profile as profileApi, upload as uploadApi } from '@/lib/api';
@@ -9,11 +9,15 @@ import ExperienceSection from '@/components/onboarding/ExperienceSection';
 import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
-import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
 const ONBOARDING_STEP_KEY = 'onboarding_step';
+const SYNC_DEBOUNCE_MS = 2000; // 2 seconds after last change
+
+// Sync status types
+type SyncStatus = 'idle' | 'syncing' | 'synced' | 'error' | 'offline';
 
 // Step descriptions for display
 const STEP_DESCRIPTIONS: { [key: string]: string } = {
@@ -45,10 +49,115 @@ export default function OnboardingPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [showChoice, setShowChoice] = useState(true); // New: show Upload/Manual choice
+  const [showChoice, setShowChoice] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Background sync state
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
+  const [lastSyncError, setLastSyncError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingProfileRef = useRef<ProfileV3 | null>(null);
+  const maxRetries = 3;
+
+  // Debounced background sync function
+  const triggerBackgroundSync = useCallback((profileData: ProfileV3) => {
+    // Clear any existing timeout
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+    }
+    
+    // Store the pending profile
+    pendingProfileRef.current = profileData;
+    setSyncStatus('syncing');
+    
+    // Schedule sync after debounce period
+    syncTimeoutRef.current = setTimeout(async () => {
+      await performSync(profileData);
+    }, SYNC_DEBOUNCE_MS);
+  }, []);
+
+  // Actual sync to server
+  const performSync = async (profileData: ProfileV3, isRetry = false) => {
+    if (!isRetry) {
+      setSyncStatus('syncing');
+    }
+    
+    try {
+      const response = await profileApi.update(profileData);
+      setCompleteness(response.data.completeness || 0);
+      setSyncStatus('synced');
+      setLastSyncError(null);
+      setRetryCount(0);
+      pendingProfileRef.current = null;
+      
+      // Clear synced status after 3 seconds
+      setTimeout(() => {
+        setSyncStatus(prev => prev === 'synced' ? 'idle' : prev);
+      }, 3000);
+      
+      return true;
+    } catch (error: any) {
+      console.error('Background sync error:', error);
+      
+      // Check if offline
+      if (!navigator.onLine) {
+        setSyncStatus('offline');
+        setLastSyncError('No internet connection');
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        setSyncStatus('error');
+        setLastSyncError('Connection timeout - slow network');
+      } else {
+        setSyncStatus('error');
+        setLastSyncError(error.response?.data?.detail || 'Sync failed');
+      }
+      
+      // Auto-retry logic (up to maxRetries)
+      if (retryCount < maxRetries && pendingProfileRef.current) {
+        setRetryCount(prev => prev + 1);
+        setTimeout(() => {
+          if (pendingProfileRef.current) {
+            performSync(pendingProfileRef.current, true);
+          }
+        }, 3000 * (retryCount + 1)); // Exponential backoff: 3s, 6s, 9s
+      }
+      
+      return false;
+    }
+  };
+
+  // Manual retry function
+  const retrySync = async () => {
+    if (pendingProfileRef.current || profile) {
+      setRetryCount(0);
+      await performSync(pendingProfileRef.current || profile);
+    }
+  };
+
+  // Listen for online/offline events
+  useEffect(() => {
+    const handleOnline = () => {
+      if (syncStatus === 'offline' && pendingProfileRef.current) {
+        toast.success('Back online! Syncing...');
+        performSync(pendingProfileRef.current);
+      }
+    };
+    
+    const handleOffline = () => {
+      setSyncStatus('offline');
+      setLastSyncError('No internet connection');
+    };
+    
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, [syncStatus]);
 
   useEffect(() => {
     setMounted(true);
@@ -156,49 +265,84 @@ export default function OnboardingPage() {
     }
   };
 
-  // Auto-save draft to localStorage
+  // Auto-save draft to localStorage AND trigger background sync
   useEffect(() => {
     if (mounted && profile.basics?.full_name) {
+      // Always save locally immediately (instant)
       localStorage.setItem(ONBOARDING_STORAGE_KEY, JSON.stringify(profile));
       localStorage.setItem(ONBOARDING_STEP_KEY, currentStep.toString());
+      
+      // Trigger background sync (debounced)
+      triggerBackgroundSync(profile);
     }
-  }, [profile, currentStep, mounted]);
+  }, [profile, currentStep, mounted, triggerBackgroundSync]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (syncTimeoutRef.current) {
+        clearTimeout(syncTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const updateProfile = (section: keyof ProfileV3, data: any) => {
     setProfile(prev => ({ ...prev, [section]: data }));
+    // Background sync will be triggered by the useEffect
   };
 
-  const saveAndContinue = async () => {
-    setIsSaving(true);
-    try {
-      const response = await profileApi.update(profile);
-      setCompleteness(response.data.completeness);
-      if (!completedSteps.includes(currentStep)) {
-        setCompletedSteps([...completedSteps, currentStep]);
-      }
-      nextStep();
-      toast.success('Progress saved!');
-    } catch (error) {
-      console.error('Error saving:', error);
-      toast.error('Failed to save. Your progress is stored locally.');
-      // Still allow navigation even if save fails
-      nextStep();
-    } finally {
-      setIsSaving(false);
+  // INSTANT navigation - no blocking on server sync
+  const saveAndContinue = () => {
+    // Mark step as completed
+    if (!completedSteps.includes(currentStep)) {
+      setCompletedSteps([...completedSteps, currentStep]);
     }
+    // Navigate immediately - sync happens in background
+    nextStep();
   };
 
+  // Final step - ensure sync is complete before redirecting
   const completeOnboarding = async () => {
     setIsSaving(true);
+    
+    // If there's pending sync, wait for it
+    if (syncTimeoutRef.current) {
+      clearTimeout(syncTimeoutRef.current);
+      syncTimeoutRef.current = null;
+    }
+    
     try {
-      await profileApi.update(profile);
+      // Force a final sync to ensure everything is saved
+      const response = await profileApi.update(profile);
+      setCompleteness(response.data.completeness || 0);
+      
+      // Clear local storage
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
       localStorage.removeItem(ONBOARDING_STEP_KEY);
+      
       toast.success('Profile complete! Redirecting...');
       router.push('/app');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error completing onboarding:', error);
-      toast.error('Failed to save profile. Please try again.');
+      
+      // Check if offline or network error
+      if (!navigator.onLine) {
+        toast.error('No internet connection. Please connect and try again.', {
+          duration: 5000,
+          icon: '📡'
+        });
+      } else if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        toast.error('Connection timeout. Please check your network and try again.', {
+          duration: 5000,
+          icon: '⏱️'
+        });
+      } else {
+        toast.error('Failed to save profile. Please try again.', {
+          duration: 5000
+        });
+      }
+      
+      // Keep data in localStorage for safety
     } finally {
       setIsSaving(false);
     }
@@ -496,6 +640,49 @@ export default function OnboardingPage() {
             </div>
 
             <div className="flex items-center gap-2">
+              {/* Sync Status Indicator */}
+              {syncStatus !== 'idle' && (
+                <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium transition-all ${
+                  syncStatus === 'syncing' ? 'bg-blue-500/20 text-blue-400' :
+                  syncStatus === 'synced' ? 'bg-green-500/20 text-green-400' :
+                  syncStatus === 'error' ? 'bg-red-500/20 text-red-400' :
+                  syncStatus === 'offline' ? 'bg-amber-500/20 text-amber-400' : ''
+                }`}>
+                  {syncStatus === 'syncing' && (
+                    <>
+                      <div className="w-3 h-3 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin" />
+                      <span className="hidden sm:inline">Syncing</span>
+                    </>
+                  )}
+                  {syncStatus === 'synced' && (
+                    <>
+                      <Cloud className="w-3 h-3" />
+                      <span className="hidden sm:inline">Saved</span>
+                    </>
+                  )}
+                  {syncStatus === 'error' && (
+                    <button 
+                      onClick={retrySync}
+                      className="flex items-center gap-1.5 hover:opacity-80"
+                      title="Click to retry"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      <span className="hidden sm:inline">Retry</span>
+                    </button>
+                  )}
+                  {syncStatus === 'offline' && (
+                    <button 
+                      onClick={retrySync}
+                      className="flex items-center gap-1.5 hover:opacity-80"
+                      title="No internet - click to retry"
+                    >
+                      <WifiOff className="w-3 h-3" />
+                      <span className="hidden sm:inline">Offline</span>
+                    </button>
+                  )}
+                </div>
+              )}
+              
               {/* Home button for mobile */}
               <button
                 onClick={() => router.push('/')}
@@ -598,20 +785,10 @@ export default function OnboardingPage() {
           {currentStep < STEPS.length ? (
             <button
               onClick={saveAndContinue}
-              disabled={isSaving}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all disabled:opacity-50"
+              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
             >
-              {isSaving ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ChevronRight className="w-5 h-5" />
-                </>
-              )}
+              Continue
+              <ChevronRight className="w-5 h-5" />
             </button>
           ) : (
             <button
@@ -622,7 +799,7 @@ export default function OnboardingPage() {
               {isSaving ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Saving...
+                  Finishing...
                 </>
               ) : (
                 <>
