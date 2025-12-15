@@ -9,6 +9,9 @@ module.exports = {
   ],
   theme: {
     extend: {
+      screens: {
+        'xs': '480px',
+      },
       colors: {
         'brand-orange': '#ff6b35',
         'brand-orange-light': '#ff8a5c',

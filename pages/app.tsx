@@ -14,7 +14,7 @@ import {
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft
 } from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
@@ -61,8 +61,11 @@ export default function AppPage() {
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const profileFileInputRef = useRef<HTMLInputElement>(null);
 
+  // Generation progress state
+  const [generationProgress, setGenerationProgress] = useState<{current: number; total: number} | null>(null);
   // Delete profile state
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -159,6 +162,11 @@ export default function AppPage() {
     toast.success('Job removed from queue');
   };
 
+  // Navigate to landing page
+  const handleGoHome = () => {
+    router.push('/');
+  };
+
   const handleGenerate = async () => {
     if (jobQueue.length === 0) {
       toast.error('Please add at least one job to the queue');
@@ -170,16 +178,32 @@ export default function AppPage() {
     }
 
     setIsGenerating(true);
+    setGenerationProgress({ current: 0, total: jobQueue.length });
+    
     try {
+      // Show progress during generation
+      const progressToast = toast.loading(
+        `Processing ${jobQueue.length} job${jobQueue.length > 1 ? 's' : ''}...`,
+        { id: 'generation-progress' }
+      );
+      
       const response = await generationApi.generate(null, jobQueue);
+      
+      // Update progress to complete
+      setGenerationProgress({ current: jobQueue.length, total: jobQueue.length });
+      
+      toast.dismiss('generation-progress');
+      toast.success(`Generated ${response.data.artifacts?.length || jobQueue.length} resumes!`);
+      
       setCurrentRun(response.data);
       setJobQueue([]);
-      toast.success('Documents generated successfully!');
       loadHistory();
     } catch (error: any) {
+      toast.dismiss('generation-progress');
       toast.error(error.response?.data?.detail || 'Failed to generate documents');
     } finally {
       setIsGenerating(false);
+      setGenerationProgress(null);
     }
   };
 
@@ -330,19 +354,31 @@ export default function AppPage() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <div className="neu-raised w-10 h-10 rounded-xl flex items-center justify-center">
-                <FileText className="h-5 w-5 text-orange-400" />
+            <button 
+              onClick={handleGoHome}
+              className="flex items-center gap-3 sm:gap-4 hover:opacity-80 transition-opacity cursor-pointer"
+              title="Go to Home"
+            >
+              <div className="neu-raised w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center">
+                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400" />
               </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">Resume Tailor</h1>
-                <p className="text-xs text-stone-500">AI-Powered Documents</p>
+              <div className="hidden xs:block">
+                <h1 className="text-lg sm:text-xl font-bold text-gradient">Resume Tailor</h1>
+                <p className="text-xs text-stone-500 hidden sm:block">AI-Powered Documents</p>
               </div>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
+              {/* Home button for mobile */}
+              <button
+                onClick={handleGoHome}
+                className="btn-icon sm:hidden"
+                title="Home"
+              >
+                <Home className="h-5 w-5" />
+              </button>
               {(profile as any)?.is_admin && (
                 <button
                   onClick={() => router.push('/admin')}
@@ -356,6 +392,7 @@ export default function AppPage() {
               <button
                 onClick={handleLogout}
                 className="btn-icon"
+                title="Logout"
               >
                 <LogOut className="h-5 w-5" />
               </button>
@@ -390,9 +427,9 @@ export default function AppPage() {
       )}
 
       {/* Tabs */}
-      <div className="glass-subtle border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex gap-1">
+      <div className="glass-subtle border-b border-white/5 overflow-x-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex gap-1 min-w-max">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -415,7 +452,7 @@ export default function AppPage() {
       </div>
 
       {/* Content */}
-      <main className="relative z-10 max-w-7xl mx-auto px-6 py-8">
+      <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {/* Profile Tab */}
         {activeTab === 'profile' && profile && (
           <div className="space-y-6 animate-fade-in-up">
@@ -629,7 +666,11 @@ export default function AppPage() {
                     {isGenerating ? (
                       <>
                         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        <span>Generating...</span>
+                        <span>
+                          {generationProgress 
+                            ? `Processing ${generationProgress.current}/${generationProgress.total}...`
+                            : 'Generating...'}
+                        </span>
                       </>
                     ) : (
                       <>

@@ -9,7 +9,7 @@ import ExperienceSection from '@/components/onboarding/ExperienceSection';
 import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
-import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
@@ -467,24 +467,50 @@ export default function OnboardingPage() {
 
       {/* Header */}
       <header className="relative z-10 border-b border-white/5">
-        <div className="max-w-6xl mx-auto px-6 py-4">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
-                <span className="text-white font-bold text-lg">U</span>
+              {/* Back button */}
+              <button
+                onClick={() => {
+                  // Check if user has an existing profile (edit mode) or token
+                  const token = localStorage.getItem('token');
+                  if (token) {
+                    router.push('/app');
+                  } else {
+                    router.push('/');
+                  }
+                }}
+                className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-stone-800/50 border border-stone-700 flex items-center justify-center text-stone-400 hover:text-white hover:border-orange-500/50 transition-all"
+                title="Go Back"
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
+                <span className="text-white font-bold text-base sm:text-lg">U</span>
               </div>
-              <div>
-                <h1 className="text-white font-semibold">UmukoziHR Tailor</h1>
+              <div className="hidden xs:block">
+                <h1 className="text-white font-semibold text-sm sm:text-base">UmukoziHR Tailor</h1>
                 <p className="text-stone-500 text-xs">Profile Setup</p>
               </div>
             </div>
 
-            {isSaving && (
-              <div className="flex items-center gap-2 text-orange-400 text-sm">
-                <div className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
-                <span>Saving...</span>
-              </div>
-            )}
+            <div className="flex items-center gap-2">
+              {/* Home button for mobile */}
+              <button
+                onClick={() => router.push('/')}
+                className="w-9 h-9 rounded-xl bg-stone-800/50 border border-stone-700 flex items-center justify-center text-stone-400 hover:text-white hover:border-orange-500/50 transition-all sm:hidden"
+                title="Home"
+              >
+                <Home className="w-4 h-4" />
+              </button>
+              {isSaving && (
+                <div className="flex items-center gap-2 text-orange-400 text-sm">
+                  <div className="w-4 h-4 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+                  <span className="hidden sm:inline">Saving...</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
