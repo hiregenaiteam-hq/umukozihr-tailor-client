@@ -48,8 +48,8 @@ export function UpgradeModal({ isOpen, onClose, trigger = "general", remaining =
       case "limit_reached":
         return {
           title: "Oww You've Used Your Free Resumes",
-          subtitle: "You've tailored 5 resumes this month — that's the free limit.",
-          description: "Upgrade to Pro for unlimited tailoring and never hit a wall again.",
+          subtitle: "You've tailored 5 resumes this month — that's what free offers.",
+          description: "Fortunately, Upgrade to Pro for unlimited tailoring and never hit a wall again.",
           icon: <Zap className="w-8 h-8 text-amber-400" />,
         };
       case "batch_upload":
