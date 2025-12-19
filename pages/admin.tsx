@@ -8,7 +8,8 @@ import {
   Users, FileText, AlertTriangle, Activity,
   TrendingUp, Clock, CheckCircle, XCircle,
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
-  Globe, Briefcase, Sparkles, DollarSign, Crown
+  Globe, Briefcase, Sparkles, DollarSign, Crown,
+  MapPin, Target, Percent
 } from 'lucide-react';
 
 interface DashboardData {
@@ -51,13 +52,21 @@ interface DashboardData {
   };
   subscription: {
     free_users: number;
-    basic_users: number;
     pro_users: number;
-    enterprise_users: number;
-    trial_users: number;
     total_paid: number;
+    africa_users: number;
+    global_users: number;
+    active_subscriptions: number;
+    cancelled_subscriptions: number;
+    expired_subscriptions: number;
     monthly_revenue_estimate: number;
+    potential_revenue: number;
     conversion_rate: number;
+    africa_conversion_rate: number;
+    global_conversion_rate: number;
+    total_generations_used: number;
+    users_at_limit: number;
+    avg_generations_per_user: number;
   };
   signups_trend: { date: string; count: number }[];
   generations_trend: { date: string; count: number }[];
@@ -362,7 +371,7 @@ export default function AdminPage() {
               </div>
             </section>
 
-            {/* Subscription & Revenue */}
+            {/* Subscription & Revenue - v1.4 Updated */}
             {dashboard.subscription && (
               <section>
                 <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
@@ -371,26 +380,65 @@ export default function AdminPage() {
                 </h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                   <StatCard title="Free Users" value={dashboard.subscription.free_users} icon={Users} color="blue" />
-                  <StatCard title="Paid Users" value={dashboard.subscription.total_paid} subtitle={`${dashboard.subscription.conversion_rate}% conversion`} icon={Crown} color="green" />
-                  <StatCard title="Monthly Revenue" value={`$${dashboard.subscription.monthly_revenue_estimate}`} subtitle="Estimated" icon={DollarSign} color="purple" />
-                  <StatCard title="Trial Users" value={dashboard.subscription.trial_users} icon={Clock} color="orange" />
+                  <StatCard title="Pro Users" value={dashboard.subscription.pro_users} subtitle={`${dashboard.subscription.conversion_rate}% conversion`} icon={Crown} color="green" />
+                  <StatCard title="Monthly Revenue" value={`$${dashboard.subscription.monthly_revenue_estimate}`} subtitle={`Potential: $${dashboard.subscription.potential_revenue}`} icon={DollarSign} color="purple" />
+                  <StatCard title="At Usage Limit" value={dashboard.subscription.users_at_limit} subtitle="Free users at 5/5" icon={Target} color="orange" />
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mt-4">
-                  <div className="glass-subtle p-4 rounded-xl text-center">
-                    <p className="text-xs text-stone-400 mb-1">Basic</p>
-                    <p className="text-xl font-bold text-blue-400">{dashboard.subscription.basic_users}</p>
+                
+                {/* Region Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-orange-400" />
+                      Region Breakdown
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="glass-subtle p-4 rounded-xl text-center">
+                        <p className="text-xs text-stone-400 mb-1">Africa</p>
+                        <p className="text-2xl font-bold text-amber-400">{dashboard.subscription.africa_users}</p>
+                        <p className="text-xs text-green-400 mt-1">{dashboard.subscription.africa_conversion_rate}% Pro</p>
+                      </div>
+                      <div className="glass-subtle p-4 rounded-xl text-center">
+                        <p className="text-xs text-stone-400 mb-1">Global</p>
+                        <p className="text-2xl font-bold text-blue-400">{dashboard.subscription.global_users}</p>
+                        <p className="text-xs text-green-400 mt-1">{dashboard.subscription.global_conversion_rate}% Pro</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="glass-subtle p-4 rounded-xl text-center">
-                    <p className="text-xs text-stone-400 mb-1">Pro</p>
-                    <p className="text-xl font-bold text-purple-400">{dashboard.subscription.pro_users}</p>
+                  
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                      <Zap className="h-4 w-4 text-orange-400" />
+                      Usage Stats
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="glass-subtle p-4 rounded-xl text-center">
+                        <p className="text-xs text-stone-400 mb-1">Total Used</p>
+                        <p className="text-2xl font-bold text-purple-400">{dashboard.subscription.total_generations_used}</p>
+                        <p className="text-xs text-stone-500 mt-1">generations</p>
+                      </div>
+                      <div className="glass-subtle p-4 rounded-xl text-center">
+                        <p className="text-xs text-stone-400 mb-1">Avg/User</p>
+                        <p className="text-2xl font-bold text-green-400">{dashboard.subscription.avg_generations_per_user}</p>
+                        <p className="text-xs text-stone-500 mt-1">per month</p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="glass-subtle p-4 rounded-xl text-center">
-                    <p className="text-xs text-stone-400 mb-1">Enterprise</p>
-                    <p className="text-xl font-bold text-amber-400">{dashboard.subscription.enterprise_users}</p>
+                </div>
+                
+                {/* Subscription Status */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                  <div className="glass-subtle p-4 rounded-xl text-center border border-green-500/20">
+                    <p className="text-xs text-stone-400 mb-1">Active Subs</p>
+                    <p className="text-xl font-bold text-green-400">{dashboard.subscription.active_subscriptions}</p>
                   </div>
-                  <div className="glass-subtle p-4 rounded-xl text-center">
-                    <p className="text-xs text-stone-400 mb-1">Conversion Rate</p>
-                    <p className="text-xl font-bold text-green-400">{dashboard.subscription.conversion_rate}%</p>
+                  <div className="glass-subtle p-4 rounded-xl text-center border border-amber-500/20">
+                    <p className="text-xs text-stone-400 mb-1">Cancelled</p>
+                    <p className="text-xl font-bold text-amber-400">{dashboard.subscription.cancelled_subscriptions}</p>
+                  </div>
+                  <div className="glass-subtle p-4 rounded-xl text-center border border-red-500/20">
+                    <p className="text-xs text-stone-400 mb-1">Expired</p>
+                    <p className="text-xl font-bold text-red-400">{dashboard.subscription.expired_subscriptions}</p>
                   </div>
                 </div>
               </section>
