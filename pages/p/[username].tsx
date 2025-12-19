@@ -4,6 +4,7 @@ import Head from 'next/head';
 import toast, { Toaster } from 'react-hot-toast';
 import { publicProfile } from '@/lib/api';
 import { ProfileV3 } from '@/lib/types';
+import { HeaderLogo } from '@/components/Logo';
 import { 
   User, MapPin, Mail, Phone, Globe, ExternalLink, 
   Briefcase, GraduationCap, Code, Award, Languages,
@@ -162,13 +163,7 @@ export default function PublicProfilePage() {
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
               <a href="https://tailor.umukozihr.com" className="flex items-center gap-3 group">
-                <div className="neu-raised w-10 h-10 rounded-xl flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-orange-400" />
-                </div>
-                <div>
-                  <span className="text-lg font-bold text-gradient">UmukoziHR Tailor</span>
-                  <span className="hidden sm:block text-xs text-stone-500">AI-Powered Resume Builder</span>
-                </div>
+                <HeaderLogo size="md" />
               </a>
               <a
                 href="https://tailor.umukozihr.com"

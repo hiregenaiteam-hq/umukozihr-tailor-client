@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
 import { admin as adminApi } from '@/lib/api';
 import ThemeToggle from '@/components/ThemeToggle';
+import { HeaderLogo } from '@/components/Logo';
 import {
   Users, FileText, AlertTriangle, Activity,
   TrendingUp, Clock, CheckCircle, XCircle,
@@ -258,12 +259,9 @@ export default function AdminPage() {
               >
                 <ArrowLeft className="h-5 w-5" />
               </button>
-              <div className="neu-raised w-10 h-10 rounded-xl flex items-center justify-center">
-                <Shield className="h-5 w-5 text-orange-400" />
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-gradient">Admin Dashboard</h1>
-                <p className="text-xs text-stone-500">UmukoziHR Resume Tailor Analytics</p>
+              <HeaderLogo size="md" />
+              <div className="border-l border-white/10 pl-3">
+                <p className="text-sm font-medium text-white">Admin Dashboard</p>
               </div>
             </div>
 

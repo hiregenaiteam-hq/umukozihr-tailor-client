@@ -9,6 +9,7 @@ import ExperienceSection from '@/components/onboarding/ExperienceSection';
 import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
+import { HeaderLogo } from '@/components/Logo';
 import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
@@ -630,13 +631,7 @@ export default function OnboardingPage() {
               >
                 <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
-                <span className="text-white font-bold text-base sm:text-lg">U</span>
-              </div>
-              <div className="hidden xs:block">
-                <h1 className="text-white font-semibold text-sm sm:text-base">UmukoziHR Tailor</h1>
-                <p className="text-stone-500 text-xs">Profile Setup</p>
-              </div>
+              <HeaderLogo size="md" />
             </div>
 
             <div className="flex items-center gap-2">

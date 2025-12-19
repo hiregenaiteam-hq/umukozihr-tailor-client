@@ -10,6 +10,7 @@ import RunCard from '@/components/RunCard';
 import JobCard from '@/components/JobCard';
 import ThemeToggle from '@/components/ThemeToggle';
 import ShareButtons from '@/components/ShareButtons';
+import { HeaderLogo } from '@/components/Logo';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
@@ -356,18 +357,12 @@ export default function AppPage() {
       <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4">
           <div className="flex justify-between items-center">
-            <button 
+            <button
               onClick={handleGoHome}
-              className="flex items-center gap-3 sm:gap-4 hover:opacity-80 transition-opacity cursor-pointer"
+              className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
               title="Go to Home"
             >
-              <div className="neu-raised w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center">
-                <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400" />
-              </div>
-              <div className="hidden xs:block">
-                <h1 className="text-lg sm:text-xl font-bold text-gradient">Resume Tailor</h1>
-                <p className="text-xs text-stone-500 hidden sm:block">AI-Powered Documents</p>
-              </div>
+              <HeaderLogo size="md" />
             </button>
 
             <div className="flex items-center gap-2 sm:gap-3">

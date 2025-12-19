@@ -3,7 +3,8 @@ import { useRouter } from "next/router";
 import { profile as profileApi } from "../lib/api";
 import LoginForm from "../components/LoginForm";
 import ThemeToggle from "../components/ThemeToggle";
-import { FileText, Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock } from "lucide-react";
+import { HeroLogo } from "../components/Logo";
+import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText } from "lucide-react";
 import Image from "next/image";
 
 // Floating orb component
@@ -187,13 +188,7 @@ export default function Home() {
           {/* Logo & Header */}
           <div className="text-center mb-16 animate-fade-in-down">
             <div className="inline-flex items-center gap-3 mb-8 glass-subtle px-6 py-3 rounded-full">
-              <div className="relative">
-                <div className="absolute inset-0 bg-orange-500/30 rounded-xl blur-lg" />
-                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-                  <FileText className="h-5 w-5 text-white" />
-                </div>
-              </div>
-              <span className="text-xl font-bold text-gradient">UmukoziHR Resume Tailor</span>
+              <HeroLogo />
             </div>
             
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6 leading-tight">
