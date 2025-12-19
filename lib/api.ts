@@ -217,3 +217,79 @@ export const upload = {
     });
   },
 };
+
+// v1.4 Subscription endpoints
+export interface SubscriptionStatus {
+  is_live: boolean;
+  tier: string;
+  status: string;
+  is_pro: boolean;
+  started_at: string | null;
+  expires_at: string | null;
+  generations_used: number;
+  generations_limit: number;
+  generations_remaining: number;
+  can_generate: boolean;
+  usage_resets_at: string | null;
+  features: {
+    batch_upload: boolean;
+    zip_download: boolean;
+    priority_queue: boolean;
+    profile_sharing: boolean;
+    ats_keywords: boolean;
+    cover_letter: boolean;
+    unlimited_generations: boolean;
+  };
+  should_show_upgrade: boolean;
+  upgrade_reason: string | null;
+}
+
+export interface SubscriptionPlan {
+  tier: string;
+  name: string;
+  description: string;
+  features: string[];
+  monthly_price: number;
+  yearly_price: number;
+  is_regional_pricing: boolean;
+  currency: string;
+  limits: {
+    monthly_generations: number;
+    batch_upload: boolean;
+    zip_download: boolean;
+    priority_queue: boolean;
+  };
+}
+
+export interface PlansResponse {
+  is_live: boolean;
+  payment_configured: boolean;
+  plans: SubscriptionPlan[];
+  user_region: string;
+  is_regional_pricing: boolean;
+}
+
+export const subscription = {
+  // Get current subscription status
+  getStatus: () =>
+    api.get<SubscriptionStatus>('/subscription/status'),
+  
+  // Get available plans with regional pricing
+  getPlans: () =>
+    api.get<PlansResponse>('/subscription/plans'),
+  
+  // Check if user can generate
+  canGenerate: (count: number = 1) =>
+    api.get<{ can_generate: boolean; is_limited: boolean; remaining: number; message: string | null }>(
+      '/subscription/can-generate',
+      { params: { count } }
+    ),
+  
+  // Create upgrade intent (will return checkout URL when payment is live)
+  createUpgradeIntent: (tier: string = 'pro', billingCycle: string = 'monthly') =>
+    api.post<{ success: boolean; redirect_url: string | null; message: string; requires_payment_setup: boolean }>(
+      '/subscription/upgrade-intent',
+      null,
+      { params: { tier, billing_cycle: billingCycle } }
+    ),
+};

@@ -385,6 +385,13 @@ export default function AppPage() {
               )}
               <ThemeToggle />
               <button
+                onClick={() => router.push('/settings')}
+                className="btn-icon"
+                title="Settings"
+              >
+                <Settings className="h-5 w-5" />
+              </button>
+              <button
                 onClick={handleLogout}
                 className="btn-icon"
                 title="Logout"
