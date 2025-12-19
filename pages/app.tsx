@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi } from '@/lib/api';
+import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, SubscriptionStatus } from '@/lib/api';
 import { config } from '@/lib/config';
 import { ProfileV3, HistoryItem } from '@/lib/types';
 import CompletenessBar from '@/components/CompletenessBar';
@@ -11,6 +11,7 @@ import JobCard from '@/components/JobCard';
 import ThemeToggle from '@/components/ThemeToggle';
 import ShareButtons from '@/components/ShareButtons';
 import { HeaderLogo } from '@/components/Logo';
+import { UpgradeModal } from '@/components/UpgradeModal';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
@@ -69,6 +70,11 @@ export default function AppPage() {
 
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Subscription state
+  const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeTrigger, setUpgradeTrigger] = useState<'limit_reached' | 'batch_upload' | 'zip_download' | 'general'>('general');
+
   useEffect(() => {
     setMounted(true);
     const token = localStorage.getItem('token');
@@ -79,6 +85,7 @@ export default function AppPage() {
     }
     loadProfile();
     loadHistory();
+    loadSubscriptionStatus();
   }, []);
 
   const loadProfile = async () => {
@@ -147,6 +154,15 @@ export default function AppPage() {
     }
   };
 
+  const loadSubscriptionStatus = async () => {
+    try {
+      const response = await subscriptionApi.getStatus();
+      setSubscriptionStatus(response.data);
+    } catch (error) {
+      console.error('Error loading subscription status:', error);
+    }
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
@@ -155,6 +171,14 @@ export default function AppPage() {
   };
 
   const handleAddJob = (job: JobQueue) => {
+    // Check if user is trying to add multiple jobs without batch permission
+    if (jobQueue.length >= 1 && subscriptionStatus?.is_live && !subscriptionStatus?.features?.batch_upload) {
+      // User is trying batch upload but doesn't have permission
+      setUpgradeTrigger('batch_upload');
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     setJobQueue([...jobQueue, job]);
   };
 
@@ -175,6 +199,13 @@ export default function AppPage() {
     }
     if (!profile) {
       toast.error('Profile not loaded');
+      return;
+    }
+
+    // Check generation limit before proceeding
+    if (subscriptionStatus?.is_live && !subscriptionStatus?.can_generate) {
+      setUpgradeTrigger('limit_reached');
+      setShowUpgradeModal(true);
       return;
     }
 
@@ -224,6 +255,16 @@ export default function AppPage() {
   };
 
   const handleDownload = (url: string, filename: string) => {
+    // Check if this is a ZIP download and if user has permission
+    const isZipDownload = filename.includes('.zip') || url.includes('.zip');
+    
+    if (isZipDownload && subscriptionStatus?.is_live && !subscriptionStatus?.features?.zip_download) {
+      // User is trying to download ZIP but doesn't have permission
+      setUpgradeTrigger('zip_download');
+      setShowUpgradeModal(true);
+      return;
+    }
+    
     // Open the artifact URL directly
     const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`;
     window.open(fullUrl, '_blank');
@@ -857,6 +898,14 @@ export default function AppPage() {
           </div>
         </div>
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        trigger={upgradeTrigger}
+        remaining={subscriptionStatus?.generations_remaining ?? 0}
+      />
     </div>
   );
 }
