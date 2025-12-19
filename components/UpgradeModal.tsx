@@ -27,7 +27,7 @@ export function UpgradeModal({ isOpen, onClose, trigger = "general", remaining =
   const handleUpgrade = async () => {
     setLoading(true);
     try {
-      const response = await subscription.createUpgradeIntent("pro", "monthly");
+      const response = await subscription.createUpgradeIntent("pro");
       if (response.data.redirect_url) {
         window.location.href = response.data.redirect_url;
       } else {
@@ -47,26 +47,30 @@ export function UpgradeModal({ isOpen, onClose, trigger = "general", remaining =
     switch (trigger) {
       case "limit_reached":
         return {
-          title: "You've Hit Your Limit",
-          subtitle: "Upgrade to Pro for unlimited tailored resumes",
+          title: "Oww You've Used Your Free Resumes",
+          subtitle: "You've tailored 5 resumes this month — that's the free limit.",
+          description: "Upgrade to Pro for unlimited tailoring and never hit a wall again.",
           icon: <Zap className="w-8 h-8 text-amber-400" />,
         };
       case "batch_upload":
         return {
-          title: "Batch Upload is a Pro Feature",
-          subtitle: "Upload multiple job descriptions at once",
+          title: "Batch Tailoring is Part of Pro",
+          subtitle: "If you're applying to several roles, this saves hours.",
+          description: "Upload multiple job descriptions at once and let us handle the rest.",
           icon: <Sparkles className="w-8 h-8 text-orange-400" />,
         };
       case "zip_download":
         return {
-          title: "ZIP Download is a Pro Feature",
-          subtitle: "Download all your documents in one click",
+          title: "Looks Like You're Applying Seriously",
+          subtitle: "Pro removes limits and lets you download everything at once.",
+          description: "Get all your tailored resumes in a single ZIP file.",
           icon: <Sparkles className="w-8 h-8 text-orange-400" />,
         };
       default:
         return {
           title: "Upgrade to Pro",
-          subtitle: "Unlock the full power of UmukoziHR Tailor",
+          subtitle: "Unlock the full power of UmukoziHR Tailor.",
+          description: "Unlimited resumes, batch uploads, and ZIP downloads.",
           icon: <Crown className="w-8 h-8 text-orange-400" />,
         };
     }
@@ -106,12 +110,9 @@ export function UpgradeModal({ isOpen, onClose, trigger = "general", remaining =
             {message.icon}
           </div>
           <h2 className="text-xl font-bold text-white mb-2">{message.title}</h2>
-          <p className="text-gray-400">{message.subtitle}</p>
-          
-          {trigger === "limit_reached" && remaining !== undefined && remaining <= 0 && (
-            <p className="mt-2 text-sm text-red-400">
-              You've used all 5 free resumes this month
-            </p>
+          <p className="text-gray-300 mb-1">{message.subtitle}</p>
+          {message.description && (
+            <p className="text-gray-400 text-sm">{message.description}</p>
           )}
         </div>
 

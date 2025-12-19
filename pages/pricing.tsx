@@ -13,7 +13,6 @@ interface PricingPageState {
   paymentConfigured: boolean;
   userRegion: string;
   isRegionalPricing: boolean;
-  billingCycle: "monthly" | "yearly";
   upgradeLoading: boolean;
 }
 
@@ -27,7 +26,6 @@ export default function PricingPage() {
     paymentConfigured: false,
     userRegion: "global",
     isRegionalPricing: false,
-    billingCycle: "monthly",
     upgradeLoading: false,
   });
 
@@ -64,7 +62,7 @@ export default function PricingPage() {
   const handleUpgrade = async (tier: string) => {
     setState(prev => ({ ...prev, upgradeLoading: true }));
     try {
-      const response = await subscription.createUpgradeIntent(tier, state.billingCycle);
+      const response = await subscription.createUpgradeIntent(tier);
       if (response.data.redirect_url) {
         window.location.href = response.data.redirect_url;
       } else {
@@ -79,14 +77,7 @@ export default function PricingPage() {
   };
 
   const getPrice = (plan: SubscriptionPlan) => {
-    return state.billingCycle === "yearly" ? plan.yearly_price : plan.monthly_price;
-  };
-
-  const getMonthlyEquivalent = (plan: SubscriptionPlan) => {
-    if (state.billingCycle === "yearly") {
-      return (plan.yearly_price / 12).toFixed(2);
-    }
-    return plan.monthly_price.toFixed(2);
+    return plan.monthly_price;
   };
 
   // System is dormant - show greyed out version
@@ -152,37 +143,6 @@ export default function PricingPage() {
               )}
             </div>
 
-            {/* Billing toggle */}
-            <div className="flex justify-center mb-10">
-              <div className={`inline-flex p-1 rounded-xl bg-gray-800 ${isDormant ? "opacity-50" : ""}`}>
-                <button
-                  onClick={() => !isDormant && setState(prev => ({ ...prev, billingCycle: "monthly" }))}
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all ${
-                    state.billingCycle === "monthly"
-                      ? "bg-orange-500 text-white"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                  disabled={isDormant}
-                >
-                  Monthly
-                </button>
-                <button
-                  onClick={() => !isDormant && setState(prev => ({ ...prev, billingCycle: "yearly" }))}
-                  className={`px-6 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                    state.billingCycle === "yearly"
-                      ? "bg-orange-500 text-white"
-                      : "text-gray-400 hover:text-white"
-                  }`}
-                  disabled={isDormant}
-                >
-                  Yearly
-                  <span className="text-xs bg-green-500 text-white px-2 py-0.5 rounded-full">
-                    Save 33%
-                  </span>
-                </button>
-              </div>
-            </div>
-
             {/* Plans grid */}
             <div className={`grid md:grid-cols-2 gap-8 max-w-4xl mx-auto ${isDormant ? "opacity-60" : ""}`}>
               {state.plans.map((plan) => {
@@ -227,7 +187,7 @@ export default function PricingPage() {
                     <div className="text-center mb-6">
                       <div className="flex items-baseline justify-center gap-1">
                         <span className="text-4xl font-bold text-white">
-                          ${price === 0 ? "0" : getMonthlyEquivalent(plan)}
+                          ${price === 0 ? "0" : price.toFixed(2)}
                         </span>
                         {price > 0 && (
                           <span className="text-gray-400">
@@ -235,11 +195,6 @@ export default function PricingPage() {
                           </span>
                         )}
                       </div>
-                      {state.billingCycle === "yearly" && price > 0 && (
-                        <p className="text-sm text-gray-500 mt-1">
-                          ${plan.yearly_price} billed yearly
-                        </p>
-                      )}
                     </div>
 
                     {/* Features */}

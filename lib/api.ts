@@ -250,7 +250,6 @@ export interface SubscriptionPlan {
   description: string;
   features: string[];
   monthly_price: number;
-  yearly_price: number;
   is_regional_pricing: boolean;
   currency: string;
   limits: {
@@ -286,10 +285,10 @@ export const subscription = {
     ),
   
   // Create upgrade intent (will return checkout URL when payment is live)
-  createUpgradeIntent: (tier: string = 'pro', billingCycle: string = 'monthly') =>
+  createUpgradeIntent: (tier: string = 'pro') =>
     api.post<{ success: boolean; redirect_url: string | null; message: string; requires_payment_setup: boolean }>(
       '/subscription/upgrade-intent',
       null,
-      { params: { tier, billing_cycle: billingCycle } }
+      { params: { tier } }
     ),
 };
