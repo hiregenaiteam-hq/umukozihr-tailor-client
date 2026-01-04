@@ -1,7 +1,7 @@
 import React from 'react';
 import { HistoryItem } from '@/lib/types';
 import { config } from '@/lib/config';
-import { Download, FileText, RefreshCw, ExternalLink, CheckCircle, XCircle, Calendar, Building2 } from 'lucide-react';
+import { Download, FileText, RefreshCw, ExternalLink, CheckCircle, XCircle, Calendar, Building2, FileEdit } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface RunCardProps {
@@ -32,7 +32,8 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
   };
 
   const handleDownload = (url: string, type: string) => {
-    const filename = `${run.company}_${run.title}_${type}.${type.includes('pdf') ? 'pdf' : 'tex'}`;
+    const ext = type.includes('docx') ? 'docx' : type.includes('pdf') ? 'pdf' : 'tex';
+    const filename = `${run.company}_${run.title}_${type}.${ext}`;
     onDownload(url, filename);
   };
 
@@ -89,8 +90,8 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
         </button>
       </div>
 
-      {/* Downloads */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
+      {/* Downloads - PDFs */}
+      <div className="grid grid-cols-2 gap-2 mb-2">
         {artifacts.resume_pdf && (
           <button
             onClick={() => handleDownload(artifacts.resume_pdf!, 'resume_pdf')}
@@ -109,6 +110,36 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
             Cover Letter
           </button>
         )}
+      </div>
+
+      {/* Downloads - DOCX (Editable) */}
+      {(artifacts.resume_docx || artifacts.cover_letter_docx) && (
+        <div className="grid grid-cols-2 gap-2 mb-2">
+          {artifacts.resume_docx && (
+            <button
+              onClick={() => handleDownload(artifacts.resume_docx!, 'resume_docx')}
+              className="flex items-center gap-2 px-3 py-2 glass-subtle rounded-lg text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-all"
+              title="Editable Word document"
+            >
+              <FileEdit className="h-4 w-4" />
+              Resume Word
+            </button>
+          )}
+          {artifacts.cover_letter_docx && (
+            <button
+              onClick={() => handleDownload(artifacts.cover_letter_docx!, 'cover_docx')}
+              className="flex items-center gap-2 px-3 py-2 glass-subtle rounded-lg text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-all"
+              title="Editable Word document"
+            >
+              <FileEdit className="h-4 w-4" />
+              Cover Word
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Downloads - TEX */}
+      <div className="grid grid-cols-2 gap-2 mb-4">
         {artifacts.resume_tex && (
           <button
             onClick={() => handleDownload(artifacts.resume_tex!, 'resume_tex')}

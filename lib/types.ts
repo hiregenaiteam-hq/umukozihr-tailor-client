@@ -133,6 +133,12 @@ export interface HistoryItem {
     cover_letter_pdf?: string;
     resume_tex?: string;
     cover_letter_tex?: string;
+    resume_docx?: string;  // Word document for editing
+    cover_letter_docx?: string;  // Word document for editing
+    pdf_compilation?: {
+      resume_success: boolean;
+      cover_letter_success: boolean;
+    };
     [key: string]: any;
   };
   created_at: string;

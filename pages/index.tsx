@@ -4,7 +4,7 @@ import { profile as profileApi } from "../lib/api";
 import LoginForm from "../components/LoginForm";
 import ThemeToggle from "../components/ThemeToggle";
 import { HeroLogo } from "../components/Logo";
-import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText } from "lucide-react";
+import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText, Globe, FileCheck, Briefcase } from "lucide-react";
 import Image from "next/image";
 
 // Floating orb component
@@ -47,6 +47,85 @@ function AnimatedCounter({ end, suffix = "" }: { end: number; suffix?: string })
   }, [end]);
   
   return <>{count.toLocaleString()}{suffix}</>;
+}
+
+// Template preview card
+function TemplatePreview({ 
+  name, 
+  region, 
+  description, 
+  features,
+  delay 
+}: { 
+  name: string; 
+  region: string; 
+  description: string;
+  features: string[];
+  delay: number;
+}) {
+  return (
+    <div 
+      className="glass-card p-6 group hover:border-orange-500/30 transition-all animate-fade-in-up"
+      style={{ animationDelay: `${delay}ms` }}
+    >
+      {/* Mock Template Preview */}
+      <div className="aspect-[8.5/11] bg-white/5 rounded-lg mb-4 overflow-hidden relative group-hover:scale-[1.02] transition-transform">
+        {/* Simulated resume layout */}
+        <div className="absolute inset-3 flex flex-col">
+          {/* Header */}
+          <div className="bg-orange-500/20 h-6 w-3/4 mx-auto rounded mb-3" />
+          <div className="bg-white/10 h-2 w-1/2 mx-auto rounded mb-4" />
+          
+          {/* Horizontal line */}
+          <div className="bg-white/20 h-px w-full mb-3" />
+          
+          {/* Section */}
+          <div className="bg-orange-400/30 h-3 w-1/4 rounded mb-2" />
+          <div className="bg-white/10 h-2 w-full rounded mb-1" />
+          <div className="bg-white/10 h-2 w-5/6 rounded mb-1" />
+          <div className="bg-white/10 h-2 w-4/6 rounded mb-3" />
+          
+          {/* Section */}
+          <div className="bg-orange-400/30 h-3 w-1/3 rounded mb-2" />
+          <div className="flex gap-2 mb-1">
+            <div className="bg-white/10 h-2 flex-1 rounded" />
+            <div className="bg-white/5 h-2 w-16 rounded" />
+          </div>
+          <div className="bg-white/5 h-2 w-full rounded mb-1" />
+          <div className="bg-white/5 h-2 w-5/6 rounded mb-3" />
+          
+          {/* Section */}
+          <div className="bg-orange-400/30 h-3 w-1/4 rounded mb-2" />
+          <div className="flex gap-2 mb-1">
+            <div className="bg-white/10 h-2 flex-1 rounded" />
+            <div className="bg-white/5 h-2 w-16 rounded" />
+          </div>
+          <div className="bg-white/5 h-2 w-full rounded mb-1" />
+          <div className="bg-white/5 h-2 w-4/6 rounded" />
+        </div>
+        
+        {/* Region badge */}
+        <div className="absolute top-2 right-2 px-2 py-1 bg-orange-500/80 text-white text-xs font-bold rounded">
+          {region}
+        </div>
+      </div>
+      
+      {/* Template info */}
+      <h3 className="text-lg font-semibold text-white mb-2 group-hover:text-gradient transition-all">
+        {name}
+      </h3>
+      <p className="text-stone-400 text-sm mb-3">{description}</p>
+      
+      {/* Features */}
+      <div className="flex flex-wrap gap-2">
+        {features.map((feature, idx) => (
+          <span key={idx} className="text-xs px-2 py-1 bg-white/5 text-stone-400 rounded-full">
+            {feature}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // Feature card
@@ -232,6 +311,59 @@ export default function Home() {
                 delay={400 + index * 150}
               />
             ))}
+          </div>
+
+          {/* Template Preview Section */}
+          <div className="mb-16">
+            <div className="text-center mb-10 animate-fade-in-up" style={{ animationDelay: '600ms' }}>
+              <div className="inline-flex items-center gap-2 px-4 py-2 glass-subtle rounded-full mb-4">
+                <FileCheck className="h-4 w-4 text-orange-400" />
+                <span className="text-sm text-stone-400">Professional Templates</span>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+                ATS-Optimized <span className="text-gradient">Resume Templates</span>
+              </h2>
+              <p className="text-stone-400 max-w-xl mx-auto">
+                Choose from region-specific templates designed to pass Applicant Tracking Systems 
+                and impress recruiters worldwide.
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <TemplatePreview
+                name="US One-Page"
+                region="US"
+                description="Concise, achievement-focused format preferred by American recruiters."
+                features={["1 Page Max", "No Photo", "ATS Friendly"]}
+                delay={700}
+              />
+              <TemplatePreview
+                name="EU Two-Page"
+                region="EU"
+                description="Detailed format with space for comprehensive experience and skills."
+                features={["2 Pages", "Optional Photo", "GDPR Ready"]}
+                delay={800}
+              />
+              <TemplatePreview
+                name="Global Standard"
+                region="GL"
+                description="Versatile format suitable for international applications."
+                features={["Flexible Length", "Universal", "Multi-Language"]}
+                delay={900}
+              />
+            </div>
+            
+            {/* Cover Letter Highlight */}
+            <div className="mt-10 glass-subtle p-6 rounded-2xl text-center animate-fade-in-up" style={{ animationDelay: '1000ms' }}>
+              <div className="flex items-center justify-center gap-3 mb-3">
+                <Briefcase className="h-6 w-6 text-orange-400" />
+                <h3 className="text-xl font-semibold text-white">Cover Letters Included</h3>
+              </div>
+              <p className="text-stone-400 max-w-2xl mx-auto">
+                Every resume comes with a professionally tailored cover letter — something most competitors don&apos;t offer. 
+                Both documents are perfectly aligned to highlight your relevant experience for each position.
+              </p>
+            </div>
           </div>
 
           {/* Login Form Section */}
