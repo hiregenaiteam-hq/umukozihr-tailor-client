@@ -1,7 +1,7 @@
 import Head from "next/head";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Check, X, Sparkles, Crown, Zap, ArrowLeft, Lock, Globe, MapPin } from "lucide-react";
+import { Check, X, Sparkles, Crown, Zap, ArrowLeft, Lock } from "lucide-react";
 import { HeaderLogo } from "../components/Logo";
 import { subscription, SubscriptionPlan, PlansResponse } from "../lib/api";
 
@@ -133,14 +133,6 @@ export default function PricingPage() {
               <p className="text-gray-400 text-lg max-w-2xl mx-auto">
                 Choose the plan that fits your job search. Upgrade anytime.
               </p>
-
-              {/* Regional pricing badge */}
-              {state.isRegionalPricing && (
-                <div className="mt-4 inline-flex items-center gap-2 px-3 py-1.5 bg-green-500/10 border border-green-500/20 rounded-full text-green-400 text-sm">
-                  <MapPin className="w-4 h-4" />
-                  <span>Special Africa pricing applied</span>
-                </div>
-              )}
             </div>
 
             {/* Plans grid */}
