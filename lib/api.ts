@@ -33,9 +33,10 @@ function getApiBaseUrl(): string {
   return 'https://umukozihr-tailor-api.onrender.com';
 }
 
-// Create axios instance with dynamic baseURL
+// Create axios instance with dynamic baseURL and timeout
 export const api = axios.create({
-  baseURL: '/api/v1'  // Will be set dynamically
+  baseURL: '/api/v1',  // Will be set dynamically
+  timeout: 120000,  // 2 minute timeout for slow Render free tier
 });
 
 // Add request interceptor for auth and logging

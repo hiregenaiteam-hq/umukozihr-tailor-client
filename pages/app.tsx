@@ -357,7 +357,11 @@ export default function AppPage() {
       }
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error(error.response?.data?.detail || 'Failed to upload resume', { id: 'profile-upload' });
+      if (error.code === 'ECONNABORTED' || error.message?.includes('timeout')) {
+        toast.error('Upload timed out. Render server may be waking up - please try again.', { id: 'profile-upload' });
+      } else {
+        toast.error(error.response?.data?.detail || 'Failed to upload resume', { id: 'profile-upload' });
+      }
     } finally {
       setIsUploadingResume(false);
       if (profileFileInputRef.current) {
