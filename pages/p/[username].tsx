@@ -390,22 +390,38 @@ export default function PublicProfilePage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Skills */}
+              {/* Skills - Organized by Category */}
               {profile.skills && profile.skills.length > 0 && (
                 <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                   <h2 className="text-lg font-semibold text-white mb-4">Skills</h2>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="space-y-4">
                     {profile.skills.map((skill, idx) => (
-                      <span 
-                        key={idx} 
-                        className={`badge ${
-                          skill.level === 'expert' ? 'badge-orange' : 
-                          skill.level === 'intermediate' ? 'badge-amber' : 
-                          'badge-stone'
-                        }`}
-                      >
-                        {skill.name}
-                      </span>
+                      <div key={idx}>
+                        {/* Category header */}
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className={`text-sm font-medium ${
+                            skill.level === 'expert' ? 'text-orange-400' : 
+                            skill.level === 'intermediate' ? 'text-amber-400' : 
+                            'text-stone-400'
+                          }`}>
+                            {skill.name}
+                          </span>
+                          <span className="text-xs text-stone-500">({skill.level})</span>
+                        </div>
+                        {/* Keywords/actual skills */}
+                        {skill.keywords && skill.keywords.length > 0 && (
+                          <div className="flex flex-wrap gap-1.5">
+                            {skill.keywords.map((keyword, kidx) => (
+                              <span 
+                                key={kidx} 
+                                className="px-2 py-0.5 text-xs rounded-md bg-stone-800 text-stone-300 border border-stone-700"
+                              >
+                                {keyword}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>

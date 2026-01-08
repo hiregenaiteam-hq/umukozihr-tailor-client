@@ -700,21 +700,44 @@ export default function AppPage() {
                 </div>
               </div>
 
-              {/* Skills */}
+              {/* Skills - Organized by Category */}
               <div className="glass-card p-6 md:col-span-2">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
                     <Code className="h-5 w-5 text-green-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-white">
-                    Skills ({profile.skills?.length || 0})
+                    Skills ({profile.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total)
                   </h3>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="space-y-4">
                   {profile.skills?.map((skill, idx) => (
-                    <span key={idx} className="badge badge-green">
-                      {skill.name}
-                    </span>
+                    <div key={idx}>
+                      {/* Category header */}
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={`text-sm font-medium ${
+                          skill.level === 'expert' ? 'text-orange-400' : 
+                          skill.level === 'intermediate' ? 'text-amber-400' : 
+                          'text-stone-400'
+                        }`}>
+                          {skill.name}
+                        </span>
+                        <span className="text-xs text-stone-500">• {skill.level}</span>
+                      </div>
+                      {/* Keywords/actual skills */}
+                      {skill.keywords && skill.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {skill.keywords.map((keyword, kidx) => (
+                            <span 
+                              key={kidx} 
+                              className="px-2 py-1 text-xs rounded-lg bg-stone-800/50 text-stone-300 border border-stone-700"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {(!profile.skills || profile.skills.length === 0) && (
                     <p className="text-stone-500 text-sm">No skills added yet</p>
