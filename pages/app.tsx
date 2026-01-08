@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import toast from 'react-hot-toast';
-import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, SubscriptionStatus } from '@/lib/api';
+import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, avatar as avatarApi, SubscriptionStatus } from '@/lib/api';
 import { config } from '@/lib/config';
 import { ProfileV3, HistoryItem } from '@/lib/types';
 import CompletenessBar from '@/components/CompletenessBar';
@@ -16,7 +16,7 @@ import {
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera
 } from 'lucide-react';
 
 type Tab = 'profile' | 'generate' | 'history';
@@ -62,6 +62,11 @@ export default function AppPage() {
   // Profile upload state
   const [isUploadingResume, setIsUploadingResume] = useState(false);
   const profileFileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Avatar state
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // Generation progress state
   const [generationProgress, setGenerationProgress] = useState<{current: number; total: number} | null>(null);
@@ -96,6 +101,15 @@ export default function AppPage() {
       setCompleteness(response.data.completeness);
       const compResponse = await profileApi.getCompleteness();
       setBreakdown(compResponse.data.breakdown);
+      
+      // Load avatar
+      try {
+        const avatarResponse = await avatarApi.get();
+        setAvatarUrl(avatarResponse.data.avatar_url);
+      } catch (e) {
+        // No avatar set - that's fine
+      }
+      
       if (response.data.completeness < 50) {
         toast('Your profile is incomplete. Consider completing it for better results!', {
           icon: '⚠️',
@@ -160,6 +174,41 @@ export default function AppPage() {
       setSubscriptionStatus(response.data);
     } catch (error) {
       console.error('Error loading subscription status:', error);
+    }
+  };
+
+  // Avatar upload handler
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please upload a JPEG, PNG, WebP, or GIF image');
+      return;
+    }
+
+    // Validate size (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image too large. Maximum 5MB.');
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      toast.loading('Uploading...', { id: 'avatar-upload' });
+      const response = await avatarApi.upload(file);
+      setAvatarUrl(response.data.avatar_url);
+      toast.success('Profile picture updated!', { id: 'avatar-upload' });
+    } catch (error: any) {
+      console.error('Avatar upload error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to upload image', { id: 'avatar-upload' });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (avatarInputRef.current) {
+        avatarInputRef.current.value = '';
+      }
     }
   };
 
@@ -506,8 +555,38 @@ export default function AppPage() {
             {/* Profile Header */}
             <div className="glass-card p-8">
               <div className="flex flex-col md:flex-row md:items-center gap-6">
-                <div className="neu-raised w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-bold text-gradient">
-                  {profile.basics.full_name?.charAt(0) || '?'}
+                {/* Clickable Avatar */}
+                <div 
+                  onClick={() => avatarInputRef.current?.click()}
+                  className="relative w-20 h-20 rounded-2xl cursor-pointer group"
+                  title="Click to upload profile picture"
+                >
+                  {avatarUrl ? (
+                    <img 
+                      src={avatarUrl} 
+                      alt="Profile" 
+                      className="w-full h-full object-cover rounded-2xl"
+                    />
+                  ) : (
+                    <div className="neu-raised w-full h-full rounded-2xl flex items-center justify-center text-3xl font-bold text-gradient">
+                      {profile.basics.full_name?.charAt(0) || '?'}
+                    </div>
+                  )}
+                  {/* Upload overlay on hover */}
+                  <div className="absolute inset-0 bg-black/60 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                    {isUploadingAvatar ? (
+                      <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                  <input
+                    ref={avatarInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleAvatarUpload}
+                    className="hidden"
+                  />
                 </div>
                 <div className="flex-1">
                   <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">

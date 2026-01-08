@@ -18,6 +18,7 @@ interface PublicProfileData {
   profile_views: number;
   member_since: string;
   is_available_for_hire: boolean;
+  avatar_url?: string;
 }
 
 // Floating orb component for background
@@ -181,9 +182,17 @@ export default function PublicProfilePage() {
           <div className="glass-card p-8 mb-6 animate-fade-in-up">
             <div className="flex flex-col md:flex-row md:items-start gap-6">
               {/* Avatar */}
-              <div className="neu-raised w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-gradient shrink-0">
-                {profile.basics.full_name?.charAt(0)?.toUpperCase() || '?'}
-              </div>
+              {profileData.avatar_url ? (
+                <img 
+                  src={profileData.avatar_url} 
+                  alt={profile.basics.full_name || 'Profile'}
+                  className="w-24 h-24 rounded-2xl object-cover shrink-0"
+                />
+              ) : (
+                <div className="neu-raised w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-gradient shrink-0">
+                  {profile.basics.full_name?.charAt(0)?.toUpperCase() || '?'}
+                </div>
+              )}
               
               {/* Info */}
               <div className="flex-1">

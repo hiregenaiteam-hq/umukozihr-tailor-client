@@ -219,6 +219,21 @@ export const upload = {
   },
 };
 
+// Avatar upload
+export const avatar = {
+  upload: (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return api.post('/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+  get: () => api.get('/profile/avatar'),
+  delete: () => api.delete('/profile/avatar'),
+};
+
 // v1.4 Subscription endpoints
 export interface SubscriptionStatus {
   is_live: boolean;
