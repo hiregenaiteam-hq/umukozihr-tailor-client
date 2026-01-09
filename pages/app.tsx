@@ -843,7 +843,7 @@ export default function AppPage() {
               
               {currentRun && currentRun.artifacts ? (
                 <div className="space-y-4">
-                  {/* Download Bundle Button */}
+                  {/* Download Bundle Button - Only show ZIP for Pro users */}
                   {currentRun.zip && (
                     <div className="glass-subtle p-4 rounded-xl border border-green-500/20 bg-green-500/5">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -854,17 +854,24 @@ export default function AppPage() {
                           <div className="min-w-0">
                             <p className="text-white font-medium">Documents Ready!</p>
                             <p className="text-xs text-stone-400">
-                              {currentRun.artifacts.length} job{currentRun.artifacts.length > 1 ? 's' : ''} • TEX files included
+                              {currentRun.artifacts.length} job{currentRun.artifacts.length > 1 ? 's' : ''} • Download PDFs below
                             </p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => handleDownload(currentRun.zip, 'documents_bundle.zip')}
-                          className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
-                        >
-                          <Download className="h-4 w-4" />
-                          Download ZIP
-                        </button>
+                        {/* Show ZIP button only if user has zip_download permission */}
+                        {(!subscriptionStatus?.is_live || subscriptionStatus?.features?.zip_download) ? (
+                          <button
+                            onClick={() => handleDownload(currentRun.zip, 'documents_bundle.zip')}
+                            className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
+                          >
+                            <Download className="h-4 w-4" />
+                            Download ZIP
+                          </button>
+                        ) : (
+                          <div className="flex items-center gap-2 text-xs text-stone-400">
+                            <span className="badge badge-stone">ZIP bundling is Pro</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}
