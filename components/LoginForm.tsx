@@ -46,8 +46,30 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       onLogin(access_token);
 
     } catch (error: any) {
-      const errorMessage = error?.response?.data?.detail ||
-        (isLogin ? 'Login failed' : 'Signup failed');
+      // User-friendly error messages based on status code
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+      
+      let errorMessage: string;
+      
+      if (status === 500 || status === 503) {
+        // Server/DB errors - don't show technical details
+        errorMessage = 'Our servers are temporarily unavailable. Please try again in a few minutes.';
+      } else if (status === 401) {
+        errorMessage = isLogin ? 'Invalid email or password' : 'Unable to create account';
+      } else if (status === 409) {
+        errorMessage = 'An account with this email already exists';
+      } else if (status === 422) {
+        errorMessage = detail || 'Please check your email and password format';
+      } else if (status === 429) {
+        errorMessage = 'Too many attempts. Please wait a moment and try again.';
+      } else if (!error?.response) {
+        // Network error
+        errorMessage = 'Unable to connect. Please check your internet connection.';
+      } else {
+        errorMessage = detail || (isLogin ? 'Login failed' : 'Signup failed');
+      }
+      
       toast.error(errorMessage, { id: loadingToast });
     } finally {
       setLoading(false);
