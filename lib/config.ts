@@ -16,24 +16,24 @@ function getApiBaseUrl(): string {
 
     // Production: custom domain or main Vercel domain
     if (hostname === 'tailor.umukozihr.com' || hostname === 'umukozihr-tailor.vercel.app') {
-      return 'https://umukozihr-tailor-api.onrender.com';
+      return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
     }
 
     // Preview deployments on Vercel (e.g., umukozihr-tailor-xxx.vercel.app)
     if (hostname.endsWith('.vercel.app')) {
-      return 'https://umukozihr-tailor-api-staging.onrender.com';
+      return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
     }
   }
 
   // Server-side rendering fallback - always use production
   if (process.env.VERCEL_ENV === 'production') {
-    return 'https://umukozihr-tailor-api.onrender.com';
+    return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
   } else if (process.env.VERCEL_ENV === 'preview') {
-    return 'https://umukozihr-tailor-api-staging.onrender.com';
+    return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
   }
 
-  // Default to production Render URL (no localhost)
-  return 'https://umukozihr-tailor-api.onrender.com';
+  // Default to AWS App Runner (no localhost)
+  return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
 }
 
 export const config = {

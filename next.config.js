@@ -11,13 +11,13 @@ function getApiBaseUrl() {
   const vercelEnv = process.env.VERCEL_ENV || process.env.NODE_ENV;
   
   if (vercelEnv === 'production') {
-    return 'https://umukozihr-tailor-api.onrender.com';
+    return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
   } else if (vercelEnv === 'preview') {
-    return 'https://umukozihr-tailor-api-staging.onrender.com';
+    return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
   }
   
-  // Default to production Render URL (no localhost)
-  return 'https://umukozihr-tailor-api.onrender.com';
+  // Default to AWS App Runner (no localhost)
+  return 'https://rj9pxkmkmn.eu-west-1.awsapprunner.com';
 }
 
 const nextConfig = {
