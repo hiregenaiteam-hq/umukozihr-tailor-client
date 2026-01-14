@@ -75,7 +75,7 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
         </div>
 
         {/* Clerk Component */}
-        <div className="bg-stone-900/90 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden">
+        <div className="bg-stone-900/95 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           {mode === 'sign-in' ? (
             <SignIn
               routing="hash"
@@ -88,16 +88,18 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
                 },
                 elements: {
                   rootBox: 'w-full',
-                  card: 'bg-transparent shadow-none border-none p-6',
+                  card: 'bg-transparent shadow-none border-none p-6 pt-8',
                   headerTitle: 'hidden',
                   headerSubtitle: 'hidden',
-                  socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all',
+                  socialButtons: 'gap-3',
+                  socialButtonsBlockButton: 'bg-stone-800 border border-stone-600 text-white hover:bg-stone-700 hover:border-stone-500 transition-all rounded-xl py-3',
                   socialButtonsBlockButtonText: 'font-medium',
-                  dividerLine: 'bg-white/20',
-                  dividerText: 'text-stone-400',
-                  formFieldLabel: 'text-stone-300',
-                  formFieldInput: 'bg-stone-800 border-stone-700 text-white placeholder-stone-500 focus:border-orange-500 focus:ring-orange-500/20',
-                  formButtonPrimary: 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg shadow-orange-500/25',
+                  socialButtonsProviderIcon: 'w-5 h-5',
+                  dividerLine: 'bg-stone-700',
+                  dividerText: 'text-stone-500 bg-stone-900',
+                  formFieldLabel: 'text-stone-300 font-medium',
+                  formFieldInput: 'bg-stone-800 border-stone-600 text-white placeholder-stone-500 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20',
+                  formButtonPrimary: 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg shadow-orange-500/25 rounded-xl py-3',
                   footerActionLink: 'text-orange-400 hover:text-orange-300',
                   footerActionText: 'text-stone-400',
                   identityPreviewEditButton: 'text-orange-400',
@@ -105,6 +107,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
                   footer: 'hidden',
                   logoBox: 'hidden',
                   logoImage: 'hidden',
+                  formFieldRow: 'mb-4',
+                  form: 'gap-4',
                 }
               }}
             />
@@ -120,16 +124,18 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
                 },
                 elements: {
                   rootBox: 'w-full',
-                  card: 'bg-transparent shadow-none border-none p-6',
+                  card: 'bg-transparent shadow-none border-none p-6 pt-8',
                   headerTitle: 'hidden',
                   headerSubtitle: 'hidden',
-                  socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all',
+                  socialButtons: 'gap-3',
+                  socialButtonsBlockButton: 'bg-stone-800 border border-stone-600 text-white hover:bg-stone-700 hover:border-stone-500 transition-all rounded-xl py-3',
                   socialButtonsBlockButtonText: 'font-medium',
-                  dividerLine: 'bg-white/20',
-                  dividerText: 'text-stone-400',
-                  formFieldLabel: 'text-stone-300',
-                  formFieldInput: 'bg-stone-800 border-stone-700 text-white placeholder-stone-500 focus:border-orange-500 focus:ring-orange-500/20',
-                  formButtonPrimary: 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg shadow-orange-500/25',
+                  socialButtonsProviderIcon: 'w-5 h-5',
+                  dividerLine: 'bg-stone-700',
+                  dividerText: 'text-stone-500 bg-stone-900',
+                  formFieldLabel: 'text-stone-300 font-medium',
+                  formFieldInput: 'bg-stone-800 border-stone-600 text-white placeholder-stone-500 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20',
+                  formButtonPrimary: 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg shadow-orange-500/25 rounded-xl py-3',
                   footerActionLink: 'text-orange-400 hover:text-orange-300',
                   footerActionText: 'text-stone-400',
                   identityPreviewEditButton: 'text-orange-400',
@@ -137,6 +143,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
                   footer: 'hidden',
                   logoBox: 'hidden',
                   logoImage: 'hidden',
+                  formFieldRow: 'mb-4',
+                  form: 'gap-4',
                 }
               }}
             />
