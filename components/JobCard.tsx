@@ -44,7 +44,7 @@ export default function JobCard({ data }: { data: any }) {
         {/* Download Buttons - PDF and DOCX only */}
         <div className="flex flex-wrap gap-2">
           {/* PDF Downloads */}
-          {hasPdfs && (
+          {hasPdfs ? (
             <>
               <a
                 href={getFullUrl(data.resume_pdf)}
@@ -66,6 +66,34 @@ export default function JobCard({ data }: { data: any }) {
                 <Download className="w-3.5 h-3.5" />
                 <span>Cover PDF</span>
               </a>
+            </>
+          ) : (
+            /* Show individual PDF buttons if only one exists */
+            <>
+              {data.resume_pdf && (
+                <a
+                  href={getFullUrl(data.resume_pdf)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
+                  onClick={() => toast.success('Resume PDF opened')}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Resume PDF</span>
+                </a>
+              )}
+              {data.cover_letter_pdf && (
+                <a
+                  href={getFullUrl(data.cover_letter_pdf)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
+                  onClick={() => toast.success('Cover letter PDF opened')}
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Cover PDF</span>
+                </a>
+              )}
             </>
           )}
           
