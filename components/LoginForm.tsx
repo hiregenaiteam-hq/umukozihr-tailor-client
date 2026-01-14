@@ -1,13 +1,19 @@
 import { useState } from 'react';
+import { useRouter } from 'next/router';
 import { auth } from '../lib/api';
 import toast from 'react-hot-toast';
 import { Mail, Lock, UserPlus, LogIn, Sparkles, ArrowRight, Eye, EyeOff } from 'lucide-react';
+
+// Check if Clerk is configured
+const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_') &&
+  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('your_publishable_key');
 
 interface LoginFormProps {
   onLogin: (token: string) => void;
 }
 
 export default function LoginForm({ onLogin }: LoginFormProps) {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({
     email: '',
@@ -16,6 +22,42 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [focusedField, setFocusedField] = useState<string | null>(null);
+
+  // If Clerk is configured, show OAuth buttons that redirect to Clerk pages
+  if (isClerkConfigured) {
+    return (
+      <div className="w-full">
+        {/* Sign In / Sign Up Buttons */}
+        <div className="space-y-4">
+          <button
+            onClick={() => router.push('/sign-in')}
+            className="btn-primary w-full flex items-center justify-center gap-3 group"
+          >
+            <LogIn className="h-5 w-5" />
+            <span>Sign In</span>
+            <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+          </button>
+          
+          <button
+            onClick={() => router.push('/sign-up')}
+            className="w-full flex items-center justify-center gap-3 py-3.5 px-6 rounded-xl font-semibold transition-all duration-300 bg-white/5 hover:bg-white/10 text-white border border-white/10 hover:border-white/20"
+          >
+            <UserPlus className="h-5 w-5" />
+            <span>Create Account</span>
+          </button>
+        </div>
+
+        {/* OAuth providers hint */}
+        <div className="mt-6 text-center">
+          <p className="text-stone-400 text-sm">
+            Sign in with Google, Apple, LinkedIn, or Email
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Legacy form for when Clerk is not configured
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
