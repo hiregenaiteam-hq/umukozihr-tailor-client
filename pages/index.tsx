@@ -1,11 +1,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { profile as profileApi } from "../lib/api";
-import LoginForm from "../components/LoginForm";
+import AuthModal from "../components/AuthModal";
 import ThemeToggle from "../components/ThemeToggle";
 import { HeroLogo } from "../components/Logo";
-import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText, Globe, FileCheck, Briefcase } from "lucide-react";
+import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText, Globe, FileCheck, Briefcase, Rocket } from "lucide-react";
 import Image from "next/image";
+import { useAuth } from '@clerk/nextjs';
+
+// Check if Clerk is configured
+const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_') &&
+  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('your_publishable_key');
 
 // Floating orb component
 function FloatingOrb({ className, delay = 0, color = "orange" }: { className: string; delay?: number; color?: "orange" | "amber" | "gold" }) {
@@ -157,11 +162,31 @@ export default function Home() {
   const router = useRouter();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [showAuthModal, setShowAuthModal] = useState(false);
+  const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-up');
+  
+  // Try to use Clerk auth if configured
+  let clerkAuth: { isSignedIn?: boolean; isLoaded?: boolean } = { isSignedIn: false, isLoaded: true };
+  if (isClerkConfigured) {
+    try {
+      clerkAuth = useAuth();
+    } catch (e) {
+      // Clerk not available
+    }
+  }
 
   useEffect(() => {
     setMounted(true);
+    
+    // If Clerk user is signed in, redirect
+    if (isClerkConfigured && clerkAuth.isLoaded && clerkAuth.isSignedIn) {
+      checkAuthAndRedirect();
+      return;
+    }
+    
+    // Check legacy auth
     checkAuthAndRedirect();
-  }, []);
+  }, [clerkAuth.isLoaded, clerkAuth.isSignedIn]);
 
   const checkAuthAndRedirect = async () => {
     const token = localStorage.getItem('token');
@@ -283,6 +308,25 @@ export default function Home() {
               perfectly matched applications.
             </p>
 
+            {/* CTA Buttons */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              <button
+                onClick={() => { setAuthMode('sign-up'); setShowAuthModal(true); }}
+                className="group inline-flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-bold text-lg rounded-2xl shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 transition-all duration-300 transform hover:scale-105"
+              >
+                <Rocket className="h-5 w-5" />
+                <span>Get Hired Today</span>
+                <ArrowRight className="h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </button>
+              
+              <button
+                onClick={() => { setAuthMode('sign-in'); setShowAuthModal(true); }}
+                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-semibold text-lg rounded-2xl border border-white/10 hover:border-white/20 transition-all duration-300"
+              >
+                <span>I have an account</span>
+              </button>
+            </div>
+
             {/* Stats row */}
             <div className="flex flex-wrap justify-center gap-8 md:gap-16 mb-12">
               {stats.map((stat, index) => (
@@ -366,30 +410,16 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Login Form Section */}
-          <div 
-            className="max-w-md mx-auto animate-fade-in-up"
-            style={{ animationDelay: '800ms' }}
-          >
-            <div className="glass-heavy p-8 rounded-3xl relative">
-              {/* Gradient accent line */}
-              <div className="absolute top-0 left-8 right-8 h-1 bg-gradient-to-r from-transparent via-orange-500 to-transparent rounded-full" />
-              
-              <div className="text-center mb-8">
-                <div className="neu-raised w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <Sparkles className="h-7 w-7 text-orange-400" />
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-2">
-                  Get Started
-                </h2>
-                <p className="text-stone-400">
-                  Create your account or sign in to continue
-                </p>
-              </div>
-              
-              <LoginForm onLogin={handleLogin} />
-            </div>
-          </div>
+          {/* Login Form Section - REMOVED, using modal instead */}
+          
+          {/* Auth Modal */}
+          {isClerkConfigured && (
+            <AuthModal
+              isOpen={showAuthModal}
+              onClose={() => setShowAuthModal(false)}
+              defaultMode={authMode}
+            />
+          )}
 
           {/* Benefits Footer */}
           <div 

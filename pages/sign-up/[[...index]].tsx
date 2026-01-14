@@ -1,5 +1,7 @@
 import { SignUp } from '@clerk/nextjs'
 import Head from 'next/head'
+import Link from 'next/link'
+import { HeroLogo } from '@/components/Logo'
 
 // Prevent static generation - Clerk needs runtime
 export const runtime = 'nodejs'
@@ -15,24 +17,41 @@ function SignUpPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="text-center mb-8">
-            <a href="/" className="inline-flex items-center gap-2">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center">
-                <span className="text-white font-bold text-lg">U</span>
-              </div>
-              <span className="text-xl font-bold text-white">UmukoziHR</span>
-            </a>
+            <Link href="/" className="inline-block">
+              <HeroLogo />
+            </Link>
           </div>
           
           {/* Clerk Sign Up */}
           <SignUp 
-            path="/sign-up"
             routing="path"
+            path="/sign-up"
             signInUrl="/sign-in"
             afterSignUpUrl="/onboarding"
             appearance={{
+              layout: {
+                socialButtonsPlacement: 'top',
+                showOptionalFields: false,
+                logoPlacement: 'none',
+              },
               elements: {
                 rootBox: 'w-full',
-                card: 'w-full shadow-xl',
+                card: 'bg-stone-900/90 backdrop-blur-xl shadow-2xl border border-white/10 rounded-3xl p-6',
+                headerTitle: 'text-white text-xl font-bold',
+                headerSubtitle: 'text-stone-400',
+                socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20 transition-all',
+                socialButtonsBlockButtonText: 'font-medium',
+                dividerLine: 'bg-white/20',
+                dividerText: 'text-stone-400',
+                formFieldLabel: 'text-stone-300',
+                formFieldInput: 'bg-stone-800 border-stone-700 text-white placeholder-stone-500 focus:border-orange-500 focus:ring-orange-500/20',
+                formButtonPrimary: 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold shadow-lg shadow-orange-500/25',
+                footerActionLink: 'text-orange-400 hover:text-orange-300',
+                footerActionText: 'text-stone-400',
+                identityPreviewEditButton: 'text-orange-400',
+                formFieldInputShowPasswordButton: 'text-stone-400 hover:text-white',
+                logoBox: 'hidden',
+                logoImage: 'hidden',
               }
             }}
           />
