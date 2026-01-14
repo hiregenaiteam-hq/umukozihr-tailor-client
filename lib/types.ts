@@ -68,6 +68,46 @@ export interface Preferences {
   templates: string[];
 }
 
+// LinkedIn-enriched talent data (UmukoziHR Talent Rich!)
+export interface Volunteering {
+  organization: string;
+  role: string;
+  cause?: string;
+  start?: string;
+  end?: string;
+  description?: string;
+}
+
+export interface Publication {
+  title: string;
+  publisher?: string;
+  date?: string;
+  url?: string;
+  description?: string;
+}
+
+export interface Course {
+  name: string;
+  number?: string;
+  associated_with?: string;
+}
+
+export interface LinkedInMeta {
+  linkedin_url?: string;
+  linkedin_id?: string;
+  photo_url?: string;
+  open_to_work?: boolean;
+  hiring?: boolean;
+  premium?: boolean;
+  verified?: boolean;
+  influencer?: boolean;
+  connections_count?: number;
+  followers_count?: number;
+  registered_at?: string;
+  current_company?: string;
+  industry?: string;
+}
+
 export interface ProfileV3 {
   basics: Basics;
   skills: Skill[];
@@ -77,6 +117,12 @@ export interface ProfileV3 {
   certifications: Certification[];
   awards: Award[];
   languages: Language[];
+  // LinkedIn-enriched sections
+  volunteering?: Volunteering[];
+  publications?: Publication[];
+  courses?: Course[];
+  linkedin_meta?: LinkedInMeta;
+  // Standard fields
   preferences: Preferences;
   version?: number;
   updated_at?: string;
@@ -170,6 +216,10 @@ export const createEmptyProfile = (): ProfileV3 => ({
   certifications: [],
   awards: [],
   languages: [],
+  volunteering: [],
+  publications: [],
+  courses: [],
+  linkedin_meta: undefined,
   preferences: {
     regions: ['US'],
     templates: ['minimal']

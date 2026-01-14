@@ -217,6 +217,10 @@ export const upload = {
       },
     });
   },
+  
+  // Extract profile from LinkedIn URL
+  linkedin: (linkedinUrl: string) =>
+    api.post('/profile/linkedin', { linkedin_url: linkedinUrl }),
 };
 
 // Avatar upload

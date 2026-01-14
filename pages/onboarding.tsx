@@ -10,7 +10,7 @@ import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
 import { HeaderLogo } from '@/components/Logo';
-import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff, Link, Info } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
@@ -53,6 +53,9 @@ export default function OnboardingPage() {
   const [showChoice, setShowChoice] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
+  const [linkedInUrl, setLinkedInUrl] = useState('');
+  const [isExtractingLinkedIn, setIsExtractingLinkedIn] = useState(false);
+  const [showUploadTooltip, setShowUploadTooltip] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Background sync state
@@ -454,10 +457,81 @@ export default function OnboardingPage() {
     }
   };
 
+  // Handle LinkedIn URL extraction
+  const handleLinkedInExtract = async () => {
+    if (!linkedInUrl.trim()) {
+      toast.error('Please enter your LinkedIn URL');
+      return;
+    }
+
+    // Basic LinkedIn URL validation
+    if (!linkedInUrl.includes('linkedin.com/in/') && !linkedInUrl.match(/^[a-zA-Z0-9\-]+$/)) {
+      toast.error('Please enter a valid LinkedIn profile URL');
+      return;
+    }
+
+    setIsExtractingLinkedIn(true);
+    
+    try {
+      toast.loading('Extracting your LinkedIn profile...', { id: 'linkedin' });
+      const response = await uploadApi.linkedin(linkedInUrl);
+      
+      if (response.data.success && response.data.profile) {
+        const extracted = response.data.profile;
+        
+        // Sanitize skills
+        const sanitizedSkills = (extracted.skills || []).map((skill: any) => ({
+          ...skill,
+          name: skill.name || '',
+          level: ['beginner', 'intermediate', 'expert'].includes(skill.level?.toLowerCase()?.trim()) 
+            ? skill.level.toLowerCase().trim() 
+            : 'intermediate',
+          keywords: skill.keywords || [],
+        }));
+        
+        setProfile(prev => ({
+          ...prev,
+          basics: {
+            full_name: extracted.basics?.full_name || '',
+            headline: extracted.basics?.headline || '',
+            summary: extracted.basics?.summary || '',
+            location: extracted.basics?.location || '',
+            email: extracted.basics?.email || prev.basics.email || '',
+            phone: extracted.basics?.phone || prev.basics.phone || '',
+            website: extracted.basics?.website || '',
+            links: extracted.basics?.links || [],
+          },
+          skills: sanitizedSkills,
+          experience: extracted.experience || [],
+          education: extracted.education || [],
+          projects: extracted.projects || [],
+          certifications: extracted.certifications || [],
+          awards: extracted.awards || [],
+          languages: extracted.languages || [],
+        }));
+        
+        // Show warnings about email/phone
+        if (response.data.warnings?.length > 0) {
+          setUploadWarnings(response.data.warnings);
+        }
+        
+        toast.success('Profile imported from LinkedIn!', { id: 'linkedin' });
+        setShowChoice(false);
+      } else {
+        toast.error(response.data.message || 'Failed to extract profile', { id: 'linkedin' });
+      }
+    } catch (error: any) {
+      console.error('LinkedIn extraction error:', error);
+      toast.error(error.response?.data?.detail || 'Failed to fetch LinkedIn profile', { id: 'linkedin' });
+    } finally {
+      setIsExtractingLinkedIn(false);
+    }
+  };
+
   // Render the choice screen
   const renderChoiceScreen = () => (
-    <div className="glass-card rounded-3xl p-8 md:p-12">
-      <div className="text-center mb-10">
+    <div className="glass-card rounded-3xl p-6 md:p-10">
+      <div className="text-center mb-8">
         <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
           <FileText className="w-8 h-8 text-white" />
         </div>
@@ -465,61 +539,153 @@ export default function OnboardingPage() {
           Let's Build Your Profile
         </h2>
         <p className="text-stone-400 max-w-md mx-auto">
-          Upload your existing resume for instant extraction, or fill in your details manually.
+          Choose how to import your professional details
         </p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6 max-w-2xl mx-auto">
-        {/* Upload Option */}
-        <div
-          onClick={() => fileInputRef.current?.click()}
-          className={`group relative p-6 rounded-2xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-            onChange={handleFileUpload}
-            className="hidden"
-          />
-          <div className="text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
-              {isUploading ? (
-                <div className="w-6 h-6 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
-              ) : (
-                <Upload className="w-6 h-6 text-orange-400" />
-              )}
+      <div className="max-w-3xl mx-auto space-y-6">
+        {/* LinkedIn URL Option - Primary */}
+        <div className="p-6 rounded-2xl border-2 border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-600/5 relative">
+          <div className="flex items-start gap-4">
+            <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-500/20 flex items-center justify-center">
+              <Link className="w-6 h-6 text-blue-400" />
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              {isUploading ? 'Extracting...' : 'Upload Resume'}
-            </h3>
-            <p className="text-sm text-stone-400">
-              PDF, DOCX, or TXT (max 10MB)
-            </p>
-            <p className="text-xs text-stone-500 mt-2">
-              Works with LinkedIn exports too!
-            </p>
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <h3 className="text-lg font-semibold text-white">Paste LinkedIn URL</h3>
+                <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">Recommended</span>
+              </div>
+              <p className="text-sm text-stone-400 mb-4">
+                We'll automatically extract your full profile: experience, education, skills, certifications, and more
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={linkedInUrl}
+                  onChange={(e) => setLinkedInUrl(e.target.value)}
+                  placeholder="linkedin.com/in/yourname"
+                  className="flex-1 px-4 py-2.5 bg-stone-800/50 border border-stone-700 rounded-xl text-white placeholder:text-stone-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  disabled={isExtractingLinkedIn}
+                />
+                <button
+                  onClick={handleLinkedInExtract}
+                  disabled={isExtractingLinkedIn || !linkedInUrl.trim()}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-700 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
+                >
+                  {isExtractingLinkedIn ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      <span>Extracting...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      <span>Extract</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Manual Option */}
-        <div
-          onClick={() => setShowChoice(false)}
-          className="group relative p-6 rounded-2xl border-2 border-stone-700 hover:border-amber-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300"
-        >
-          <div className="text-center">
-            <div className="w-12 h-12 mx-auto mb-4 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
-              <PenLine className="w-6 h-6 text-amber-400" />
+        <div className="flex items-center gap-4">
+          <div className="flex-1 h-px bg-stone-700/50" />
+          <span className="text-sm text-stone-500">or</span>
+          <div className="flex-1 h-px bg-stone-700/50" />
+        </div>
+
+        {/* Other Options - Grid */}
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Upload Resume Option */}
+          <div className="relative">
+            <div
+              onClick={() => !isUploading && fileInputRef.current?.click()}
+              className={`group p-5 rounded-2xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+            >
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                onChange={handleFileUpload}
+                className="hidden"
+              />
+              <div className="flex items-center gap-4">
+                <div className="w-10 h-10 shrink-0 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
+                  {isUploading ? (
+                    <div className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-5 h-5 text-orange-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-white">
+                      {isUploading ? 'Extracting...' : 'Upload Resume'}
+                    </h3>
+                    {/* Info tooltip trigger */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowUploadTooltip(!showUploadTooltip);
+                      }}
+                      className="p-1 text-stone-500 hover:text-orange-400 transition-colors"
+                    >
+                      <Info className="w-4 h-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-stone-400">PDF, DOCX, or TXT (max 10MB)</p>
+                </div>
+              </div>
             </div>
-            <h3 className="text-lg font-semibold text-white mb-2">
-              Fill Manually
-            </h3>
-            <p className="text-sm text-stone-400">
-              Enter your details step by step
-            </p>
-            <p className="text-xs text-stone-500 mt-2">
-              Takes about 5-10 minutes
-            </p>
+
+            {/* Tooltip with LinkedIn PDF export instructions */}
+            {showUploadTooltip && (
+              <div className="absolute z-20 top-full left-0 right-0 mt-2 p-4 bg-stone-800 border border-stone-700 rounded-xl shadow-xl">
+                <button
+                  onClick={() => setShowUploadTooltip(false)}
+                  className="absolute top-2 right-2 p-1 text-stone-500 hover:text-white"
+                >
+                  ×
+                </button>
+                <h4 className="font-medium text-orange-400 mb-2">Pro Tip: Export from LinkedIn</h4>
+                <ol className="text-sm text-stone-300 space-y-1.5">
+                  <li className="flex gap-2">
+                    <span className="text-orange-400 font-medium">1.</span>
+                    <span>Go to your LinkedIn profile</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-orange-400 font-medium">2.</span>
+                    <span>Click "More" button below your name</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-orange-400 font-medium">3.</span>
+                    <span>Select "Save to PDF"</span>
+                  </li>
+                  <li className="flex gap-2">
+                    <span className="text-orange-400 font-medium">4.</span>
+                    <span>Upload that PDF here!</span>
+                  </li>
+                </ol>
+              </div>
+            )}
+          </div>
+
+          {/* Manual Option */}
+          <div
+            onClick={() => setShowChoice(false)}
+            className="group p-5 rounded-2xl border-2 border-stone-700 hover:border-amber-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300"
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 shrink-0 rounded-lg bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
+                <PenLine className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-white">Fill Manually</h3>
+                <p className="text-xs text-stone-400">Enter details step by step (~5 min)</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
