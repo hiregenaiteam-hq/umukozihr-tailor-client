@@ -555,8 +555,12 @@ export default function OnboardingPage() {
                 <h3 className="text-lg font-semibold text-white">Paste LinkedIn URL</h3>
                 <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">Recommended</span>
               </div>
-              <p className="text-sm text-stone-400 mb-4">
-                We'll automatically extract your full profile: experience, education, skills, certifications, and more
+              <p className="text-sm text-stone-400 mb-2">
+                We'll extract your profile: experience, education, skills, certifications, and more
+              </p>
+              <p className="text-xs text-stone-500 mb-4 flex items-center gap-1">
+                <Info className="w-3 h-3" />
+                <span>Some sections may be incomplete. You can add missing details in the next step.</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
