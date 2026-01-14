@@ -12,12 +12,17 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ShareButtons from '@/components/ShareButtons';
 import { HeaderLogo } from '@/components/Logo';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import useApiAuth from '@/lib/useApiAuth';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera
 } from 'lucide-react';
+
+// Check if Clerk is properly configured
+const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_') &&
+  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('your_publishable_key');
 
 type Tab = 'profile' | 'generate' | 'history';
 
@@ -41,6 +46,8 @@ function FloatingOrb({ className, delay = 0 }: { className: string; delay?: numb
 
 export default function AppPage() {
   const router = useRouter();
+  const { isLoaded, isSignedIn, isSynced } = useApiAuth();
+  
   const [activeTab, setActiveTab] = useState<Tab>('generate');
   const [profile, setProfile] = useState<ProfileV3 | null>(null);
   const [completeness, setCompleteness] = useState(0);
@@ -82,16 +89,25 @@ export default function AppPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
+    
+    // Wait for Clerk to load
+    if (!isLoaded) return;
+    
+    // Check authentication - Clerk or legacy token
+    const legacyToken = localStorage.getItem('token');
+    if (!isSignedIn && !legacyToken) {
       toast.error('Please log in');
-      router.push('/');
+      router.push('/sign-in');
       return;
     }
+    
+    // Wait for sync with backend before loading profile
+    if (isSignedIn && !isSynced) return;
+    
     loadProfile();
     loadHistory();
     loadSubscriptionStatus();
-  }, []);
+  }, [isLoaded, isSignedIn, isSynced]);
 
   const loadProfile = async () => {
     setIsLoading(true);
@@ -212,9 +228,14 @@ export default function AppPage() {
     }
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    // Clear legacy tokens
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
+    
+    // Sign out from Clerk if configured - redirect will handle clearing Clerk state
+    // Clerk's signOut is handled by redirecting to root which Clerk middleware manages
+    
     toast.success('Logged out successfully');
     router.push('/');
   };

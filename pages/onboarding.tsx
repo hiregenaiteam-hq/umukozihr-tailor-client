@@ -11,6 +11,7 @@ import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components
 import ReviewSection from '@/components/onboarding/ReviewSection';
 import { HeaderLogo } from '@/components/Logo';
 import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff, Link, Info } from 'lucide-react';
+import useApiAuth from '@/lib/useApiAuth';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
@@ -43,6 +44,7 @@ function FloatingOrb({ className, delay = 0, color = "orange" }: { className?: s
 
 export default function OnboardingPage() {
   const router = useRouter();
+  const { isLoaded, isSignedIn, isSynced } = useApiAuth();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [profile, setProfile] = useState<ProfileV3>(createEmptyProfile());
@@ -165,12 +167,20 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
+    
+    // Wait for Clerk to load
+    if (!isLoaded) return;
+    
+    // Check authentication - Clerk or legacy token
+    const legacyToken = localStorage.getItem('token');
+    if (!isSignedIn && !legacyToken) {
       toast.error('Please log in to continue');
-      router.push('/');
+      router.push('/sign-in');
       return;
     }
+    
+    // Wait for sync with backend before continuing
+    if (isSignedIn && !isSynced) return;
 
     const isEditMode = router.query.edit === 'true';
     const savedDraft = localStorage.getItem(ONBOARDING_STORAGE_KEY);
@@ -220,7 +230,7 @@ export default function OnboardingPage() {
     // If step === 1 with draft, still show choice (user can pick "Fill Manually" to see their data)
 
     loadExistingProfile(hasLocalDraft, isEditMode);
-  }, [router.query.edit]);
+  }, [router.query.edit, isLoaded, isSignedIn, isSynced]);
 
   const loadExistingProfile = async (hasLocalDraft: boolean = false, isEditMode: boolean = false) => {
     try {
