@@ -1,12 +1,10 @@
 import toast from 'react-hot-toast';
-import { FileText, Download, CheckCircle, Calendar, MapPin, FileCode, FileEdit } from "lucide-react";
+import { FileText, Download, CheckCircle, Calendar, MapPin, FileEdit } from "lucide-react";
 import { config } from '@/lib/config';
 
 export default function JobCard({ data }: { data: any }) {
-  // Check if PDFs were compiled successfully
   const hasPdfs = data.resume_pdf && data.cover_letter_pdf;
   const hasDocx = data.resume_docx || data.cover_letter_docx;
-  const hasTex = data.resume_tex || data.cover_letter_tex;
   
   const getFullUrl = (url: string) => {
     if (!url) return '';
@@ -43,9 +41,9 @@ export default function JobCard({ data }: { data: any }) {
           <span>Resume and cover letter generated</span>
         </div>
 
-        {/* Download Buttons */}
+        {/* Download Buttons - PDF and DOCX only */}
         <div className="flex flex-wrap gap-2">
-          {/* PDF Downloads - Primary if available */}
+          {/* PDF Downloads */}
           {hasPdfs && (
             <>
               <a
@@ -101,43 +99,11 @@ export default function JobCard({ data }: { data: any }) {
             </>
           )}
           
-          {/* TEX Downloads - Always show if no PDFs or as additional option */}
-          {hasTex && !hasPdfs && (
-            <>
-              {data.resume_tex && (
-                <a
-                  href={getFullUrl(data.resume_tex)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-amber-400 hover:bg-amber-500/10 transition-all"
-                  onClick={() => toast.success('Resume TEX opened')}
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  <span>Resume TEX</span>
-                </a>
-              )}
-              {data.cover_letter_tex && (
-                <a
-                  href={getFullUrl(data.cover_letter_tex)}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-amber-400 hover:bg-amber-500/10 transition-all"
-                  onClick={() => toast.success('Cover letter TEX opened')}
-                >
-                  <FileCode className="w-3.5 h-3.5" />
-                  <span>Cover TEX</span>
-                </a>
-              )}
-            </>
+          {/* If no files available yet */}
+          {!hasPdfs && !hasDocx && (
+            <span className="text-xs text-stone-500">Files generating...</span>
           )}
         </div>
-        
-        {/* Helpful tip if only TEX files */}
-        {hasTex && !hasPdfs && !hasDocx && (
-          <p className="text-xs text-stone-500">
-            Tip: Open TEX files in <a href="https://overleaf.com" target="_blank" rel="noreferrer" className="text-amber-400 hover:underline">Overleaf</a> to compile PDFs
-          </p>
-        )}
       </div>
     </div>
   );

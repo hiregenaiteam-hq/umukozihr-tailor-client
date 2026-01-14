@@ -1,7 +1,7 @@
 import React from 'react';
 import { HistoryItem } from '@/lib/types';
 import { config } from '@/lib/config';
-import { Download, FileText, RefreshCw, ExternalLink, CheckCircle, XCircle, Calendar, Building2, FileEdit } from 'lucide-react';
+import { Download, FileText, RefreshCw, CheckCircle, XCircle, Calendar, Building2, FileEdit } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 interface RunCardProps {
@@ -32,25 +32,9 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
   };
 
   const handleDownload = (url: string, type: string) => {
-    const ext = type.includes('docx') ? 'docx' : type.includes('pdf') ? 'pdf' : 'tex';
+    const ext = type.includes('docx') ? 'docx' : 'pdf';
     const filename = `${run.company}_${run.title}_${type}.${ext}`;
     onDownload(url, filename);
-  };
-
-  const handleOverleafOpen = () => {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = 'https://www.overleaf.com/docs';
-    form.target = '_blank';
-    const input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = 'snip_uri[]';
-    input.value = `${config.apiUrl}${run.artifacts_urls.resume_tex}`;
-    form.appendChild(input);
-    document.body.appendChild(form);
-    form.submit();
-    document.body.removeChild(form);
-    toast.success('Opening in Overleaf...');
   };
 
   const artifacts = run.artifacts_urls;
@@ -136,39 +120,6 @@ export default function RunCard({ run, onRegenerate, onDownload }: RunCardProps)
             </button>
           )}
         </div>
-      )}
-
-      {/* Downloads - TEX */}
-      <div className="grid grid-cols-2 gap-2 mb-4">
-        {artifacts.resume_tex && (
-          <button
-            onClick={() => handleDownload(artifacts.resume_tex!, 'resume_tex')}
-            className="flex items-center gap-2 px-3 py-2 glass-subtle rounded-lg text-sm font-medium text-stone-400 hover:bg-white/5 transition-all"
-          >
-            <FileText className="h-4 w-4" />
-            Resume TEX
-          </button>
-        )}
-        {artifacts.cover_letter_tex && (
-          <button
-            onClick={() => handleDownload(artifacts.cover_letter_tex!, 'cover_tex')}
-            className="flex items-center gap-2 px-3 py-2 glass-subtle rounded-lg text-sm font-medium text-stone-400 hover:bg-white/5 transition-all"
-          >
-            <FileText className="h-4 w-4" />
-            Cover TEX
-          </button>
-        )}
-      </div>
-
-      {/* Overleaf Button */}
-      {artifacts.resume_tex && (
-        <button
-          onClick={handleOverleafOpen}
-          className="w-full py-2.5 btn-secondary flex items-center justify-center gap-2 text-sm"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Open in Overleaf
-        </button>
       )}
 
       {/* Compilation Status */}
