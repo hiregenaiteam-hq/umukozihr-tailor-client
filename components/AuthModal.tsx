@@ -78,7 +78,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
         <div className="bg-stone-900/95 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
           {mode === 'sign-in' ? (
             <SignIn
-              routing="hash"
+              routing="path"
+              path="/sign-in"
               afterSignInUrl="/app"
               appearance={{
                 layout: {
@@ -117,7 +118,8 @@ export default function AuthModal({ isOpen, onClose, defaultMode = 'sign-in' }: 
             />
           ) : (
             <SignUp
-              routing="hash"
+              routing="path"
+              path="/sign-up"
               afterSignUpUrl="/onboarding"
               appearance={{
                 layout: {

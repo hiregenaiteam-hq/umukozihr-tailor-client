@@ -14,6 +14,7 @@ const isPublicRoute = createRouteMatcher([
   '/pricing',               // Pricing page
   '/sign-in(.*)',           // Sign in pages
   '/sign-up(.*)',           // Sign up pages
+  '/sso-callback(.*)',      // SSO callback for OAuth
   '/p/(.*)',                // Public profile pages (/p/username)
   '/api/webhooks/(.*)',     // Webhook endpoints
 ]);
