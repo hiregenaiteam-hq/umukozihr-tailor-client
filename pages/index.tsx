@@ -1,16 +1,11 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
-import { profile as profileApi } from "../lib/api";
-import AuthModal from "../components/AuthModal";
+import { profile as profileApi, auth } from "../lib/api";
 import ThemeToggle from "../components/ThemeToggle";
 import { HeroLogo } from "../components/Logo";
-import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText, Globe, FileCheck, Briefcase, Rocket } from "lucide-react";
+import { Zap, Target, CheckCircle, Sparkles, ArrowRight, Shield, Clock, FileText, Globe, FileCheck, Briefcase, Rocket, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import Image from "next/image";
-import { useAuth } from '@clerk/nextjs';
-
-// Check if Clerk is configured
-const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_') &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('your_publishable_key');
+import toast from 'react-hot-toast';
 
 // Floating orb component
 function FloatingOrb({ className, delay = 0, color = "orange" }: { className: string; delay?: number; color?: "orange" | "amber" | "gold" }) {
@@ -164,29 +159,15 @@ export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState<'sign-in' | 'sign-up'>('sign-up');
-  
-  // Try to use Clerk auth if configured
-  let clerkAuth: { isSignedIn?: boolean; isLoaded?: boolean } = { isSignedIn: false, isLoaded: true };
-  if (isClerkConfigured) {
-    try {
-      clerkAuth = useAuth();
-    } catch (e) {
-      // Clerk not available
-    }
-  }
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
-    // If Clerk user is signed in, redirect
-    if (isClerkConfigured && clerkAuth.isLoaded && clerkAuth.isSignedIn) {
-      checkAuthAndRedirect();
-      return;
-    }
-    
-    // Check legacy auth
     checkAuthAndRedirect();
-  }, [clerkAuth.isLoaded, clerkAuth.isSignedIn]);
+  }, []);
 
   const checkAuthAndRedirect = async () => {
     const token = localStorage.getItem('token');
@@ -225,6 +206,34 @@ export default function Home() {
       }
     } catch (error: any) {
       await router.push('/onboarding');
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      if (authMode === 'sign-up') {
+        const response = await auth.signup(email, password);
+        localStorage.setItem('token', response.data.access_token);
+        toast.success('Account created!');
+        router.push('/onboarding');
+      } else {
+        const response = await auth.login(email, password);
+        localStorage.setItem('token', response.data.access_token);
+        toast.success('Welcome back!');
+        handleLogin(response.data.access_token);
+      }
+    } catch (error: any) {
+      const message = error.response?.data?.detail || 'Authentication failed';
+      toast.error(message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -413,12 +422,47 @@ export default function Home() {
           {/* Login Form Section - REMOVED, using modal instead */}
           
           {/* Auth Modal */}
-          {isClerkConfigured && (
-            <AuthModal
-              isOpen={showAuthModal}
-              onClose={() => setShowAuthModal(false)}
-              defaultMode={authMode}
-            />
+          {showAuthModal && (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center" onClick={() => setShowAuthModal(false)}>
+              <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+              <div className="relative z-10 w-full max-w-md mx-4 animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+                <button onClick={() => setShowAuthModal(false)} className="absolute -top-12 right-0 p-2 text-white/60 hover:text-white transition-colors">
+                  <span className="text-2xl">&times;</span>
+                </button>
+
+                {/* Tab Switcher */}
+                <div className="flex mb-4 bg-stone-900/80 backdrop-blur-xl rounded-2xl p-1.5 border border-white/10">
+                  <button onClick={() => setAuthMode('sign-in')} className={`flex-1 py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-300 ${authMode === 'sign-in' ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25' : 'text-stone-400 hover:text-white'}`}>Sign In</button>
+                  <button onClick={() => setAuthMode('sign-up')} className={`flex-1 py-3 px-6 rounded-xl font-semibold text-sm transition-all duration-300 ${authMode === 'sign-up' ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-white shadow-lg shadow-orange-500/25' : 'text-stone-400 hover:text-white'}`}>Create Account</button>
+                </div>
+
+                {/* Auth Form */}
+                <div className="bg-stone-900/95 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden shadow-2xl p-8">
+                  <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                      <label className="block text-stone-300 text-sm font-medium mb-2">Email</label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500" />
+                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="w-full pl-10 pr-4 py-3 bg-stone-800 border border-stone-600 text-white placeholder-stone-500 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-stone-300 text-sm font-medium mb-2">Password</label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500" />
+                        <input type={showPassword ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" className="w-full pl-10 pr-12 py-3 bg-stone-800 border border-stone-600 text-white placeholder-stone-500 rounded-xl focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all" />
+                        <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-white">
+                          {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                        </button>
+                      </div>
+                    </div>
+                    <button type="submit" disabled={isLoading} className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+                      {isLoading ? 'Please wait...' : (authMode === 'sign-up' ? 'Create Account' : 'Sign In')}
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
           )}
 
           {/* Benefits Footer */}

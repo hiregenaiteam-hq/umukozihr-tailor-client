@@ -1,16 +1,5 @@
 import axios from 'axios';
 
-// Token setter - will be called by useApiAuth hook with Clerk token
-let clerkToken: string | null = null;
-
-export function setAuthToken(token: string | null) {
-  clerkToken = token;
-}
-
-export function getAuthToken(): string | null {
-  return clerkToken;
-}
-
 // Auto-detect API URL based on environment
 function getApiBaseUrl(): string {
   // If explicitly set via env var, use that
@@ -57,8 +46,8 @@ api.interceptors.request.use(
     const apiBaseUrl = getApiBaseUrl();
     config.baseURL = `${apiBaseUrl}/api/v1`;
 
-    // Use Clerk token (primary) or fallback to localStorage (legacy)
-    const token = clerkToken || localStorage.getItem('token');
+    // Get token from localStorage
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -113,15 +102,12 @@ api.interceptors.response.use(
   }
 );
 
-// Auth endpoints (legacy - now using Clerk)
+// Auth endpoints
 export const auth = {
   signup: (email: string, password: string) =>
     api.post('/auth/signup', { email, password }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
-  // Clerk sync endpoint - called after Clerk sign in/up to sync user with our DB
-  clerkSync: () =>
-    api.post('/auth/clerk-sync'),
 };
 
 // Profile endpoints (v1.3)
