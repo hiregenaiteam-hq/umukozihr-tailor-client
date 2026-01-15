@@ -220,12 +220,17 @@ export default function AppPage() {
   };
 
   const handleLogout = async () => {
-    // Clear legacy tokens
+    // Clear auth tokens
     localStorage.removeItem('token');
     localStorage.removeItem('userProfile');
     
-    // Sign out from Clerk if configured - redirect will handle clearing Clerk state
-    // Clerk's signOut is handled by redirecting to root which Clerk middleware manages
+    // Sign out from Supabase if configured
+    try {
+      const { signOut } = await import('../lib/supabase');
+      await signOut();
+    } catch (e) {
+      // Supabase not configured or signout failed - continue anyway
+    }
     
     toast.success('Logged out successfully');
     router.push('/');
