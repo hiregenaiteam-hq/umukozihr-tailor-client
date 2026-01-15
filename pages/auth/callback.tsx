@@ -57,33 +57,9 @@ export default function AuthCallback() {
       setStatus('Syncing your account...');
 
       try {
-        // Try to sign up or login with the email from OAuth
-        const email = session.user.email;
-        
-        // Generate a random password for OAuth users (they won't use it)
-        const randomPassword = `oauth_${crypto.randomUUID()}`;
-        
-        try {
-          // Try signup first
-          const response = await auth.signup(email, randomPassword);
-          localStorage.setItem('token', response.data.access_token);
-        } catch (signupError: any) {
-          // If email exists, the user already has an account - log them in
-          // For OAuth users, we need a way to handle this
-          // For now, we'll create a special OAuth sync endpoint
-          if (signupError.response?.status === 400) {
-            // Email already registered - need OAuth login
-            // Store Supabase token temporarily for backend sync
-            localStorage.setItem('supabase_token', session.access_token);
-            
-            // Call our OAuth sync endpoint
-            const syncResponse = await auth.oauthSync(session.access_token, 'google');
-            localStorage.setItem('token', syncResponse.data.access_token);
-            localStorage.removeItem('supabase_token');
-          } else {
-            throw signupError;
-          }
-        }
+        // Use OAuth sync endpoint directly - it handles both new and existing users
+        const syncResponse = await auth.oauthSync(session.access_token, 'google');
+        localStorage.setItem('token', syncResponse.data.access_token);
 
         setStatus('Checking profile...');
 
