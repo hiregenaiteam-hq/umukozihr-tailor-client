@@ -108,6 +108,9 @@ export const auth = {
     api.post('/auth/signup', { email, password }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
+  // OAuth sync - exchanges Supabase token for our backend token
+  oauthSync: (supabaseToken: string, provider: string) =>
+    api.post('/auth/oauth-sync', { token: supabaseToken, provider }),
 };
 
 // Profile endpoints (v1.3)

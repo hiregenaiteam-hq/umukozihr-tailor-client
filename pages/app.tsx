@@ -12,7 +12,6 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ShareButtons from '@/components/ShareButtons';
 import { HeaderLogo } from '@/components/Logo';
 import { UpgradeModal } from '@/components/UpgradeModal';
-import useApiAuth from '@/lib/useApiAuth';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
@@ -20,9 +19,8 @@ import {
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera
 } from 'lucide-react';
 
-// Check if Clerk is properly configured
-const isClerkConfigured = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.startsWith('pk_') &&
-  !process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY?.includes('your_publishable_key');
+// Check for authentication token
+const hasAuthToken = () => typeof window !== 'undefined' && !!localStorage.getItem('token');
 
 type Tab = 'profile' | 'generate' | 'history';
 
@@ -46,7 +44,6 @@ function FloatingOrb({ className, delay = 0 }: { className: string; delay?: numb
 
 export default function AppPage() {
   const router = useRouter();
-  const { isLoaded, isSignedIn, isSynced } = useApiAuth();
   
   const [activeTab, setActiveTab] = useState<Tab>('generate');
   const [profile, setProfile] = useState<ProfileV3 | null>(null);
@@ -90,24 +87,18 @@ export default function AppPage() {
   useEffect(() => {
     setMounted(true);
     
-    // Wait for Clerk to load
-    if (!isLoaded) return;
-    
-    // Check authentication - Clerk or legacy token
-    const legacyToken = localStorage.getItem('token');
-    if (!isSignedIn && !legacyToken) {
+    // Check authentication - require token
+    const token = localStorage.getItem('token');
+    if (!token) {
       toast.error('Please log in');
-      router.push('/sign-in');
+      router.push('/');
       return;
     }
-    
-    // Wait for sync with backend before loading profile
-    if (isSignedIn && !isSynced) return;
     
     loadProfile();
     loadHistory();
     loadSubscriptionStatus();
-  }, [isLoaded, isSignedIn, isSynced]);
+  }, []);
 
   const loadProfile = async () => {
     setIsLoading(true);
