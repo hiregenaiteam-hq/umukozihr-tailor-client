@@ -10,6 +10,37 @@ export default function JobCard({ data }: { data: any }) {
     if (!url) return '';
     return url.startsWith('http') ? url : `${config.apiUrl}${url}`;
   };
+
+  // Force download on all devices (including mobile)
+  const handleDownload = async (url: string, filename: string) => {
+    const fullUrl = getFullUrl(url);
+    
+    try {
+      toast.loading(`Downloading ${filename}...`, { id: 'download' });
+      
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success(`Downloaded ${filename}`, { id: 'download' });
+    } catch (error) {
+      console.error('Download error:', error);
+      window.open(fullUrl, '_blank');
+      toast.success(`Opening ${filename}...`, { id: 'download' });
+    }
+  };
   
   return (
     <div className="glass-subtle p-4 sm:p-5 rounded-xl hover:border-orange-500/20 transition-all group overflow-hidden">
@@ -46,53 +77,41 @@ export default function JobCard({ data }: { data: any }) {
           {/* PDF Downloads */}
           {hasPdfs ? (
             <>
-              <a
-                href={getFullUrl(data.resume_pdf)}
-                target="_blank"
-                rel="noreferrer"
+              <button
+                onClick={() => handleDownload(data.resume_pdf, `${data.job_id}_resume.pdf`)}
                 className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
-                onClick={() => toast.success('Resume PDF opened')}
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Resume PDF</span>
-              </a>
-              <a
-                href={getFullUrl(data.cover_letter_pdf)}
-                target="_blank"
-                rel="noreferrer"
+              </button>
+              <button
+                onClick={() => handleDownload(data.cover_letter_pdf, `${data.job_id}_cover.pdf`)}
                 className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
-                onClick={() => toast.success('Cover letter PDF opened')}
               >
                 <Download className="w-3.5 h-3.5" />
                 <span>Cover PDF</span>
-              </a>
+              </button>
             </>
           ) : (
             /* Show individual PDF buttons if only one exists */
             <>
               {data.resume_pdf && (
-                <a
-                  href={getFullUrl(data.resume_pdf)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => handleDownload(data.resume_pdf, `${data.job_id}_resume.pdf`)}
                   className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
-                  onClick={() => toast.success('Resume PDF opened')}
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Resume PDF</span>
-                </a>
+                </button>
               )}
               {data.cover_letter_pdf && (
-                <a
-                  href={getFullUrl(data.cover_letter_pdf)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => handleDownload(data.cover_letter_pdf, `${data.job_id}_cover.pdf`)}
                   className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-green-400 hover:bg-green-500/10 transition-all"
-                  onClick={() => toast.success('Cover letter PDF opened')}
                 >
                   <Download className="w-3.5 h-3.5" />
                   <span>Cover PDF</span>
-                </a>
+                </button>
               )}
             </>
           )}
@@ -101,28 +120,22 @@ export default function JobCard({ data }: { data: any }) {
           {hasDocx && (
             <>
               {data.resume_docx && (
-                <a
-                  href={getFullUrl(data.resume_docx)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => handleDownload(data.resume_docx, `${data.job_id}_resume.docx`)}
                   className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-all"
-                  onClick={() => toast.success('Resume DOCX opened')}
                 >
                   <FileEdit className="w-3.5 h-3.5" />
                   <span>Resume Word</span>
-                </a>
+                </button>
               )}
               {data.cover_letter_docx && (
-                <a
-                  href={getFullUrl(data.cover_letter_docx)}
-                  target="_blank"
-                  rel="noreferrer"
+                <button
+                  onClick={() => handleDownload(data.cover_letter_docx, `${data.job_id}_cover.docx`)}
                   className="flex items-center gap-1.5 px-3 py-2 glass-subtle rounded-lg text-xs sm:text-sm font-medium text-blue-400 hover:bg-blue-500/10 transition-all"
-                  onClick={() => toast.success('Cover letter DOCX opened')}
                 >
                   <FileEdit className="w-3.5 h-3.5" />
                   <span>Cover Word</span>
-                </a>
+                </button>
               )}
             </>
           )}

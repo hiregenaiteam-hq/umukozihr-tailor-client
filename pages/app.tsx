@@ -320,7 +320,7 @@ export default function AppPage() {
     }
   };
 
-  const handleDownload = (url: string, filename: string) => {
+  const handleDownload = async (url: string, filename: string) => {
     // Check if this is a ZIP download and if user has permission
     const isZipDownload = filename.includes('.zip') || url.includes('.zip');
     
@@ -331,10 +331,38 @@ export default function AppPage() {
       return;
     }
     
-    // Open the artifact URL directly
+    // Force download on all devices (including mobile)
     const fullUrl = url.startsWith('http') ? url : `${config.apiUrl}${url}`;
-    window.open(fullUrl, '_blank');
-    toast.success(`Opening ${filename}...`);
+    
+    try {
+      toast.loading(`Downloading ${filename}...`, { id: 'download' });
+      
+      // Fetch as blob to force download behavior
+      const response = await fetch(fullUrl);
+      if (!response.ok) throw new Error('Download failed');
+      
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      
+      // Create temporary anchor with download attribute
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = filename;
+      link.style.display = 'none';
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(blobUrl);
+      
+      toast.success(`Downloaded ${filename}`, { id: 'download' });
+    } catch (error) {
+      console.error('Download error:', error);
+      // Fallback: open in new tab
+      window.open(fullUrl, '_blank');
+      toast.success(`Opening ${filename}...`, { id: 'download' });
+    }
   };
 
   // Handle resume upload to update profile
