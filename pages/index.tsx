@@ -117,19 +117,19 @@ function AnimatedTitle({ text, className }: { text: string; className?: string }
 // COMPANY LOGOS (from /media folder)
 // ============================================
 const companyLogos = [
-  { name: "Google", src: "/media/google-new.svg" },
-  { name: "Microsoft", src: "/media/microsoft-6.svg" },
-  { name: "Apple", src: "/media/apple-11.svg" },
-  { name: "Meta", src: "/media/meta-3.svg" },
-  { name: "OpenAI", src: "/media/openai-wordmark.svg" },
-  { name: "Anthropic", src: "/media/anthropic-1.svg" },
-  { name: "NVIDIA", src: "/media/nvidia.svg" },
-  { name: "Tesla", src: "/media/tesla-motors.svg" },
-  { name: "SpaceX", src: "/media/spacex.svg" },
-  { name: "NASA", src: "/media/nasa-6.svg" },
-  { name: "JP Morgan", src: "/media/jp-morgan.svg" },
-  { name: "Bank of America", src: "/media/bank-of-america.svg" },
-  { name: "Coca-Cola", src: "/media/coca-cola-2021.svg" },
+  { name: "Google", src: "/media/google-new.svg", dark: false },
+  { name: "Microsoft", src: "/media/microsoft-6.svg", dark: false },
+  { name: "Apple", src: "/media/apple-11.svg", dark: true },
+  { name: "Meta", src: "/media/meta-3.svg", dark: false },
+  { name: "OpenAI", src: "/media/openai-wordmark.svg", dark: true },
+  { name: "Anthropic", src: "/media/anthropic-1.svg", dark: true },
+  { name: "NVIDIA", src: "/media/nvidia.svg", dark: false },
+  { name: "Tesla", src: "/media/tesla-motors.svg", dark: false },
+  { name: "SpaceX", src: "/media/spacex.svg", dark: true },
+  { name: "NASA", src: "/media/nasa-6.svg", dark: false },
+  { name: "JP Morgan", src: "/media/jp-morgan.svg", dark: true },
+  { name: "Bank of America", src: "/media/bank-of-america.svg", dark: false },
+  { name: "Coca-Cola", src: "/media/coca-cola-2021.svg", dark: false },
 ];
 
 // ============================================
@@ -151,7 +151,10 @@ function LogoMarquee() {
               <img 
                 src={logo.src} 
                 alt={logo.name} 
-                className="h-8 w-auto max-w-[140px] object-contain"
+                className={cn(
+                  "h-8 w-auto max-w-[140px] object-contain",
+                  logo.dark && "invert brightness-0 invert"
+                )}
               />
             </div>
           ))}
@@ -165,7 +168,10 @@ function LogoMarquee() {
               <img 
                 src={logo.src} 
                 alt={logo.name} 
-                className="h-8 w-auto max-w-[140px] object-contain"
+                className={cn(
+                  "h-8 w-auto max-w-[140px] object-contain",
+                  logo.dark && "invert brightness-0 invert"
+                )}
               />
             </div>
           ))}
