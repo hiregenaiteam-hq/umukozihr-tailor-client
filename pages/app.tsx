@@ -70,6 +70,49 @@ const cardVariants = {
   })
 };
 
+// Derive region from location string
+const getRegionFromLocation = (location: string | undefined): 'US' | 'EU' | 'GL' => {
+  if (!location) return 'GL';
+  const loc = location.toLowerCase();
+  
+  // US states and common US locations
+  const usPatterns = [
+    'united states', 'usa', 'u.s.a', 'u.s.', 'america',
+    // States
+    'california', 'texas', 'florida', 'new york', 'illinois', 'pennsylvania',
+    'ohio', 'georgia', 'north carolina', 'michigan', 'new jersey', 'virginia',
+    'washington', 'arizona', 'massachusetts', 'tennessee', 'indiana', 'missouri',
+    'maryland', 'wisconsin', 'colorado', 'minnesota', 'south carolina', 'alabama',
+    'louisiana', 'kentucky', 'oregon', 'oklahoma', 'connecticut', 'utah', 'iowa',
+    'nevada', 'arkansas', 'mississippi', 'kansas', 'new mexico', 'nebraska',
+    'idaho', 'hawaii', 'maine', 'montana', 'delaware', 'south dakota', 'alaska',
+    'north dakota', 'vermont', 'wyoming', 'west virginia', 'rhode island',
+    // Major cities
+    'san francisco', 'los angeles', 'chicago', 'houston', 'phoenix', 'philadelphia',
+    'san antonio', 'san diego', 'dallas', 'austin', 'seattle', 'denver', 'boston',
+    'detroit', 'atlanta', 'miami', 'portland', 'las vegas', 'brooklyn', 'manhattan'
+  ];
+  
+  // EU countries
+  const euPatterns = [
+    'germany', 'france', 'italy', 'spain', 'poland', 'romania', 'netherlands',
+    'belgium', 'greece', 'czech', 'portugal', 'sweden', 'hungary', 'austria',
+    'bulgaria', 'denmark', 'finland', 'slovakia', 'ireland', 'croatia', 'lithuania',
+    'slovenia', 'latvia', 'estonia', 'cyprus', 'luxembourg', 'malta',
+    // UK (post-Brexit but still often grouped)
+    'united kingdom', 'uk', 'england', 'scotland', 'wales', 'london', 'manchester',
+    'birmingham', 'liverpool', 'bristol',
+    // Major EU cities
+    'berlin', 'paris', 'madrid', 'rome', 'amsterdam', 'vienna', 'barcelona',
+    'munich', 'milan', 'prague', 'brussels', 'stockholm', 'dublin', 'lisbon',
+    'copenhagen', 'warsaw', 'budapest', 'zurich', 'geneva', 'switzerland'
+  ];
+  
+  if (usPatterns.some(p => loc.includes(p))) return 'US';
+  if (euPatterns.some(p => loc.includes(p))) return 'EU';
+  return 'GL';
+};
+
 export default function AppPage() {
   const router = useRouter();
   
@@ -699,14 +742,12 @@ export default function AppPage() {
                     {profile.basics.full_name || 'Complete Your Profile'}
                   </h2>
                   <p className="text-stone-400 mb-3 text-sm sm:text-base">{profile.basics.email}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {profile.preferences.regions.map((region) => (
-                      <span key={region} className="badge badge-orange">
-                        <MapPin className="h-3 w-3 mr-1" />
-                        {region}
-                      </span>
-                    ))}
-                  </div>
+                  {profile.basics.location && (
+                    <p className="text-stone-500 text-sm flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {profile.basics.location}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
                   <button
@@ -1021,7 +1062,7 @@ export default function AppPage() {
                 </div>
                 <JDComposer
                   onAddJob={handleAddJob}
-                  defaultRegion={profile?.preferences.regions[0] || 'US'}
+                  defaultRegion={getRegionFromLocation(profile?.basics.location)}
                 />
               </div>
 
