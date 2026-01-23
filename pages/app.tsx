@@ -17,7 +17,8 @@ import {
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
-  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera
+  Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera,
+  Award, Languages, Globe, ExternalLink, FolderKanban, X
 } from 'lucide-react';
 
 // Check for authentication token
@@ -110,6 +111,9 @@ export default function AppPage() {
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeTrigger, setUpgradeTrigger] = useState<'limit_reached' | 'batch_upload' | 'zip_download' | 'general'>('general');
+
+  // Skills modal state
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -802,20 +806,149 @@ export default function AppPage() {
                 </div>
               </div>
 
-              {/* Skills - Organized by Category */}
-              <div className="glass-card p-6 md:col-span-2">
+              {/* Projects */}
+              <div className="glass-card p-6">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <Code className="h-5 w-5 text-green-400" />
+                    <FolderKanban className="h-5 w-5 text-blue-400" />
                   </div>
                   <h3 className="text-lg font-semibold text-white">
-                    Skills ({profile.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total)
+                    Projects ({profile.projects?.length || 0})
                   </h3>
                 </div>
+                <div className="space-y-3">
+                  {profile.projects?.slice(0, 3).map((project, idx) => (
+                    <div key={idx} className="glass-subtle p-3 rounded-lg">
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium text-white">{project.name}</p>
+                        {project.url && (
+                          <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        )}
+                      </div>
+                      {project.stack && project.stack.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-2">
+                          {project.stack.slice(0, 4).map((tech, tidx) => (
+                            <span key={tidx} className="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300">{tech}</span>
+                          ))}
+                          {project.stack.length > 4 && (
+                            <span className="px-2 py-0.5 text-xs rounded bg-stone-700 text-stone-400">+{project.stack.length - 4}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {(!profile.projects || profile.projects.length === 0) && (
+                    <p className="text-stone-500 text-sm">No projects added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Certifications */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Award className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Certifications ({profile.certifications?.length || 0})
+                  </h3>
+                </div>
+                <div className="space-y-3">
+                  {profile.certifications?.slice(0, 3).map((cert, idx) => (
+                    <div key={idx} className="glass-subtle p-3 rounded-lg">
+                      <p className="font-medium text-white">{cert.name}</p>
+                      <p className="text-sm text-stone-400">{cert.issuer}</p>
+                    </div>
+                  ))}
+                  {(!profile.certifications || profile.certifications.length === 0) && (
+                    <p className="text-stone-500 text-sm">No certifications added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Languages */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Languages className="h-5 w-5 text-green-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Languages ({profile.languages?.length || 0})
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {profile.languages?.slice(0, 5).map((lang, idx) => (
+                    <div key={idx} className="flex justify-between text-sm">
+                      <span className="text-white">{lang.name}</span>
+                      <span className="text-stone-400 bg-stone-800/50 px-2 py-0.5 rounded text-xs">{lang.level}</span>
+                    </div>
+                  ))}
+                  {(!profile.languages || profile.languages.length === 0) && (
+                    <p className="text-stone-500 text-sm">No languages added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Links */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">
+                    Links ({profile.basics?.links?.filter(l => l && l.trim()).length || 0})
+                  </h3>
+                </div>
+                <div className="space-y-2">
+                  {profile.basics?.links?.filter(l => l && l.trim()).slice(0, 5).map((link, idx) => {
+                    let hostname = link;
+                    try {
+                      hostname = new URL(link).hostname.replace('www.', '');
+                    } catch {}
+                    return (
+                      <a
+                        key={idx}
+                        href={link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition p-2 rounded-lg hover:bg-stone-800/50"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        {hostname}
+                      </a>
+                    );
+                  })}
+                  {(!profile.basics?.links || profile.basics.links.filter(l => l && l.trim()).length === 0) && (
+                    <p className="text-stone-500 text-sm">No links added yet</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Skills - With View All Modal */}
+              <div className="glass-card p-6 md:col-span-2">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                      <Code className="h-5 w-5 text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Skills ({profile.skills?.length || 0} categories)
+                    </h3>
+                  </div>
+                  {profile.skills && profile.skills.length > 3 && (
+                    <button
+                      onClick={() => setShowSkillsModal(true)}
+                      className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                    >
+                      View All <ChevronRight className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
                 <div className="space-y-4">
-                  {profile.skills?.map((skill, idx) => (
+                  {profile.skills?.slice(0, 3).map((skill, idx) => (
                     <div key={idx}>
-                      {/* Category header */}
                       <div className="flex items-center gap-2 mb-2">
                         <span className={`text-sm font-medium ${
                           skill.level === 'expert' ? 'text-orange-400' : 
@@ -825,11 +958,13 @@ export default function AppPage() {
                           {skill.name}
                         </span>
                         <span className="text-xs text-stone-500">• {skill.level}</span>
+                        {skill.keywords && skill.keywords.length > 0 && (
+                          <span className="text-xs text-stone-600">({skill.keywords.length})</span>
+                        )}
                       </div>
-                      {/* Keywords/actual skills */}
                       {skill.keywords && skill.keywords.length > 0 && (
                         <div className="flex flex-wrap gap-1.5">
-                          {skill.keywords.map((keyword, kidx) => (
+                          {skill.keywords.slice(0, 8).map((keyword, kidx) => (
                             <span 
                               key={kidx} 
                               className="px-2 py-1 text-xs rounded-lg bg-stone-800/50 text-stone-300 border border-stone-700"
@@ -837,10 +972,24 @@ export default function AppPage() {
                               {keyword}
                             </span>
                           ))}
+                          {skill.keywords.length > 8 && (
+                            <span className="px-2 py-1 text-xs rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                              +{skill.keywords.length - 8} more
+                            </span>
+                          )}
                         </div>
                       )}
                     </div>
                   ))}
+                  {profile.skills && profile.skills.length > 3 && (
+                    <button
+                      onClick={() => setShowSkillsModal(true)}
+                      className="w-full py-3 text-sm text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition flex items-center justify-center gap-2"
+                    >
+                      <span>View all {profile.skills.length} skill categories</span>
+                      <ChevronRight className="h-4 w-4" />
+                    </button>
+                  )}
                   {(!profile.skills || profile.skills.length === 0) && (
                     <p className="text-stone-500 text-sm">No skills added yet</p>
                   )}
@@ -1114,6 +1263,99 @@ export default function AppPage() {
           </div>
         </div>
       )}
+
+      {/* Skills Modal */}
+      <AnimatePresence>
+        {showSkillsModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowSkillsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <Code className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Skills</h2>
+                    <p className="text-sm text-stone-400">
+                      {profile.skills?.length || 0} categories • {profile.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total skills
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowSkillsModal(false)}
+                  className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Modal Body - Scrollable */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {profile.skills?.map((skill, idx) => (
+                  <div key={idx} className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <span className={`text-sm font-semibold ${
+                        skill.level === 'expert' ? 'text-orange-400' : 
+                        skill.level === 'intermediate' ? 'text-amber-400' : 
+                        'text-stone-400'
+                      }`}>
+                        {skill.name}
+                      </span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${
+                        skill.level === 'expert' ? 'bg-orange-500/20 text-orange-400' : 
+                        skill.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 
+                        'bg-stone-700 text-stone-400'
+                      }`}>
+                        {skill.level}
+                      </span>
+                      {skill.keywords && skill.keywords.length > 0 && (
+                        <span className="text-xs text-stone-500">
+                          ({skill.keywords.length} skills)
+                        </span>
+                      )}
+                    </div>
+                    {skill.keywords && skill.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {skill.keywords.map((keyword, kidx) => (
+                          <span 
+                            key={kidx} 
+                            className="px-3 py-1.5 text-sm rounded-lg bg-stone-800/50 text-stone-300 border border-stone-700 hover:border-stone-600 transition"
+                          >
+                            {keyword}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button
+                  onClick={() => setShowSkillsModal(false)}
+                  className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Upgrade Modal */}
       <UpgradeModal
