@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/router";
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profile as profileApi, upload as uploadApi } from '@/lib/api';
 import { ProfileV3, createEmptyProfile } from '@/lib/types';
@@ -10,7 +11,7 @@ import EducationSection from '@/components/onboarding/EducationSection';
 import { ProjectsSection, SkillsSection, LinksExtrasSection } from '@/components/onboarding/ProjectsSkillsSection';
 import ReviewSection from '@/components/onboarding/ReviewSection';
 import { HeaderLogo } from '@/components/Logo';
-import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff, Link, Info } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CheckCircle, Sparkles, Save, Upload, FileText, PenLine, AlertCircle, Home, ArrowLeft, Cloud, CloudOff, RefreshCw, Wifi, WifiOff, Link, Info, Linkedin, Zap, ArrowRight, Check } from 'lucide-react';
 
 const STEPS = ['Basics', 'Experience', 'Education', 'Projects', 'Skills', 'Extras', 'Review'];
 const ONBOARDING_STORAGE_KEY = 'onboarding_draft';
@@ -31,12 +32,49 @@ const STEP_DESCRIPTIONS: { [key: string]: string } = {
   'Review': 'Final check'
 };
 
+// Animation variants
+const pageVariants = {
+  initial: { opacity: 0, x: 20 },
+  animate: { opacity: 1, x: 0 },
+  exit: { opacity: 0, x: -20 }
+};
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
+  }
+};
+
 function FloatingOrb({ className, delay = 0, color = "orange" }: { className?: string; delay?: number; color?: string }) {
   const colorClass = color === "amber" ? "bg-amber-500/20" : color === "gold" ? "bg-yellow-500/15" : "bg-orange-500/20";
   return (
-    <div 
-      className={`absolute rounded-full blur-3xl animate-float pointer-events-none ${colorClass} ${className}`}
-      style={{ animationDelay: `${delay}s` }}
+    <motion.div 
+      className={`absolute rounded-full blur-3xl pointer-events-none ${colorClass} ${className}`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        y: [0, -20, 0],
+      }}
+      transition={{ 
+        duration: 6,
+        delay,
+        y: { duration: 6, repeat: Infinity, ease: "easeInOut" }
+      }}
     />
   );
 }
@@ -532,178 +570,237 @@ export default function OnboardingPage() {
 
   // Render the choice screen
   const renderChoiceScreen = () => (
-    <div className="glass-card rounded-3xl p-6 md:p-10">
-      <div className="text-center mb-8">
-        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/25">
-          <FileText className="w-8 h-8 text-white" />
-        </div>
-        <h2 className="text-2xl md:text-3xl font-bold text-white mb-3">
-          Let's Build Your Profile
-        </h2>
-        <p className="text-stone-400 max-w-md mx-auto">
-          Choose how to import your professional details
-        </p>
-      </div>
-
-      <div className="max-w-3xl mx-auto space-y-6">
-        {/* LinkedIn URL Option - Primary */}
-        <div className="p-6 rounded-2xl border-2 border-blue-500/30 bg-gradient-to-br from-blue-500/10 to-blue-600/5 relative">
-          <div className="flex items-start gap-4">
-            <div className="w-12 h-12 shrink-0 rounded-xl bg-blue-500/20 flex items-center justify-center">
-              <Link className="w-6 h-6 text-blue-400" />
-            </div>
-            <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2">
-                <h3 className="text-lg font-semibold text-white">Paste LinkedIn URL</h3>
-                <span className="px-2 py-0.5 text-xs font-medium bg-blue-500/20 text-blue-400 rounded-full">Recommended</span>
-              </div>
-              <p className="text-sm text-stone-400 mb-2">
-                We'll extract your profile: experience, education, skills, certifications, and more
-              </p>
-              <p className="text-xs text-stone-500 mb-4 flex items-center gap-1">
-                <Info className="w-3 h-3" />
-                <span>Some sections may be incomplete. You can add missing details in the next step.</span>
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                <input
-                  type="text"
-                  value={linkedInUrl}
-                  onChange={(e) => setLinkedInUrl(e.target.value)}
-                  placeholder="linkedin.com/in/yourname"
-                  className="flex-1 px-4 py-2.5 bg-stone-800/50 border border-stone-700 rounded-xl text-white placeholder:text-stone-500 focus:outline-none focus:border-blue-500/50 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                  disabled={isExtractingLinkedIn}
-                />
-                <button
-                  onClick={handleLinkedInExtract}
-                  disabled={isExtractingLinkedIn || !linkedInUrl.trim()}
-                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 disabled:bg-stone-700 disabled:cursor-not-allowed text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
-                >
-                  {isExtractingLinkedIn ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      <span>Extracting...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      <span>Extract</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex-1 h-px bg-stone-700/50" />
-          <span className="text-sm text-stone-500">or</span>
-          <div className="flex-1 h-px bg-stone-700/50" />
-        </div>
-
-        {/* Other Options - Grid */}
-        <div className="grid md:grid-cols-2 gap-4">
-          {/* Upload Resume Option */}
-          <div className="relative">
-            <div
-              onClick={() => !isUploading && fileInputRef.current?.click()}
-              className={`group p-5 rounded-2xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+    <motion.div 
+      className="relative"
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+    >
+      {/* Main card */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl shadow-2xl">
+        {/* Decorative gradient orbs */}
+        <div className="absolute -top-24 -right-24 w-48 h-48 bg-orange-500/20 rounded-full blur-3xl" />
+        <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-500/10 rounded-full blur-3xl" />
+        
+        <div className="relative p-8 md:p-12">
+          {/* Header */}
+          <motion.div variants={itemVariants} className="text-center mb-10">
+            <motion.div 
+              className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-2xl shadow-orange-500/30"
+              whileHover={{ scale: 1.05, rotate: 5 }}
+              transition={{ type: "spring", stiffness: 300 }}
             >
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
-                onChange={handleFileUpload}
-                className="hidden"
-              />
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 shrink-0 rounded-lg bg-orange-500/20 flex items-center justify-center group-hover:bg-orange-500/30 transition-colors">
-                  {isUploading ? (
-                    <div className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
-                  ) : (
-                    <Upload className="w-5 h-5 text-orange-400" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-white">
-                      {isUploading ? 'Extracting...' : 'Upload Resume'}
-                    </h3>
-                    {/* Info tooltip trigger */}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowUploadTooltip(!showUploadTooltip);
-                      }}
-                      className="p-1 text-stone-500 hover:text-orange-400 transition-colors"
-                    >
-                      <Info className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-stone-400">PDF, DOCX, or TXT (max 10MB)</p>
-                </div>
-              </div>
-            </div>
+              <FileText className="w-10 h-10 text-white" />
+            </motion.div>
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-3">
+              Let's Build Your Profile
+            </h2>
+            <p className="text-stone-400 max-w-md mx-auto text-lg">
+              Choose how you'd like to import your professional details
+            </p>
+          </motion.div>
 
-            {/* Tooltip with LinkedIn PDF export instructions */}
-            {showUploadTooltip && (
-              <div className="absolute z-20 top-full left-0 right-0 mt-2 p-4 bg-stone-800 border border-stone-700 rounded-xl shadow-xl">
-                <button
-                  onClick={() => setShowUploadTooltip(false)}
-                  className="absolute top-2 right-2 p-1 text-stone-500 hover:text-white"
+          <div className="max-w-3xl mx-auto space-y-6">
+            {/* LinkedIn URL Option - Primary */}
+            <motion.div 
+              variants={itemVariants}
+              className="group relative p-6 rounded-2xl border-2 border-[#0A66C2]/40 bg-gradient-to-br from-[#0A66C2]/15 via-[#0A66C2]/10 to-transparent hover:border-[#0A66C2]/60 transition-all duration-300"
+            >
+              {/* Recommended badge */}
+              <div className="absolute -top-3 left-6">
+                <span className="px-3 py-1 text-xs font-semibold bg-[#0A66C2] text-white rounded-full shadow-lg shadow-[#0A66C2]/30 flex items-center gap-1">
+                  <Zap className="w-3 h-3" />
+                  Fastest
+                </span>
+              </div>
+              
+              <div className="flex items-start gap-4">
+                <motion.div 
+                  className="w-14 h-14 shrink-0 rounded-xl bg-[#0A66C2] flex items-center justify-center shadow-lg shadow-[#0A66C2]/30"
+                  whileHover={{ scale: 1.1 }}
                 >
-                  ×
-                </button>
-                <h4 className="font-medium text-orange-400 mb-2">Pro Tip: Export from LinkedIn</h4>
-                <ol className="text-sm text-stone-300 space-y-1.5">
-                  <li className="flex gap-2">
-                    <span className="text-orange-400 font-medium">1.</span>
-                    <span>Go to your LinkedIn profile</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-orange-400 font-medium">2.</span>
-                    <span>Click "More" button below your name</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-orange-400 font-medium">3.</span>
-                    <span>Select "Save to PDF"</span>
-                  </li>
-                  <li className="flex gap-2">
-                    <span className="text-orange-400 font-medium">4.</span>
-                    <span>Upload that PDF here!</span>
-                  </li>
-                </ol>
+                  <Linkedin className="w-7 h-7 text-white" />
+                </motion.div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-semibold text-white mb-1">Import from LinkedIn</h3>
+                  <p className="text-sm text-stone-400 mb-4">
+                    Instantly extract your experience, education, skills, and certifications
+                  </p>
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="relative flex-1">
+                      <input
+                        type="text"
+                        value={linkedInUrl}
+                        onChange={(e) => setLinkedInUrl(e.target.value)}
+                        placeholder="linkedin.com/in/yourname"
+                        className="w-full px-4 py-3 bg-stone-800/60 border border-stone-700/50 rounded-xl text-white placeholder:text-stone-500 focus:outline-none focus:border-[#0A66C2]/60 focus:ring-2 focus:ring-[#0A66C2]/20 transition-all"
+                        disabled={isExtractingLinkedIn}
+                      />
+                    </div>
+                    <motion.button
+                      onClick={handleLinkedInExtract}
+                      disabled={isExtractingLinkedIn || !linkedInUrl.trim()}
+                      className="px-6 py-3 bg-[#0A66C2] hover:bg-[#004182] disabled:bg-stone-700 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#0A66C2]/20 hover:shadow-xl hover:shadow-[#0A66C2]/30"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      {isExtractingLinkedIn ? (
+                        <>
+                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          <span>Extracting...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="w-5 h-5" />
+                          <span>Extract Profile</span>
+                        </>
+                      )}
+                    </motion.button>
+                  </div>
+                  <p className="text-xs text-stone-500 mt-3 flex items-center gap-1">
+                    <Info className="w-3 h-3" />
+                    <span>You can review and edit all imported data in the next step</span>
+                  </p>
+                </div>
               </div>
-            )}
+            </motion.div>
+
+            {/* Divider */}
+            <motion.div variants={itemVariants} className="flex items-center gap-4 py-2">
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-stone-700 to-transparent" />
+              <span className="text-sm text-stone-500 font-medium">or choose another method</span>
+              <div className="flex-1 h-px bg-gradient-to-r from-transparent via-stone-700 to-transparent" />
+            </motion.div>
+
+            {/* Other Options - Grid */}
+            <motion.div variants={itemVariants} className="grid md:grid-cols-2 gap-4">
+              {/* Upload Resume Option */}
+              <div className="relative">
+                <motion.div
+                  onClick={() => !isUploading && fileInputRef.current?.click()}
+                  className={`group h-full p-5 rounded-2xl border-2 border-dashed border-stone-700/70 hover:border-orange-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300 ${isUploading ? 'opacity-50 pointer-events-none' : ''}`}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.docx,.txt,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/plain"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-orange-500/30 to-amber-500/20 flex items-center justify-center group-hover:from-orange-500/40 group-hover:to-amber-500/30 transition-colors border border-orange-500/20">
+                      {isUploading ? (
+                        <div className="w-5 h-5 border-2 border-orange-400/30 border-t-orange-400 rounded-full animate-spin" />
+                      ) : (
+                        <Upload className="w-5 h-5 text-orange-400" />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold text-white text-lg">
+                          {isUploading ? 'Extracting...' : 'Upload Resume'}
+                        </h3>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowUploadTooltip(!showUploadTooltip);
+                          }}
+                          className="p-1 text-stone-500 hover:text-orange-400 transition-colors"
+                        >
+                          <Info className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <p className="text-sm text-stone-400">PDF, DOCX, or TXT • Max 10MB</p>
+                      <div className="flex items-center gap-2 mt-2 text-xs text-stone-500">
+                        <Sparkles className="w-3 h-3 text-orange-400" />
+                        <span>AI-powered extraction</span>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+
+                {/* Tooltip */}
+                <AnimatePresence>
+                  {showUploadTooltip && (
+                    <motion.div 
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute z-20 top-full left-0 right-0 mt-2 p-4 bg-stone-800 border border-stone-700 rounded-xl shadow-xl"
+                    >
+                      <button
+                        onClick={() => setShowUploadTooltip(false)}
+                        className="absolute top-2 right-2 p-1.5 text-stone-500 hover:text-white rounded-lg hover:bg-stone-700 transition-colors"
+                      >
+                        ×
+                      </button>
+                      <h4 className="font-semibold text-orange-400 mb-3 flex items-center gap-2">
+                        <Linkedin className="w-4 h-4 text-[#0A66C2]" />
+                        Pro Tip: Export from LinkedIn
+                      </h4>
+                      <ol className="text-sm text-stone-300 space-y-2">
+                        {[
+                          'Go to your LinkedIn profile',
+                          'Click "More" button below your name',
+                          'Select "Save to PDF"',
+                          'Upload that PDF here!'
+                        ].map((step, i) => (
+                          <li key={i} className="flex gap-3 items-start">
+                            <span className="w-5 h-5 flex-shrink-0 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-xs font-medium">{i + 1}</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Manual Option */}
+              <motion.div
+                onClick={() => setShowChoice(false)}
+                className="group h-full p-5 rounded-2xl border-2 border-stone-700/70 hover:border-amber-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="flex items-start gap-4">
+                  <div className="w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-amber-500/30 to-yellow-500/20 flex items-center justify-center group-hover:from-amber-500/40 group-hover:to-yellow-500/30 transition-colors border border-amber-500/20">
+                    <PenLine className="w-5 h-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-white text-lg">Start from Scratch</h3>
+                    <p className="text-sm text-stone-400">Enter your details step by step</p>
+                    <div className="flex items-center gap-2 mt-2 text-xs text-stone-500">
+                      <span className="flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                        ~5 minutes
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
           </div>
 
-          {/* Manual Option */}
-          <div
-            onClick={() => setShowChoice(false)}
-            className="group p-5 rounded-2xl border-2 border-stone-700 hover:border-amber-500/50 bg-stone-800/30 hover:bg-stone-800/50 cursor-pointer transition-all duration-300"
-          >
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 shrink-0 rounded-lg bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors">
-                <PenLine className="w-5 h-5 text-amber-400" />
+          {/* Footer */}
+          <motion.div variants={itemVariants} className="flex justify-center mt-10">
+            <div className="flex items-center gap-3 px-4 py-2 rounded-full bg-stone-800/50 border border-stone-700/50">
+              <div className="flex -space-x-1">
+                {['bg-green-500', 'bg-blue-500', 'bg-purple-500'].map((color, i) => (
+                  <div key={i} className={`w-5 h-5 rounded-full ${color} border-2 border-stone-900 flex items-center justify-center`}>
+                    <Check className="w-3 h-3 text-white" />
+                  </div>
+                ))}
               </div>
-              <div>
-                <h3 className="font-semibold text-white">Fill Manually</h3>
-                <p className="text-xs text-stone-400">Enter details step by step (~5 min)</p>
-              </div>
+              <span className="text-sm text-stone-400">Trusted by 10,000+ professionals</span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
-
-      {/* Decorative sparkle */}
-      <div className="flex justify-center mt-8">
-        <div className="flex items-center gap-2 text-stone-500 text-sm">
-          <Sparkles className="w-4 h-4 text-orange-400" />
-          <span>AI-powered extraction saves you time</span>
-        </div>
-      </div>
-    </div>
+    </motion.div>
   );
 
   const renderStep = () => {
@@ -901,69 +998,94 @@ export default function OnboardingPage() {
               <OnboardingStepper steps={STEPS} currentStep={currentStep} completedSteps={completedSteps} />
             </div>
 
-        {/* Step content */}
-        <div className="glass-card rounded-3xl p-8 md:p-12">
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-              {STEPS[currentStep - 1]}
-            </h2>
-            <p className="text-stone-400">
-              {STEP_DESCRIPTIONS[STEPS[currentStep - 1]]}
-            </p>
-          </div>
+        {/* Step content with animations */}
+        <AnimatePresence mode="wait">
+          <motion.div 
+            key={currentStep}
+            className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl shadow-2xl"
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+          >
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-500/5 rounded-full blur-3xl" />
+            
+            <div className="relative p-8 md:p-12">
+              <div className="mb-8">
+                <motion.div 
+                  className="flex items-center gap-3 mb-4"
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-500/20">
+                    <span className="text-white font-bold">{currentStep}</span>
+                  </div>
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white">
+                      {STEPS[currentStep - 1]}
+                    </h2>
+                    <p className="text-stone-400 text-sm">
+                      {STEP_DESCRIPTIONS[STEPS[currentStep - 1]]}
+                    </p>
+                  </div>
+                </motion.div>
+              </div>
 
-          {renderStep()}
-        </div>
+              {renderStep()}
+            </div>
+          </motion.div>
+        </AnimatePresence>
 
-        {/* Progress indicator */}
-        <div className="mt-8 flex items-center justify-center gap-2">
-          {STEPS.map((step, index) => (
-            <div
-              key={step}
-              className={`h-1.5 rounded-full transition-all duration-300 ${
-                index + 1 === currentStep
-                  ? "w-8 bg-gradient-to-r from-orange-500 to-amber-500"
-                  : index + 1 < currentStep
-                  ? "w-4 bg-orange-500/50"
-                  : "w-4 bg-stone-700"
-              }`}
-            />
-          ))}
-        </div>
-
-        {/* Navigation buttons */}
-        <div className="mt-8 flex justify-between items-center">
+        {/* Navigation buttons - Enhanced */}
+        <motion.div 
+          className="mt-8 flex justify-between items-center"
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
           {currentStep === 1 ? (
-            <button
+            <motion.button
               onClick={goToChoice}
-              className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white transition-colors"
+              className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800/50 transition-all"
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               Change Method
-            </button>
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               onClick={prevStep}
-              className="flex items-center gap-2 px-6 py-3 text-white/70 hover:text-white transition-colors"
+              className="group flex items-center gap-2 px-5 py-2.5 rounded-xl text-stone-400 hover:text-white hover:bg-stone-800/50 transition-all"
+              whileHover={{ x: -3 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 transition-transform group-hover:-translate-x-1" />
               Back
-            </button>
+            </motion.button>
           )}
 
           {currentStep < STEPS.length ? (
-            <button
+            <motion.button
               onClick={saveAndContinue}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
+              className="group flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-xl hover:shadow-orange-500/30 transition-all"
+              whileHover={{ scale: 1.02, x: 3 }}
+              whileTap={{ scale: 0.98 }}
             >
               Continue
-              <ChevronRight className="w-5 h-5" />
-            </button>
+              <ArrowRight className="w-5 h-5 transition-transform group-hover:translate-x-1" />
+            </motion.button>
           ) : (
-            <button
+            <motion.button
               onClick={completeOnboarding}
               disabled={isSaving}
-              className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl hover:shadow-lg hover:shadow-green-500/25 transition-all disabled:opacity-50"
+              className="group flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-semibold rounded-xl shadow-lg shadow-green-500/20 hover:shadow-xl hover:shadow-green-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              whileHover={{ scale: isSaving ? 1 : 1.02 }}
+              whileTap={{ scale: isSaving ? 1 : 0.98 }}
             >
               {isSaving ? (
                 <>
@@ -974,11 +1096,12 @@ export default function OnboardingPage() {
                 <>
                   <CheckCircle className="w-5 h-5" />
                   Complete Profile
+                  <Sparkles className="w-4 h-4 ml-1" />
                 </>
               )}
-            </button>
+            </motion.button>
           )}
-        </div>
+        </motion.div>
           </>
         )}
       </main>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, avatar as avatarApi, SubscriptionStatus } from '@/lib/api';
 import { config } from '@/lib/config';
@@ -35,12 +36,38 @@ interface JobQueue {
 // Floating orb for background
 function FloatingOrb({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
-    <div 
+    <motion.div 
       className={`floating-orb floating-orb-orange ${className}`}
-      style={{ animationDelay: `${delay}s` }}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ 
+        opacity: 1, 
+        scale: 1,
+        y: [0, -30, 0]
+      }}
+      transition={{ 
+        duration: 8,
+        delay,
+        y: { duration: 8, repeat: Infinity, ease: "easeInOut" }
+      }}
     />
   );
 }
+
+// Animation variants
+const tabContentVariants = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.1, duration: 0.4, ease: "easeOut" }
+  })
+};
 
 export default function AppPage() {
   const router = useRouter();
@@ -567,26 +594,37 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* Tabs */}
+      {/* Tabs - Enhanced */}
       <div className="glass-subtle border-b border-white/5 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex gap-1 min-w-max">
             {tabs.map((tab) => (
-              <button
+              <motion.button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-4 font-medium transition-all relative ${
+                className={`relative flex items-center gap-2 px-6 py-4 font-medium transition-all ${
                   activeTab === tab.id
                     ? 'text-orange-400'
                     : 'text-stone-400 hover:text-white'
                 }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
               >
-                <tab.icon className="h-4 w-4" />
+                <motion.div
+                  animate={activeTab === tab.id ? { scale: [1, 1.2, 1] } : {}}
+                  transition={{ duration: 0.3 }}
+                >
+                  <tab.icon className="h-4 w-4" />
+                </motion.div>
                 <span>{tab.label}</span>
                 {activeTab === tab.id && (
-                  <div className="absolute bottom-0 left-4 right-4 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full" />
+                  <motion.div 
+                    className="absolute bottom-0 left-4 right-4 h-0.5 bg-gradient-to-r from-orange-500 to-amber-500 rounded-full"
+                    layoutId="activeTab"
+                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                  />
                 )}
-              </button>
+              </motion.button>
             ))}
           </div>
         </div>
@@ -594,17 +632,36 @@ export default function AppPage() {
 
       {/* Content */}
       <main className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
+        <AnimatePresence mode="wait">
         {/* Profile Tab */}
         {activeTab === 'profile' && profile && (
-          <div className="space-y-6 animate-fade-in-up">
+          <motion.div 
+            key="profile"
+            className="space-y-6"
+            variants={tabContentVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            transition={{ duration: 0.3 }}
+          >
             {/* Profile Header */}
-            <div className="glass-card p-8">
-              <div className="flex flex-col md:flex-row md:items-center gap-6">
+            <motion.div 
+              className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl p-8"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {/* Decorative gradient */}
+              <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+              
+              <div className="relative flex flex-col md:flex-row md:items-center gap-6">
                 {/* Clickable Avatar */}
-                <div 
+                <motion.div 
                   onClick={() => avatarInputRef.current?.click()}
                   className="relative w-20 h-20 rounded-2xl cursor-pointer group"
                   title="Click to upload profile picture"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
                   {avatarUrl ? (
                     <img 
@@ -632,7 +689,7 @@ export default function AppPage() {
                     onChange={handleAvatarUpload}
                     className="hidden"
                   />
-                </div>
+                </motion.div>
                 <div className="flex-1">
                   <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
                     {profile.basics.full_name || 'Complete Your Profile'}
@@ -695,7 +752,7 @@ export default function AppPage() {
                   <div className="progress-bar-fill" style={{ width: `${completeness}%` }} />
                 </div>
               </div>
-            </div>
+            </motion.div>
 
             {/* Profile Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -795,7 +852,7 @@ export default function AppPage() {
                 <ShareButtons />
               </div>
             </div>
-          </div>
+          </motion.div>
         )}
 
         {/* Generate Tab */}
@@ -1012,6 +1069,7 @@ export default function AppPage() {
             )}
           </div>
         )}
+        </AnimatePresence>
       </main>
 
       {/* Delete Confirmation Modal */}

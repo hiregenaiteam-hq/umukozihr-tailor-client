@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
 import toast, { Toaster } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 import { publicProfile } from '@/lib/api';
 import { ProfileV3 } from '@/lib/types';
 import { HeaderLogo } from '@/components/Logo';
@@ -10,6 +11,37 @@ import {
   Briefcase, GraduationCap, Code, Award, Languages,
   Calendar, CheckCircle, Sparkles, FileText, ArrowRight
 } from 'lucide-react';
+
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    transition: { type: "spring" as const, stiffness: 300, damping: 24 }
+  }
+};
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: { type: "spring" as const, stiffness: 200, damping: 20 }
+  }
+};
 
 interface PublicProfileData {
   username: string;
@@ -21,12 +53,26 @@ interface PublicProfileData {
   avatar_url?: string;
 }
 
-// Floating orb component for background
+// Floating orb component for background with motion
 function FloatingOrb({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
-    <div 
-      className={`floating-orb floating-orb-orange ${className}`}
-      style={{ animationDelay: `${delay}s` }}
+    <motion.div 
+      className={`absolute rounded-full blur-3xl opacity-20 ${className}`}
+      initial={{ opacity: 0, scale: 0.8 }}
+      animate={{ 
+        opacity: 0.15, 
+        scale: [1, 1.1, 1],
+        x: [0, 30, 0],
+        y: [0, -20, 0]
+      }}
+      transition={{
+        delay,
+        duration: 8,
+        repeat: Infinity,
+        repeatType: "reverse" as const,
+        ease: "easeInOut"
+      }}
+      style={{ background: 'linear-gradient(135deg, #f97316, #fbbf24)' }}
     />
   );
 }
@@ -102,14 +148,39 @@ export default function PublicProfilePage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-[#0c0a09] flex items-center justify-center">
-        <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-6">
-            <div className="absolute inset-0 rounded-full border-2 border-orange-500/20" />
-            <div className="absolute inset-0 rounded-full border-2 border-t-orange-500 animate-spin" />
-            <Sparkles className="absolute inset-0 m-auto h-6 w-6 text-orange-400" />
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <motion.div 
+              className="absolute inset-0 rounded-full border-2 border-orange-500/20"
+              animate={{ scale: [1, 1.1, 1] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            />
+            <motion.div 
+              className="absolute inset-0 rounded-full border-2 border-t-orange-500 border-r-amber-500"
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: "linear" }}
+            />
+            <motion.div
+              className="absolute inset-0 m-auto flex items-center justify-center"
+              animate={{ scale: [1, 1.2, 1] }}
+              transition={{ duration: 1.5, repeat: Infinity }}
+            >
+              <Sparkles className="h-7 w-7 text-orange-400" />
+            </motion.div>
           </div>
-          <p className="text-stone-400">Loading profile...</p>
-        </div>
+          <motion.p 
+            className="text-stone-400 font-medium"
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            Loading profile...
+          </motion.p>
+        </motion.div>
       </div>
     );
   }
@@ -120,21 +191,33 @@ export default function PublicProfilePage() {
         <Head>
           <title>Profile Not Found | UmukoziHR Tailor</title>
         </Head>
-        <div className="text-center glass-card p-8 max-w-md mx-4">
-          <div className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4">
+        <motion.div 
+          className="text-center rounded-2xl border border-white/10 bg-stone-900/80 backdrop-blur-xl p-8 max-w-md mx-4"
+          initial={{ opacity: 0, y: 20, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ type: "spring" as const, stiffness: 200, damping: 20 }}
+        >
+          <motion.div 
+            className="w-16 h-16 rounded-full bg-red-500/20 flex items-center justify-center mx-auto mb-4"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring" as const, stiffness: 300 }}
+          >
             <User className="h-8 w-8 text-red-400" />
-          </div>
+          </motion.div>
           <h1 className="text-2xl font-bold text-white mb-2">{error}</h1>
           <p className="text-stone-400 mb-6">
             The profile you're looking for doesn't exist or is private.
           </p>
-          <a
+          <motion.a
             href="https://tailor.umukozihr.com"
-            className="btn-primary inline-flex items-center gap-2"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             Create Your Profile <ArrowRight className="h-4 w-4" />
-          </a>
-        </div>
+          </motion.a>
+        </motion.div>
       </div>
     );
   }
@@ -158,46 +241,71 @@ export default function PublicProfilePage() {
         <div className="fixed inset-0 bg-mesh pointer-events-none" />
         <FloatingOrb className="w-[500px] h-[500px] -top-32 -right-32" delay={0} />
         <FloatingOrb className="w-[400px] h-[400px] bottom-0 -left-20" delay={3} />
+        <FloatingOrb className="w-[300px] h-[300px] top-1/2 left-1/2" delay={5} />
 
         {/* Header with CTA */}
-        <header className="sticky top-0 z-50 glass-heavy border-b border-white/5">
+        <motion.header 
+          className="sticky top-0 z-50 border-b border-white/5 bg-stone-950/80 backdrop-blur-xl"
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.4 }}
+        >
           <div className="max-w-4xl mx-auto px-6 py-4">
             <div className="flex justify-between items-center">
               <a href="https://tailor.umukozihr.com" className="flex items-center gap-3 group">
                 <HeaderLogo size="md" />
               </a>
-              <a
+              <motion.a
                 href="https://tailor.umukozihr.com"
-                className="btn-primary text-sm flex items-center gap-2"
+                className="text-sm flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold shadow-lg shadow-orange-500/20"
+                whileHover={{ scale: 1.05, boxShadow: '0 10px 30px rgba(249, 115, 22, 0.3)' }}
+                whileTap={{ scale: 0.95 }}
               >
                 Create Your Profile <ArrowRight className="h-4 w-4" />
-              </a>
+              </motion.a>
             </div>
           </div>
-        </header>
+        </motion.header>
 
         {/* Main Content */}
         <main className="relative z-10 max-w-4xl mx-auto px-6 py-8">
           {/* Profile Hero */}
-          <div className="glass-card p-8 mb-6 animate-fade-in-up">
+          <motion.div 
+            className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-8 mb-6"
+            variants={cardVariants}
+            initial="hidden"
+            animate="visible"
+          >
             <div className="flex flex-col md:flex-row md:items-start gap-6">
               {/* Avatar */}
               {profileData.avatar_url ? (
-                <img 
+                <motion.img 
                   src={profileData.avatar_url} 
                   alt={profile.basics.full_name || 'Profile'}
-                  className="w-24 h-24 rounded-2xl object-cover shrink-0"
+                  className="w-24 h-24 rounded-2xl object-cover shrink-0 ring-2 ring-orange-500/30"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
                 />
               ) : (
-                <div className="neu-raised w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold text-gradient shrink-0">
+                <motion.div 
+                  className="w-24 h-24 rounded-2xl flex items-center justify-center text-4xl font-bold shrink-0 bg-gradient-to-br from-orange-500 to-amber-500 text-white"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ delay: 0.2 }}
+                >
                   {profile.basics.full_name?.charAt(0)?.toUpperCase() || '?'}
-                </div>
+                </motion.div>
               )}
               
               {/* Info */}
               <div className="flex-1">
                 <div className="flex items-start justify-between flex-wrap gap-4">
-                  <div>
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                  >
                     <h1 className="text-3xl font-bold text-white mb-2">
                       {profile.basics.full_name || 'Professional'}
                     </h1>
@@ -208,62 +316,82 @@ export default function PublicProfilePage() {
                     <div className="flex flex-wrap items-center gap-4 text-sm text-stone-400">
                       {profile.basics.location && (
                         <span className="flex items-center gap-1">
-                          <MapPin className="h-4 w-4" />
+                          <MapPin className="h-4 w-4 text-orange-400" />
                           {profile.basics.location}
                         </span>
                       )}
                       {profile.basics.email && (
-                        <a 
+                        <motion.a 
                           href={`mailto:${profile.basics.email}`}
                           className="flex items-center gap-1 hover:text-orange-400 transition"
+                          whileHover={{ x: 3 }}
                         >
-                          <Mail className="h-4 w-4" />
+                          <Mail className="h-4 w-4 text-orange-400" />
                           {profile.basics.email}
-                        </a>
+                        </motion.a>
                       )}
                       {profile.basics.website && (
-                        <a 
+                        <motion.a 
                           href={profile.basics.website}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="flex items-center gap-1 hover:text-orange-400 transition"
+                          whileHover={{ x: 3 }}
                         >
-                          <Globe className="h-4 w-4" />
+                          <Globe className="h-4 w-4 text-orange-400" />
                           Website
-                        </a>
+                        </motion.a>
                       )}
                     </div>
-                  </div>
+                  </motion.div>
                   
                   {is_available_for_hire && (
-                    <span className="badge badge-green">
-                      <CheckCircle className="h-3 w-3 mr-1" />
+                    <motion.span 
+                      className="px-3 py-1.5 rounded-full bg-green-500/20 text-green-400 text-sm font-medium flex items-center gap-1.5 border border-green-500/30"
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 0.4 }}
+                    >
+                      <CheckCircle className="h-3.5 w-3.5" />
                       Open to opportunities
-                    </span>
+                    </motion.span>
                   )}
                 </div>
                 
                 {/* Stats */}
-                <div className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10 text-sm">
+                <motion.div 
+                  className="flex items-center gap-6 mt-6 pt-6 border-t border-white/10 text-sm"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <div className="text-stone-400">
                     <span className="text-white font-semibold">{profile_views}</span> profile views
                   </div>
                   <div className="text-stone-400">
                     Member since <span className="text-white font-semibold">{member_since}</span>
                   </div>
-                </div>
+                </motion.div>
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Summary */}
           {profile.basics.summary && (
-            <div className="glass-card p-6 mb-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <h2 className="text-lg font-semibold text-white mb-3">About</h2>
+            <motion.div 
+              className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6 mb-6"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h2 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-orange-400" />
+                About
+              </h2>
               <p className="text-stone-300 leading-relaxed whitespace-pre-line">
                 {profile.basics.summary}
               </p>
-            </div>
+            </motion.div>
           )}
 
           {/* Two Column Layout */}
@@ -272,22 +400,37 @@ export default function PublicProfilePage() {
             <div className="lg:col-span-2 space-y-6">
               {/* Experience */}
               {profile.experience && profile.experience.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
                       <Briefcase className="h-5 w-5 text-orange-400" />
                     </div>
                     <h2 className="text-lg font-semibold text-white">Experience</h2>
                   </div>
-                  <div className="space-y-4">
+                  <motion.div 
+                    className="space-y-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {profile.experience.map((exp, idx) => (
-                      <div key={idx} className="glass-subtle p-4 rounded-xl">
+                      <motion.div 
+                        key={idx} 
+                        className="p-4 rounded-xl bg-stone-800/50 border border-white/5 hover:border-orange-500/30 transition-all"
+                        variants={itemVariants}
+                        whileHover={{ x: 4 }}
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <div>
                             <h3 className="font-semibold text-white">{exp.title}</h3>
                             <p className="text-orange-400">{exp.company}</p>
                           </div>
-                          <span className="text-sm text-stone-500 flex items-center gap-1">
+                          <span className="text-sm text-stone-500 flex items-center gap-1 bg-stone-900/50 px-2 py-1 rounded-lg">
                             <Calendar className="h-3 w-3" />
                             {exp.start} - {exp.end}
                           </span>
@@ -304,31 +447,46 @@ export default function PublicProfilePage() {
                             ))}
                           </ul>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
 
               {/* Education */}
               {profile.education && profile.education.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
                       <GraduationCap className="h-5 w-5 text-amber-400" />
                     </div>
                     <h2 className="text-lg font-semibold text-white">Education</h2>
                   </div>
-                  <div className="space-y-4">
+                  <motion.div 
+                    className="space-y-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {profile.education.map((edu, idx) => (
-                      <div key={idx} className="glass-subtle p-4 rounded-xl">
+                      <motion.div 
+                        key={idx} 
+                        className="p-4 rounded-xl bg-stone-800/50 border border-white/5 hover:border-amber-500/30 transition-all"
+                        variants={itemVariants}
+                        whileHover={{ x: 4 }}
+                      >
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-semibold text-white">{edu.degree}</h3>
                             <p className="text-amber-400">{edu.school}</p>
                           </div>
                           {(edu.start || edu.end) && (
-                            <span className="text-sm text-stone-500">
+                            <span className="text-sm text-stone-500 bg-stone-900/50 px-2 py-1 rounded-lg">
                               {edu.start} - {edu.end}
                             </span>
                           )}
@@ -336,41 +494,58 @@ export default function PublicProfilePage() {
                         {edu.gpa && (
                           <p className="text-sm text-stone-400 mt-1">GPA: {edu.gpa}</p>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
 
               {/* Projects */}
               {profile.projects && profile.projects.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
                       <Code className="h-5 w-5 text-blue-400" />
                     </div>
                     <h2 className="text-lg font-semibold text-white">Projects</h2>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <motion.div 
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {profile.projects.map((project, idx) => (
-                      <div key={idx} className="glass-subtle p-4 rounded-xl">
+                      <motion.div 
+                        key={idx} 
+                        className="p-4 rounded-xl bg-stone-800/50 border border-white/5 hover:border-blue-500/30 transition-all"
+                        variants={itemVariants}
+                        whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                      >
                         <div className="flex items-start justify-between mb-2">
                           <h3 className="font-semibold text-white">{project.name}</h3>
                           {project.url && (
-                            <a 
+                            <motion.a 
                               href={project.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-400 hover:text-blue-300"
+                              className="text-blue-400 hover:text-blue-300 p-1 rounded-lg hover:bg-blue-500/10 transition"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
                             >
                               <ExternalLink className="h-4 w-4" />
-                            </a>
+                            </motion.a>
                           )}
                         </div>
                         {project.stack && project.stack.length > 0 && (
                           <div className="flex flex-wrap gap-1 mb-2">
                             {project.stack.map((tech, tIdx) => (
-                              <span key={tIdx} className="badge badge-blue text-xs">{tech}</span>
+                              <span key={tIdx} className="px-2 py-0.5 text-xs rounded-md bg-blue-500/20 text-blue-300 border border-blue-500/30">{tech}</span>
                             ))}
                           </div>
                         )}
@@ -381,10 +556,10 @@ export default function PublicProfilePage() {
                             ))}
                           </ul>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
             </div>
 
@@ -392,11 +567,24 @@ export default function PublicProfilePage() {
             <div className="space-y-6">
               {/* Skills - Organized by Category */}
               {profile.skills && profile.skills.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                  <h2 className="text-lg font-semibold text-white mb-4">Skills</h2>
-                  <div className="space-y-4">
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-orange-400" />
+                    Skills
+                  </h2>
+                  <motion.div 
+                    className="space-y-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {profile.skills.map((skill, idx) => (
-                      <div key={idx}>
+                      <motion.div key={idx} variants={itemVariants}>
                         {/* Category header */}
                         <div className="flex items-center gap-2 mb-2">
                           <span className={`text-sm font-medium ${
@@ -406,7 +594,13 @@ export default function PublicProfilePage() {
                           }`}>
                             {skill.name}
                           </span>
-                          <span className="text-xs text-stone-500">({skill.level})</span>
+                          <span className={`text-xs px-1.5 py-0.5 rounded-md ${
+                            skill.level === 'expert' ? 'bg-orange-500/20 text-orange-400' : 
+                            skill.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 
+                            'bg-stone-700 text-stone-400'
+                          }`}>
+                            {skill.level}
+                          </span>
                         </div>
                         {/* Keywords/actual skills */}
                         {skill.keywords && skill.keywords.length > 0 && (
@@ -414,59 +608,92 @@ export default function PublicProfilePage() {
                             {skill.keywords.map((keyword, kidx) => (
                               <span 
                                 key={kidx} 
-                                className="px-2 py-0.5 text-xs rounded-md bg-stone-800 text-stone-300 border border-stone-700"
+                                className="px-2 py-0.5 text-xs rounded-md bg-stone-800 text-stone-300 border border-stone-700 hover:border-orange-500/30 transition-colors"
                               >
                                 {keyword}
                               </span>
                             ))}
                           </div>
                         )}
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
 
               {/* Languages */}
               {profile.languages && profile.languages.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.4 }}
+                >
                   <div className="flex items-center gap-2 mb-4">
                     <Languages className="h-5 w-5 text-green-400" />
                     <h2 className="text-lg font-semibold text-white">Languages</h2>
                   </div>
                   <div className="space-y-2">
                     {profile.languages.map((lang, idx) => (
-                      <div key={idx} className="flex justify-between text-sm">
+                      <motion.div 
+                        key={idx} 
+                        className="flex justify-between text-sm p-2 rounded-lg hover:bg-stone-800/50 transition"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.4 + idx * 0.1 }}
+                      >
                         <span className="text-white">{lang.name}</span>
-                        <span className="text-stone-400">{lang.level}</span>
-                      </div>
+                        <span className="text-stone-400 bg-stone-800 px-2 py-0.5 rounded-md text-xs">{lang.level}</span>
+                      </motion.div>
                     ))}
                   </div>
-                </div>
+                </motion.div>
               )}
 
               {/* Certifications */}
               {profile.certifications && profile.certifications.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                >
                   <div className="flex items-center gap-2 mb-4">
                     <Award className="h-5 w-5 text-purple-400" />
                     <h2 className="text-lg font-semibold text-white">Certifications</h2>
                   </div>
-                  <div className="space-y-3">
+                  <motion.div 
+                    className="space-y-3"
+                    variants={containerVariants}
+                    initial="hidden"
+                    animate="visible"
+                  >
                     {profile.certifications.map((cert, idx) => (
-                      <div key={idx} className="glass-subtle p-3 rounded-lg">
+                      <motion.div 
+                        key={idx} 
+                        className="p-3 rounded-xl bg-stone-800/50 border border-white/5 hover:border-purple-500/30 transition"
+                        variants={itemVariants}
+                      >
                         <p className="font-medium text-white text-sm">{cert.name}</p>
                         <p className="text-xs text-stone-400">{cert.issuer}</p>
-                      </div>
+                      </motion.div>
                     ))}
-                  </div>
-                </div>
+                  </motion.div>
+                </motion.div>
               )}
 
               {/* Links */}
               {profile.basics.links && profile.basics.links.length > 0 && (
-                <div className="glass-card p-6 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-                  <h2 className="text-lg font-semibold text-white mb-4">Links</h2>
+                <motion.div 
+                  className="rounded-2xl border border-white/10 bg-stone-900/60 backdrop-blur-xl p-6"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                    <ExternalLink className="h-5 w-5 text-orange-400" />
+                    Links
+                  </h2>
                   <div className="space-y-2">
                     {profile.basics.links
                       .filter((link) => {
@@ -487,49 +714,84 @@ export default function PublicProfilePage() {
                           // Fallback to the link itself
                         }
                         return (
-                          <a
+                          <motion.a
                             key={idx}
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition"
+                            className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition p-2 rounded-lg hover:bg-stone-800/50"
+                            whileHover={{ x: 4 }}
                           >
                             <ExternalLink className="h-4 w-4" />
                             {hostname}
-                          </a>
+                          </motion.a>
                         );
                       })}
                   </div>
-                </div>
+                </motion.div>
               )}
             </div>
           </div>
 
           {/* CTA Banner */}
-          <div className="mt-12 glass-card p-8 text-center animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
-            <div className="max-w-2xl mx-auto">
-              <div className="neu-raised w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Sparkles className="h-8 w-8 text-orange-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-white mb-2">
+          <motion.div 
+            className="mt-12 rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/80 to-stone-950/80 backdrop-blur-xl p-8 text-center overflow-hidden relative"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            {/* Decorative gradient orbs */}
+            <div className="absolute -top-20 -right-20 w-40 h-40 rounded-full bg-orange-500/20 blur-3xl" />
+            <div className="absolute -bottom-20 -left-20 w-40 h-40 rounded-full bg-amber-500/20 blur-3xl" />
+            
+            <div className="max-w-2xl mx-auto relative z-10">
+              <motion.div 
+                className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 bg-gradient-to-br from-orange-500 to-amber-500 shadow-lg shadow-orange-500/30"
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ delay: 0.9, type: "spring" as const, stiffness: 200 }}
+              >
+                <Sparkles className="h-8 w-8 text-white" />
+              </motion.div>
+              <motion.h2 
+                className="text-2xl font-bold text-white mb-2"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1 }}
+              >
                 Create Your Professional Profile
-              </h2>
-              <p className="text-stone-400 mb-6">
+              </motion.h2>
+              <motion.p 
+                className="text-stone-400 mb-6"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 1.1 }}
+              >
                 Join thousands of professionals using UmukoziHR Tailor to create AI-powered, 
                 tailored resumes and shareable profiles.
-              </p>
-              <a
+              </motion.p>
+              <motion.a
                 href="https://tailor.umukozihr.com"
-                className="btn-primary inline-flex items-center gap-2 text-lg px-8 py-3"
+                className="inline-flex items-center gap-2 text-lg px-8 py-3 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold shadow-lg shadow-orange-500/30"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 1.2 }}
+                whileHover={{ scale: 1.05, boxShadow: '0 15px 40px rgba(249, 115, 22, 0.4)' }}
+                whileTap={{ scale: 0.95 }}
               >
                 Get Started Free <ArrowRight className="h-5 w-5" />
-              </a>
+              </motion.a>
             </div>
-          </div>
+          </motion.div>
         </main>
 
         {/* Footer */}
-        <footer className="relative z-10 border-t border-white/5 mt-12">
+        <motion.footer 
+          className="relative z-10 border-t border-white/5 mt-12"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
           <div className="max-w-4xl mx-auto px-6 py-8">
             <div className="flex flex-col md:flex-row justify-between items-center gap-4">
               <div className="flex items-center gap-2 text-stone-400 text-sm">
@@ -541,7 +803,7 @@ export default function PublicProfilePage() {
               </div>
             </div>
           </div>
-        </footer>
+        </motion.footer>
       </div>
     </>
   );
