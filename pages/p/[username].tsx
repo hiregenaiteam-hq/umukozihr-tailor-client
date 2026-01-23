@@ -694,7 +694,7 @@ export default function PublicProfilePage() {
                         transition={{ delay: 0.4 + idx * 0.1 }}
                       >
                         <span className="text-white">{lang.name}</span>
-                        <span className="text-stone-500 text-xs">{lang.level}</span>
+                        <span className="text-stone-500 text-xs ml-2">{lang.level}</span>
                       </motion.div>
                     ))}
                   </div>
