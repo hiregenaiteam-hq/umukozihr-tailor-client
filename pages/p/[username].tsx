@@ -184,13 +184,13 @@ export default function PublicProfilePage() {
         <meta property="og:description" content={description} />
         <meta property="og:url" content={url} />
         <meta property="og:type" content="profile" />
-        <meta property="og:image" content="https://tailor.umukozihr.com/og-profile.png" />
+        <meta property="og:image" content="https://tailor.umukozihr.com/media/og-image.png" />
         <meta property="og:site_name" content="UmukoziHR Tailor" />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={title} />
         <meta name="twitter:description" content={description} />
-        <meta name="twitter:image" content="https://tailor.umukozihr.com/og-profile.png" />
+        <meta name="twitter:image" content="https://tailor.umukozihr.com/media/og-image.png" />
         
         <meta property="profile:first_name" content={profile.basics.full_name?.split(' ')[0] || ''} />
         <meta property="profile:last_name" content={profile.basics.full_name?.split(' ').slice(1).join(' ') || ''} />

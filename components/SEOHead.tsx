@@ -58,14 +58,14 @@ export default function SEOHead({
       <meta property="og:locale" content="en_US" />
 
       {/* Twitter */}
-      <meta property="twitter:card" content="summary_large_image" />
-      <meta property="twitter:url" content={url} />
-      <meta property="twitter:title" content={title} />
-      <meta property="twitter:description" content={description} />
-      <meta property="twitter:image" content={image} />
-      <meta property="twitter:image:alt" content="UmukoziHR Resume Tailor" />
-      <meta property="twitter:creator" content={twitterHandle} />
-      <meta property="twitter:site" content={twitterHandle} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:url" content={url} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+      <meta name="twitter:image:alt" content="UmukoziHR Resume Tailor" />
+      <meta name="twitter:creator" content={twitterHandle} />
+      <meta name="twitter:site" content={twitterHandle} />
 
       {/* LinkedIn */}
       <meta property="og:image:secure_url" content={image} />
