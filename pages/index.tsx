@@ -541,7 +541,7 @@ export default function Home() {
               onClick={() => { setAuthMode('sign-up'); setShowAuthModal(true); }}
               className="px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-orange-500 to-amber-500 rounded-xl hover:shadow-lg hover:shadow-orange-500/25 transition-all"
             >
-              Get Started
+              Land Your Role
             </button>
           </div>
         </div>
@@ -587,8 +587,8 @@ export default function Home() {
             transition={{ delay: 1, duration: 0.6 }}
             className="text-xl text-stone-400 max-w-2xl mx-auto mb-10"
           >
-            Tailor your resume to any job posting in seconds. Our AI analyzes job descriptions 
-            and optimizes your application for ATS systems and recruiters.
+            Stop applying into the void. Our AI tailors your resume to beat ATS systems 
+            and catch recruiters' eyes in seconds—not hours.
           </motion.p>
 
           {/* CTA Buttons */}
@@ -606,7 +606,7 @@ export default function Home() {
             >
               <span className="relative z-10 flex items-center gap-2">
                 <Rocket className="w-5 h-5" />
-                Get Started Free
+                Land Your Dream Role Now
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </span>
               {/* Shine effect */}
@@ -988,10 +988,10 @@ export default function Home() {
             <div className="relative">
               <Award className="w-12 h-12 text-orange-400 mx-auto mb-6" />
               <h2 className="text-4xl md:text-5xl font-bold text-white mb-4">
-                Ready to Land Your Dream Job?
+                Stop Getting Ghosted. Start Getting Hired.
               </h2>
               <p className="text-lg text-stone-400 mb-8 max-w-xl mx-auto">
-                Join thousands of successful job seekers who've transformed their career with AI-powered resumes.
+                Your dream job is one tailored resume away. Join thousands who landed roles at top companies.
               </p>
               <motion.button
                 onClick={() => { setAuthMode('sign-up'); setShowAuthModal(true); }}
@@ -1000,10 +1000,10 @@ export default function Home() {
                 className="inline-flex items-center justify-center gap-3 px-10 py-5 rounded-2xl font-bold text-lg text-white bg-gradient-to-r from-orange-500 to-amber-500 shadow-[0_0_40px_rgba(249,115,22,0.4)] hover:shadow-[0_0_60px_rgba(249,115,22,0.5)] transition-all"
               >
                 <Rocket className="w-5 h-5" />
-                Start Free Today
+                Build My Winning Resume
                 <ArrowRight className="w-5 h-5" />
               </motion.button>
-              <p className="text-sm text-stone-500 mt-4">No credit card required</p>
+              <p className="text-sm text-stone-500 mt-4">Free to start • No credit card required</p>
             </div>
           </div>
         </motion.div>
