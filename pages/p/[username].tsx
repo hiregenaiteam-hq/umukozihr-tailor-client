@@ -9,7 +9,7 @@ import { HeaderLogo } from '@/components/Logo';
 import { 
   User, MapPin, Mail, Phone, Globe, ExternalLink, 
   Briefcase, GraduationCap, Code, Award, Languages,
-  Calendar, CheckCircle, Sparkles, FileText, ArrowRight
+  Calendar, CheckCircle, Sparkles, FileText, ArrowRight, X, ChevronRight
 } from 'lucide-react';
 
 // Animation variants
@@ -85,6 +85,7 @@ export default function PublicProfilePage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [showSkillsModal, setShowSkillsModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -573,17 +574,27 @@ export default function PublicProfilePage() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 }}
                 >
-                  <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-orange-400" />
-                    Skills
-                  </h2>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Sparkles className="h-5 w-5 text-orange-400" />
+                      Skills ({profile.skills.length})
+                    </h2>
+                    {profile.skills.length > 4 && (
+                      <button
+                        onClick={() => setShowSkillsModal(true)}
+                        className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
+                      >
+                        View All <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
                   <motion.div 
                     className="space-y-4"
                     variants={containerVariants}
                     initial="hidden"
                     animate="visible"
                   >
-                    {profile.skills.map((skill, idx) => (
+                    {profile.skills.slice(0, 4).map((skill, idx) => (
                       <motion.div key={idx} variants={itemVariants}>
                         {/* Category header */}
                         <div className="flex items-center gap-2 mb-2">
@@ -601,11 +612,14 @@ export default function PublicProfilePage() {
                           }`}>
                             {skill.level}
                           </span>
+                          {skill.keywords && skill.keywords.length > 0 && (
+                            <span className="text-xs text-stone-500">({skill.keywords.length})</span>
+                          )}
                         </div>
-                        {/* Keywords/actual skills */}
+                        {/* Keywords/actual skills - truncated */}
                         {skill.keywords && skill.keywords.length > 0 && (
                           <div className="flex flex-wrap gap-1.5">
-                            {skill.keywords.map((keyword, kidx) => (
+                            {skill.keywords.slice(0, 6).map((keyword, kidx) => (
                               <span 
                                 key={kidx} 
                                 className="px-2 py-0.5 text-xs rounded-md bg-stone-800 text-stone-300 border border-stone-700 hover:border-orange-500/30 transition-colors"
@@ -613,10 +627,24 @@ export default function PublicProfilePage() {
                                 {keyword}
                               </span>
                             ))}
+                            {skill.keywords.length > 6 && (
+                              <span className="px-2 py-0.5 text-xs rounded-md bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                +{skill.keywords.length - 6}
+                              </span>
+                            )}
                           </div>
                         )}
                       </motion.div>
                     ))}
+                    {profile.skills.length > 4 && (
+                      <button
+                        onClick={() => setShowSkillsModal(true)}
+                        className="w-full py-2.5 text-sm text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <span>View all {profile.skills.length} categories</span>
+                        <ChevronRight className="h-4 w-4" />
+                      </button>
+                    )}
                   </motion.div>
                 </motion.div>
               )}
@@ -804,6 +832,99 @@ export default function PublicProfilePage() {
             </div>
           </div>
         </motion.footer>
+
+        {/* Skills Modal */}
+        <AnimatePresence>
+          {showSkillsModal && profile && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowSkillsModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="w-full max-w-2xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                      <Sparkles className="h-5 w-5 text-orange-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-semibold text-white">All Skills</h2>
+                      <p className="text-sm text-stone-400">
+                        {profile.skills?.length || 0} categories • {profile.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total skills
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setShowSkillsModal(false)}
+                    className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+                
+                {/* Modal Body - Scrollable */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  {profile.skills?.map((skill, idx) => (
+                    <div key={idx} className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm font-semibold ${
+                          skill.level === 'expert' ? 'text-orange-400' : 
+                          skill.level === 'intermediate' ? 'text-amber-400' : 
+                          'text-stone-400'
+                        }`}>
+                          {skill.name}
+                        </span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          skill.level === 'expert' ? 'bg-orange-500/20 text-orange-400' : 
+                          skill.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 
+                          'bg-stone-700 text-stone-400'
+                        }`}>
+                          {skill.level}
+                        </span>
+                        {skill.keywords && skill.keywords.length > 0 && (
+                          <span className="text-xs text-stone-500">
+                            ({skill.keywords.length} skills)
+                          </span>
+                        )}
+                      </div>
+                      {skill.keywords && skill.keywords.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {skill.keywords.map((keyword, kidx) => (
+                            <span 
+                              key={kidx} 
+                              className="px-3 py-1.5 text-sm rounded-lg bg-stone-800/50 text-stone-300 border border-stone-700 hover:border-stone-600 transition"
+                            >
+                              {keyword}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                
+                {/* Modal Footer */}
+                <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                  <button
+                    onClick={() => setShowSkillsModal(false)}
+                    className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </>
   );
