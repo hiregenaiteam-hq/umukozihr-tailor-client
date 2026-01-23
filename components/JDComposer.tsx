@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { jd as jdApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Link2, FileText, Plus, Globe, Sparkles, ArrowRight, Loader2 } from 'lucide-react';
+import { Link2, FileText, Plus, Globe, Sparkles, ArrowRight, Loader2, ChevronDown, Check } from 'lucide-react';
 
 interface JobInput {
   id: string;
@@ -24,6 +24,25 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
   const [jdText, setJdText] = useState('');
   const [region, setRegion] = useState<'US' | 'EU' | 'GL'>(defaultRegion);
   const [isFetching, setIsFetching] = useState(false);
+  const [regionOpen, setRegionOpen] = useState(false);
+  const regionRef = useRef<HTMLDivElement>(null);
+
+  const regionOptions = [
+    { value: 'US' as const, label: 'United States', flag: '🇺🇸' },
+    { value: 'EU' as const, label: 'Europe', flag: '🇪🇺' },
+    { value: 'GL' as const, label: 'Global', flag: '🌍' },
+  ];
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (regionRef.current && !regionRef.current.contains(e.target as Node)) {
+        setRegionOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleFetchFromUrl = async () => {
     if (!url.trim()) {
@@ -185,17 +204,46 @@ export default function JDComposer({ onAddJob, defaultRegion = 'US' }: JDCompose
               <label className="block text-sm font-medium text-stone-300 mb-2">
                 Region
               </label>
-              <div className="relative">
-                <Globe className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-stone-500" />
-                <select
-                  value={region}
-                  onChange={(e) => setRegion(e.target.value as 'US' | 'EU' | 'GL')}
-                  className="select-glass pl-12"
+              <div className="relative" ref={regionRef}>
+                <button
+                  type="button"
+                  onClick={() => setRegionOpen(!regionOpen)}
+                  className="w-full flex items-center justify-between gap-2 px-4 py-3 rounded-xl bg-white/5 border border-white/10 hover:border-orange-500/50 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all text-left"
                 >
-                  <option value="US">US - United States</option>
-                  <option value="EU">EU - Europe</option>
-                  <option value="GL">GL - Global</option>
-                </select>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{regionOptions.find(r => r.value === region)?.flag}</span>
+                    <span className="text-white">{regionOptions.find(r => r.value === region)?.label}</span>
+                  </div>
+                  <ChevronDown className={`h-4 w-4 text-stone-400 transition-transform ${regionOpen ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {regionOpen && (
+                  <div className="absolute top-full left-0 right-0 mt-2 py-2 rounded-xl bg-stone-800 border border-white/10 shadow-xl shadow-black/50 z-50 overflow-hidden">
+                    {regionOptions.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        onClick={() => {
+                          setRegion(opt.value);
+                          setRegionOpen(false);
+                        }}
+                        className={`w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-white/10 transition-colors ${
+                          region === opt.value ? 'bg-orange-500/10' : ''
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">{opt.flag}</span>
+                          <span className={region === opt.value ? 'text-orange-400 font-medium' : 'text-white'}>
+                            {opt.label}
+                          </span>
+                        </div>
+                        {region === opt.value && (
+                          <Check className="h-4 w-4 text-orange-400" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
