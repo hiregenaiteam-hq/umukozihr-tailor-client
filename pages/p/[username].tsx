@@ -9,7 +9,8 @@ import { HeaderLogo } from '@/components/Logo';
 import { 
   User, MapPin, Mail, Phone, Globe, ExternalLink, 
   Briefcase, GraduationCap, Code, Award, Languages,
-  Calendar, CheckCircle, Sparkles, FileText, ArrowRight, X, ChevronRight
+  Calendar, CheckCircle, Sparkles, FileText, ArrowRight, X, ChevronRight,
+  Github, Linkedin, Twitter, Youtube, Instagram, Facebook, Link2
 } from 'lucide-react';
 
 // Animation variants
@@ -76,6 +77,56 @@ function FloatingOrb({ className, delay = 0 }: { className: string; delay?: numb
     />
   );
 }
+
+// Platform detection for links
+const getPlatformInfo = (url: string): { icon: React.ElementType; name: string; color: string } => {
+  const hostname = url.toLowerCase();
+  
+  if (hostname.includes('github.com') || hostname.includes('github.io')) {
+    return { icon: Github, name: 'GitHub', color: 'text-white' };
+  }
+  if (hostname.includes('linkedin.com')) {
+    return { icon: Linkedin, name: 'LinkedIn', color: 'text-blue-400' };
+  }
+  if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+    return { icon: Twitter, name: 'Twitter/X', color: 'text-sky-400' };
+  }
+  if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+    return { icon: Youtube, name: 'YouTube', color: 'text-red-500' };
+  }
+  if (hostname.includes('instagram.com')) {
+    return { icon: Instagram, name: 'Instagram', color: 'text-pink-500' };
+  }
+  if (hostname.includes('facebook.com') || hostname.includes('fb.com')) {
+    return { icon: Facebook, name: 'Facebook', color: 'text-blue-500' };
+  }
+  if (hostname.includes('medium.com')) {
+    return { icon: FileText, name: 'Medium', color: 'text-white' };
+  }
+  if (hostname.includes('dev.to')) {
+    return { icon: Code, name: 'Dev.to', color: 'text-white' };
+  }
+  if (hostname.includes('stackoverflow.com')) {
+    return { icon: Code, name: 'Stack Overflow', color: 'text-orange-500' };
+  }
+  if (hostname.includes('behance.net')) {
+    return { icon: Sparkles, name: 'Behance', color: 'text-blue-400' };
+  }
+  if (hostname.includes('dribbble.com')) {
+    return { icon: Sparkles, name: 'Dribbble', color: 'text-pink-400' };
+  }
+  if (hostname.includes('kaggle.com')) {
+    return { icon: Code, name: 'Kaggle', color: 'text-cyan-400' };
+  }
+  if (hostname.includes('pypi.org')) {
+    return { icon: Code, name: 'PyPI', color: 'text-blue-400' };
+  }
+  if (hostname.includes('npmjs.com')) {
+    return { icon: Code, name: 'npm', color: 'text-red-500' };
+  }
+  // Default: website/portfolio
+  return { icon: Globe, name: 'Website', color: 'text-orange-400' };
+};
 
 export default function PublicProfilePage() {
   const router = useRouter();
@@ -742,13 +793,12 @@ export default function PublicProfilePage() {
                   transition={{ delay: 0.6 }}
                 >
                   <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <ExternalLink className="h-5 w-5 text-orange-400" />
+                    <Link2 className="h-5 w-5 text-orange-400" />
                     Links
                   </h2>
                   <div className="space-y-2">
                     {profile.basics.links
                       .filter((link) => {
-                        // Filter out invalid URLs
                         if (!link || typeof link !== 'string' || link.trim() === '') return false;
                         try {
                           new URL(link);
@@ -758,23 +808,33 @@ export default function PublicProfilePage() {
                         }
                       })
                       .map((link, idx) => {
-                        let hostname = link;
-                        try {
-                          hostname = new URL(link).hostname.replace('www.', '');
-                        } catch {
-                          // Fallback to the link itself
-                        }
+                        const platform = getPlatformInfo(link);
+                        const PlatformIcon = platform.icon;
                         return (
                           <motion.a
                             key={idx}
                             href={link}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition p-2 rounded-lg hover:bg-stone-800/50"
+                            className="flex items-center gap-3 text-sm p-3 rounded-xl bg-stone-800/30 border border-white/5 hover:border-white/20 hover:bg-stone-800/50 transition-all group"
                             whileHover={{ x: 4 }}
                           >
-                            <ExternalLink className="h-4 w-4" />
-                            {hostname}
+                            <div className={`w-8 h-8 rounded-lg bg-stone-700/50 flex items-center justify-center group-hover:scale-110 transition-transform ${platform.color}`}>
+                              <PlatformIcon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-white font-medium truncate">{platform.name}</p>
+                              <p className="text-stone-500 text-xs truncate">
+                                {(() => {
+                                  try {
+                                    return new URL(link).hostname.replace('www.', '');
+                                  } catch {
+                                    return link;
+                                  }
+                                })()}
+                              </p>
+                            </div>
+                            <ExternalLink className="h-4 w-4 text-stone-500 group-hover:text-orange-400 transition-colors" />
                           </motion.a>
                         );
                       })}
