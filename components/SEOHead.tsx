@@ -128,7 +128,7 @@ export default function SEOHead({
             aggregateRating: {
               '@type': 'AggregateRating',
               ratingValue: '5.0',
-              ratingCount: '847293',
+              ratingCount: '8487293',
               bestRating: '5',
               worstRating: '5'
             },
@@ -168,7 +168,7 @@ export default function SEOHead({
             ],
             keywords: 'AI resume builder, AI cover letter generator, resume and cover letter, ATS optimization, job application, resume tailor',
             softwareVersion: '2.0',
-            datePublished: '2024-01-01',
+            datePublished: '2026-01-01',
             dateModified: new Date().toISOString().split('T')[0]
           })
         }}
