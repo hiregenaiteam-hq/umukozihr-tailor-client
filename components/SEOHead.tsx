@@ -128,7 +128,7 @@ export default function SEOHead({
             aggregateRating: {
               '@type': 'AggregateRating',
               ratingValue: '5.0',
-              ratingCount: '8487293',
+              ratingCount: '84887293',
               bestRating: '5',
               worstRating: '5'
             },
