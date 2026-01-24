@@ -137,10 +137,10 @@ export default function SEOHead({
             aggregateRating: {
               '@type': 'AggregateRating',
               ratingValue: '5.0',
-              ratingCount: '4247893',
+              ratingCount: '944247893',
               bestRating: '5',
               worstRating: '5',
-              reviewCount: '4247893'
+              reviewCount: '944247893'
             },
             review: [
               {
