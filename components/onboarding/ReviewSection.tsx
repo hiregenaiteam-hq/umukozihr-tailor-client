@@ -344,8 +344,8 @@ export default function ReviewSection({ profile, completeness, breakdown }: Revi
           <div className="flex flex-wrap gap-2">
             {profile.languages?.slice(0, 4).map((lang, idx) => (
               <div key={idx} className="flex items-center gap-2 px-3 py-1.5 bg-stone-800/50 rounded-lg border border-stone-700/50">
-                <span className="text-white text-sm">{lang.language}</span>
-                <span className="text-stone-500 text-xs ml-1">{lang.proficiency}</span>
+                <span className="text-white text-sm">{lang.name}</span>
+                <span className="text-stone-500 text-xs ml-1">{lang.level}</span>
               </div>
             ))}
           </div>
@@ -424,7 +424,7 @@ export default function ReviewSection({ profile, completeness, breakdown }: Revi
             <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
               <h4 className="font-semibold text-white">{edu.degree}</h4>
               <p className="text-stone-400 text-sm">{edu.school}</p>
-              {edu.period && <p className="text-stone-500 text-xs mt-1">{edu.period}</p>}
+              {(edu.start || edu.end) && <p className="text-stone-500 text-xs mt-1">{edu.start} - {edu.end || 'Present'}</p>}
             </div>
           ))}
           {profile.education.length === 0 && (
@@ -522,8 +522,8 @@ export default function ReviewSection({ profile, completeness, breakdown }: Revi
         <div className="space-y-4">
           {profile.languages?.map((lang, idx) => (
             <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center justify-between">
-              <h4 className="font-semibold text-white">{lang.language}</h4>
-              <span className="text-stone-400 text-sm">{lang.proficiency}</span>
+              <h4 className="font-semibold text-white">{lang.name}</h4>
+              <span className="text-stone-400 text-sm">{lang.level}</span>
             </div>
           ))}
           {(!profile.languages || profile.languages.length === 0) && (

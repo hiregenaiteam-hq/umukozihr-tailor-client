@@ -18,8 +18,57 @@ import {
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera,
-  Award, Languages, Globe, ExternalLink, FolderKanban, X
+  Award, Languages, Globe, ExternalLink, FolderKanban, X,
+  Github, Linkedin, Twitter, Youtube, Dribbble, Figma, Instagram, Facebook
 } from 'lucide-react';
+
+// Platform detection for branded link icons
+const getPlatformInfo = (url: string): { icon: React.ElementType; name: string; color: string } => {
+  const hostname = url.toLowerCase();
+  if (hostname.includes('github.com') || hostname.includes('github.io')) {
+    return { icon: Github, name: 'GitHub', color: 'text-white' };
+  }
+  if (hostname.includes('linkedin.com')) {
+    return { icon: Linkedin, name: 'LinkedIn', color: 'text-blue-400' };
+  }
+  if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
+    return { icon: Twitter, name: 'X / Twitter', color: 'text-sky-400' };
+  }
+  if (hostname.includes('youtube.com') || hostname.includes('youtu.be')) {
+    return { icon: Youtube, name: 'YouTube', color: 'text-red-500' };
+  }
+  if (hostname.includes('dribbble.com')) {
+    return { icon: Dribbble, name: 'Dribbble', color: 'text-pink-400' };
+  }
+  if (hostname.includes('figma.com')) {
+    return { icon: Figma, name: 'Figma', color: 'text-purple-400' };
+  }
+  if (hostname.includes('instagram.com')) {
+    return { icon: Instagram, name: 'Instagram', color: 'text-pink-500' };
+  }
+  if (hostname.includes('facebook.com')) {
+    return { icon: Facebook, name: 'Facebook', color: 'text-blue-500' };
+  }
+  if (hostname.includes('behance.net')) {
+    return { icon: Globe, name: 'Behance', color: 'text-blue-400' };
+  }
+  if (hostname.includes('codepen.io')) {
+    return { icon: Code, name: 'CodePen', color: 'text-yellow-400' };
+  }
+  if (hostname.includes('medium.com')) {
+    return { icon: FileText, name: 'Medium', color: 'text-green-400' };
+  }
+  if (hostname.includes('dev.to')) {
+    return { icon: Code, name: 'Dev.to', color: 'text-white' };
+  }
+  if (hostname.includes('stackoverflow.com')) {
+    return { icon: Code, name: 'Stack Overflow', color: 'text-orange-400' };
+  }
+  if (hostname.includes('kaggle.com')) {
+    return { icon: Code, name: 'Kaggle', color: 'text-cyan-400' };
+  }
+  return { icon: Globe, name: 'Website', color: 'text-orange-400' };
+};
 
 // Check for authentication token
 const hasAuthToken = () => typeof window !== 'undefined' && !!localStorage.getItem('token');
@@ -157,6 +206,14 @@ export default function AppPage() {
 
   // Skills modal state
   const [showSkillsModal, setShowSkillsModal] = useState(false);
+  
+  // Section modal states
+  const [showExperienceModal, setShowExperienceModal] = useState(false);
+  const [showEducationModal, setShowEducationModal] = useState(false);
+  const [showProjectsModal, setShowProjectsModal] = useState(false);
+  const [showCertsModal, setShowCertsModal] = useState(false);
+  const [showLanguagesModal, setShowLanguagesModal] = useState(false);
+  const [showLinksModal, setShowLinksModal] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -801,15 +858,23 @@ export default function AppPage() {
 
             {/* Profile Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Experience */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <Briefcase className="h-5 w-5 text-orange-400" />
+              {/* Experience - Clickable */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-orange-500/30 transition-all group"
+                onClick={() => setShowExperienceModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-orange-500/20 transition">
+                      <Briefcase className="h-5 w-5 text-orange-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Experience ({profile.experience?.length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Experience ({profile.experience?.length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-orange-400 transition" />
                 </div>
                 <div className="space-y-3">
                   {profile.experience?.slice(0, 3).map((exp, idx) => (
@@ -822,17 +887,25 @@ export default function AppPage() {
                     <p className="text-stone-500 text-sm">No experience added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Education */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <GraduationCap className="h-5 w-5 text-amber-400" />
+              {/* Education - Clickable */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-amber-500/30 transition-all group"
+                onClick={() => setShowEducationModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-amber-500/20 transition">
+                      <GraduationCap className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Education ({profile.education?.length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Education ({profile.education?.length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-amber-400 transition" />
                 </div>
                 <div className="space-y-3">
                   {profile.education?.slice(0, 3).map((edu, idx) => (
@@ -845,29 +918,30 @@ export default function AppPage() {
                     <p className="text-stone-500 text-sm">No education added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Projects */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <FolderKanban className="h-5 w-5 text-blue-400" />
+              {/* Projects - Clickable */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-blue-500/30 transition-all group"
+                onClick={() => setShowProjectsModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-blue-500/20 transition">
+                      <FolderKanban className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Projects ({profile.projects?.length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Projects ({profile.projects?.length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-blue-400 transition" />
                 </div>
                 <div className="space-y-3">
                   {profile.projects?.slice(0, 3).map((project, idx) => (
                     <div key={idx} className="glass-subtle p-3 rounded-lg">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium text-white">{project.name}</p>
-                        {project.url && (
-                          <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                            <ExternalLink className="h-4 w-4" />
-                          </a>
-                        )}
-                      </div>
+                      <p className="font-medium text-white">{project.name}</p>
                       {project.stack && project.stack.length > 0 && (
                         <div className="flex flex-wrap gap-1 mt-2">
                           {project.stack.slice(0, 4).map((tech, tidx) => (
@@ -884,17 +958,25 @@ export default function AppPage() {
                     <p className="text-stone-500 text-sm">No projects added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Certifications */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <Award className="h-5 w-5 text-purple-400" />
+              {/* Certifications - Clickable */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-purple-500/30 transition-all group"
+                onClick={() => setShowCertsModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-purple-500/20 transition">
+                      <Award className="h-5 w-5 text-purple-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Certifications ({profile.certifications?.length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Certifications ({profile.certifications?.length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-purple-400 transition" />
                 </div>
                 <div className="space-y-3">
                   {profile.certifications?.slice(0, 3).map((cert, idx) => (
@@ -907,65 +989,77 @@ export default function AppPage() {
                     <p className="text-stone-500 text-sm">No certifications added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Languages */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <Languages className="h-5 w-5 text-green-400" />
+              {/* Languages - Clickable */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-green-500/30 transition-all group"
+                onClick={() => setShowLanguagesModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-green-500/20 transition">
+                      <Languages className="h-5 w-5 text-green-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Languages ({profile.languages?.length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Languages ({profile.languages?.length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-green-400 transition" />
                 </div>
                 <div className="space-y-2">
                   {profile.languages?.slice(0, 5).map((lang, idx) => (
                     <div key={idx} className="flex justify-between text-sm">
                       <span className="text-white">{lang.name}</span>
-                      <span className="text-stone-400 bg-stone-800/50 px-2 py-0.5 rounded text-xs">{lang.level}</span>
+                      <span className="text-stone-400 text-xs">{lang.level}</span>
                     </div>
                   ))}
                   {(!profile.languages || profile.languages.length === 0) && (
                     <p className="text-stone-500 text-sm">No languages added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
-              {/* Links */}
-              <div className="glass-card p-6">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                    <Globe className="h-5 w-5 text-cyan-400" />
+              {/* Links - Clickable with Platform Icons */}
+              <motion.div 
+                className="glass-card p-6 cursor-pointer hover:border-cyan-500/30 transition-all group"
+                onClick={() => setShowLinksModal(true)}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-cyan-500/20 transition">
+                      <Globe className="h-5 w-5 text-cyan-400" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-white">
+                      Links ({profile.basics?.links?.filter(l => l && l.trim()).length || 0})
+                    </h3>
                   </div>
-                  <h3 className="text-lg font-semibold text-white">
-                    Links ({profile.basics?.links?.filter(l => l && l.trim()).length || 0})
-                  </h3>
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-cyan-400 transition" />
                 </div>
                 <div className="space-y-2">
                   {profile.basics?.links?.filter(l => l && l.trim()).slice(0, 5).map((link, idx) => {
-                    let hostname = link;
-                    try {
-                      hostname = new URL(link).hostname.replace('www.', '');
-                    } catch {}
+                    const platform = getPlatformInfo(link);
+                    const PlatformIcon = platform.icon;
                     return (
-                      <a
+                      <div
                         key={idx}
-                        href={link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-stone-400 hover:text-orange-400 transition p-2 rounded-lg hover:bg-stone-800/50"
+                        className="flex items-center gap-2 text-sm p-2 rounded-lg bg-stone-800/30"
+                        onClick={(e) => e.stopPropagation()}
                       >
-                        <ExternalLink className="h-4 w-4" />
-                        {hostname}
-                      </a>
+                        <PlatformIcon className={`h-4 w-4 ${platform.color}`} />
+                        <span className="text-stone-300">{platform.name}</span>
+                      </div>
                     );
                   })}
                   {(!profile.basics?.links || profile.basics.links.filter(l => l && l.trim()).length === 0) && (
                     <p className="text-stone-500 text-sm">No links added yet</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Skills - With View All Modal */}
               <div className="glass-card p-6 md:col-span-2">
@@ -1392,6 +1486,363 @@ export default function AppPage() {
                 >
                   Close
                 </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Experience Modal */}
+      <AnimatePresence>
+        {showExperienceModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowExperienceModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                    <Briefcase className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Experience</h2>
+                    <p className="text-sm text-stone-400">{profile.experience?.length || 0} positions</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowExperienceModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {profile.experience?.map((exp, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    <h4 className="font-semibold text-white">{exp.title}</h4>
+                    <p className="text-orange-400 text-sm">{exp.company}</p>
+                    <p className="text-stone-500 text-xs mt-1">{exp.start} - {exp.end || 'Present'}</p>
+                    {exp.bullets && exp.bullets.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {exp.bullets.map((bullet, bidx) => (
+                          <li key={bidx} className="text-sm text-stone-400 flex gap-2">
+                            <span className="text-orange-400">•</span>
+                            {bullet}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+                {(!profile.experience || profile.experience.length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No experience added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowExperienceModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Education Modal */}
+      <AnimatePresence>
+        {showEducationModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowEducationModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                    <GraduationCap className="h-5 w-5 text-amber-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Education</h2>
+                    <p className="text-sm text-stone-400">{profile.education?.length || 0} entries</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowEducationModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {profile.education?.map((edu, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    <h4 className="font-semibold text-white">{edu.degree}</h4>
+                    <p className="text-amber-400 text-sm">{edu.school}</p>
+                    {(edu.start || edu.end) && <p className="text-stone-500 text-xs mt-1">{edu.start} - {edu.end || 'Present'}</p>}
+                    {edu.gpa && <p className="text-stone-400 text-xs mt-1">GPA: {edu.gpa}</p>}
+                  </div>
+                ))}
+                {(!profile.education || profile.education.length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No education added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowEducationModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Projects Modal */}
+      <AnimatePresence>
+        {showProjectsModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowProjectsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
+                    <FolderKanban className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Projects</h2>
+                    <p className="text-sm text-stone-400">{profile.projects?.length || 0} projects</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowProjectsModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {profile.projects?.map((project, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-semibold text-white">{project.name}</h4>
+                      {project.url && (
+                        <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      )}
+                    </div>
+                    {project.stack && project.stack.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {project.stack.map((tech, tidx) => (
+                          <span key={tidx} className="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300">{tech}</span>
+                        ))}
+                      </div>
+                    )}
+                    {project.bullets && project.bullets.length > 0 && (
+                      <ul className="mt-3 space-y-1">
+                        {project.bullets.map((bullet, bidx) => (
+                          <li key={bidx} className="text-sm text-stone-400 flex gap-2">
+                            <span className="text-blue-400">•</span>
+                            {bullet}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                ))}
+                {(!profile.projects || profile.projects.length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No projects added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowProjectsModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Certifications Modal */}
+      <AnimatePresence>
+        {showCertsModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowCertsModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
+                    <Award className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Certifications</h2>
+                    <p className="text-sm text-stone-400">{profile.certifications?.length || 0} certifications</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowCertsModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {profile.certifications?.map((cert, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    <h4 className="font-semibold text-white">{cert.name}</h4>
+                    <p className="text-purple-400 text-sm">{cert.issuer}</p>
+                    {cert.date && <p className="text-stone-500 text-xs mt-1">{cert.date}</p>}
+                  </div>
+                ))}
+                {(!profile.certifications || profile.certifications.length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No certifications added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowCertsModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Languages Modal */}
+      <AnimatePresence>
+        {showLanguagesModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLanguagesModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
+                    <Languages className="h-5 w-5 text-green-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Languages</h2>
+                    <p className="text-sm text-stone-400">{profile.languages?.length || 0} languages</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowLanguagesModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                {profile.languages?.map((lang, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center justify-between">
+                    <h4 className="font-semibold text-white">{lang.name}</h4>
+                    <span className="text-stone-400 text-sm">{lang.level}</span>
+                  </div>
+                ))}
+                {(!profile.languages || profile.languages.length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No languages added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowLanguagesModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Links Modal */}
+      <AnimatePresence>
+        {showLinksModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLinksModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
+                    <Globe className="h-5 w-5 text-cyan-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">All Links</h2>
+                    <p className="text-sm text-stone-400">{profile.basics?.links?.filter(l => l && l.trim()).length || 0} links</p>
+                  </div>
+                </div>
+                <button onClick={() => setShowLinksModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6 space-y-3">
+                {profile.basics?.links?.filter(l => l && l.trim()).map((link, idx) => {
+                  const platform = getPlatformInfo(link);
+                  const PlatformIcon = platform.icon;
+                  let displayUrl = link;
+                  try {
+                    displayUrl = new URL(link).hostname.replace('www.', '');
+                  } catch {}
+                  return (
+                    <a
+                      key={idx}
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3 hover:border-cyan-500/30 transition group"
+                    >
+                      <div className={`w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center group-hover:bg-cyan-500/20 transition`}>
+                        <PlatformIcon className={`h-5 w-5 ${platform.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-white">{platform.name}</h4>
+                        <p className="text-stone-500 text-sm truncate">{displayUrl}</p>
+                      </div>
+                      <ExternalLink className="h-4 w-4 text-stone-500 group-hover:text-cyan-400 transition" />
+                    </a>
+                  );
+                })}
+                {(!profile.basics?.links || profile.basics.links.filter(l => l && l.trim()).length === 0) && (
+                  <p className="text-stone-500 text-center py-8">No links added yet</p>
+                )}
+              </div>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <button onClick={() => setShowLinksModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
               </div>
             </motion.div>
           </motion.div>
