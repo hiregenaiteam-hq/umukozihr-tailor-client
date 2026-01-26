@@ -18,9 +18,10 @@ import {
   Sparkles, ChevronRight, Briefcase, MapPin, 
   GraduationCap, Code, Play, Trash2, Download,
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera,
-  Award, Languages, Globe, ExternalLink, FolderKanban, X,
+  Award, Languages, Globe, ExternalLink, FolderKanban, X, Plus, Pencil,
   Github, Linkedin, Twitter, Youtube, Dribbble, Figma, Instagram, Facebook
 } from 'lucide-react';
+import { Experience, Education, Project, Certification, Language, Skill } from '@/lib/types';
 
 // Platform detection for branded link icons
 const getPlatformInfo = (url: string): { icon: React.ElementType; name: string; color: string } => {
@@ -215,6 +216,51 @@ export default function AppPage() {
   const [showLanguagesModal, setShowLanguagesModal] = useState(false);
   const [showLinksModal, setShowLinksModal] = useState(false);
 
+  // Inline editing state
+  const [editedProfile, setEditedProfile] = useState<ProfileV3 | null>(null);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  // Helper to update a section and save to localStorage
+  const updateProfileSection = <K extends keyof ProfileV3>(section: K, newData: ProfileV3[K]) => {
+    const currentProfile = editedProfile || profile;
+    if (!currentProfile) return;
+    
+    const updated = { ...currentProfile, [section]: newData };
+    setEditedProfile(updated);
+    // Auto-save to localStorage for crash recovery
+    localStorage.setItem('profile_draft', JSON.stringify(updated));
+  };
+
+  // Save profile changes to database
+  const saveProfileChanges = async () => {
+    if (!editedProfile) return;
+    
+    setIsSavingProfile(true);
+    try {
+      const response = await profileApi.update(editedProfile);
+      setProfile(editedProfile);
+      setEditedProfile(null);
+      setCompleteness(response.data.completeness);
+      localStorage.removeItem('profile_draft');
+      toast.success('Profile updated successfully!');
+      return true;
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to save profile');
+      return false;
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  // Cancel edits and revert
+  const cancelProfileEdits = () => {
+    setEditedProfile(null);
+    localStorage.removeItem('profile_draft');
+  };
+
+  // Get the current working profile (edited or original)
+  const workingProfile = editedProfile || profile;
+
   useEffect(() => {
     setMounted(true);
     
@@ -224,6 +270,23 @@ export default function AppPage() {
       toast.error('Please log in');
       router.push('/');
       return;
+    }
+    
+    // Check for unsaved draft and offer recovery
+    const savedDraft = localStorage.getItem('profile_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft && draft.basics) {
+          setEditedProfile(draft);
+          toast('Recovered unsaved changes from your last session', {
+            icon: '💾',
+            duration: 4000
+          });
+        }
+      } catch (e) {
+        localStorage.removeItem('profile_draft');
+      }
     }
     
     loadProfile();
@@ -1061,25 +1124,23 @@ export default function AppPage() {
                 </div>
               </motion.div>
 
-              {/* Skills - With View All Modal */}
-              <div className="glass-card p-6 md:col-span-2">
+              {/* Skills - Clickable */}
+              <motion.div 
+                className="glass-card p-6 md:col-span-2 cursor-pointer hover:border-emerald-500/30 transition-all group"
+                onClick={() => setShowSkillsModal(true)}
+                whileHover={{ scale: 1.005 }}
+                whileTap={{ scale: 0.995 }}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center">
-                      <Code className="h-5 w-5 text-green-400" />
+                    <div className="neu-flat w-10 h-10 rounded-lg flex items-center justify-center group-hover:bg-emerald-500/20 transition">
+                      <Code className="h-5 w-5 text-emerald-400" />
                     </div>
                     <h3 className="text-lg font-semibold text-white">
                       Skills ({profile.skills?.length || 0} categories)
                     </h3>
                   </div>
-                  {profile.skills && profile.skills.length > 3 && (
-                    <button
-                      onClick={() => setShowSkillsModal(true)}
-                      className="text-sm text-orange-400 hover:text-orange-300 flex items-center gap-1"
-                    >
-                      View All <ChevronRight className="h-4 w-4" />
-                    </button>
-                  )}
+                  <ChevronRight className="h-5 w-5 text-stone-500 group-hover:text-emerald-400 transition" />
                 </div>
                 <div className="space-y-4">
                   {profile.skills?.slice(0, 3).map((skill, idx) => (
@@ -1117,19 +1178,15 @@ export default function AppPage() {
                     </div>
                   ))}
                   {profile.skills && profile.skills.length > 3 && (
-                    <button
-                      onClick={() => setShowSkillsModal(true)}
-                      className="w-full py-3 text-sm text-orange-400 hover:text-orange-300 hover:bg-orange-500/10 rounded-lg transition flex items-center justify-center gap-2"
-                    >
-                      <span>View all {profile.skills.length} skill categories</span>
-                      <ChevronRight className="h-4 w-4" />
-                    </button>
+                    <div className="w-full py-3 text-sm text-orange-400 rounded-lg flex items-center justify-center gap-2">
+                      <span>+{profile.skills.length - 3} more skill categories</span>
+                    </div>
                   )}
                   {(!profile.skills || profile.skills.length === 0) && (
-                    <p className="text-stone-500 text-sm">No skills added yet</p>
+                    <p className="text-stone-500 text-sm">No skills added yet. Click to add your first skill category.</p>
                   )}
                 </div>
-              </div>
+              </motion.div>
 
               {/* Share Profile */}
               <div className="md:col-span-2">
@@ -1399,7 +1456,7 @@ export default function AppPage() {
         </div>
       )}
 
-      {/* Skills Modal */}
+      {/* Skills Modal - Editable */}
       <AnimatePresence>
         {showSkillsModal && profile && (
           <motion.div
@@ -1407,30 +1464,30 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowSkillsModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowSkillsModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-3xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               {/* Modal Header */}
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-green-500/20 flex items-center justify-center">
-                    <Code className="h-5 w-5 text-green-400" />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                    <Code className="h-5 w-5 text-emerald-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Skills</h2>
+                    <h2 className="text-xl font-semibold text-white">Edit Skills</h2>
                     <p className="text-sm text-stone-400">
-                      {profile.skills?.length || 0} categories • {profile.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total skills
+                      {(workingProfile?.skills?.length || 0)} categories • {workingProfile?.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total skills
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => setShowSkillsModal(false)}
+                  onClick={() => { cancelProfileEdits(); setShowSkillsModal(false); }}
                   className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
                 >
                   <X className="h-5 w-5" />
@@ -1438,36 +1495,80 @@ export default function AppPage() {
               </div>
               
               {/* Modal Body - Scrollable */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {profile.skills?.map((skill, idx) => (
-                  <div key={idx} className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-sm font-semibold ${
-                        skill.level === 'expert' ? 'text-orange-400' : 
-                        skill.level === 'intermediate' ? 'text-amber-400' : 
-                        'text-stone-400'
-                      }`}>
-                        {skill.name}
-                      </span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        skill.level === 'expert' ? 'bg-orange-500/20 text-orange-400' : 
-                        skill.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 
-                        'bg-stone-700 text-stone-400'
-                      }`}>
-                        {skill.level}
-                      </span>
-                      {skill.keywords && skill.keywords.length > 0 && (
-                        <span className="text-xs text-stone-500">
-                          ({skill.keywords.length} skills)
-                        </span>
-                      )}
+              <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                {/* Add New Skill Category */}
+                <button
+                  onClick={() => {
+                    const newSkill: Skill = { name: '', level: 'intermediate', keywords: [] };
+                    updateProfileSection('skills', [newSkill, ...(workingProfile?.skills || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-emerald-500/50 text-stone-400 hover:text-emerald-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Skill Category
+                </button>
+                
+                {workingProfile?.skills?.map((skill, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={skill.name}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.skills || [])];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            updateProfileSection('skills', updated);
+                          }}
+                          placeholder="Category Name (e.g., Frontend, Backend)"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
+                        />
+                        <select
+                          value={skill.level}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.skills || [])];
+                            updated[idx] = { ...updated[idx], level: e.target.value as 'beginner' | 'intermediate' | 'expert' };
+                            updateProfileSection('skills', updated);
+                          }}
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
+                        >
+                          <option value="beginner">Beginner</option>
+                          <option value="intermediate">Intermediate</option>
+                          <option value="expert">Expert</option>
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.skills?.filter((_, i) => i !== idx) || [];
+                          updateProfileSection('skills', updated);
+                        }}
+                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
                     </div>
+                    {/* Keywords input */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-stone-500">Skills/Keywords (comma-separated)</p>
+                      <input
+                        type="text"
+                        value={(skill.keywords || []).join(', ')}
+                        onChange={(e) => {
+                          const updated = [...(workingProfile.skills || [])];
+                          updated[idx] = { ...updated[idx], keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k) };
+                          updateProfileSection('skills', updated);
+                        }}
+                        placeholder="React, TypeScript, Node.js, PostgreSQL..."
+                        className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none text-sm"
+                      />
+                    </div>
+                    {/* Visual preview of keywords */}
                     {skill.keywords && skill.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex flex-wrap gap-1.5 pt-1">
                         {skill.keywords.map((keyword, kidx) => (
                           <span 
                             key={kidx} 
-                            className="px-3 py-1.5 text-sm rounded-lg bg-stone-800/50 text-stone-300 border border-stone-700 hover:border-stone-600 transition"
+                            className="px-2 py-1 text-xs rounded-lg bg-stone-700/50 text-stone-300 border border-stone-600"
                           >
                             {keyword}
                           </span>
@@ -1476,15 +1577,25 @@ export default function AppPage() {
                     )}
                   </div>
                 ))}
+                {(!workingProfile?.skills || workingProfile.skills.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No skills added yet. Click the button above to add your first skill category.</p>
+                )}
               </div>
               
               {/* Modal Footer */}
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
                 <button
-                  onClick={() => setShowSkillsModal(false)}
-                  className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
+                  onClick={() => { cancelProfileEdits(); setShowSkillsModal(false); }}
+                  className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
                 >
-                  Close
+                  Cancel
+                </button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowSkillsModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </motion.div>
@@ -1500,14 +1611,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowExperienceModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowExperienceModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-3xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1515,38 +1626,142 @@ export default function AppPage() {
                     <Briefcase className="h-5 w-5 text-orange-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Experience</h2>
-                    <p className="text-sm text-stone-400">{profile.experience?.length || 0} positions</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Experience</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.experience?.length || 0)} positions</p>
                   </div>
                 </div>
-                <button onClick={() => setShowExperienceModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowExperienceModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {profile.experience?.map((exp, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
-                    <h4 className="font-semibold text-white">{exp.title}</h4>
-                    <p className="text-orange-400 text-sm">{exp.company}</p>
-                    <p className="text-stone-500 text-xs mt-1">{exp.start} - {exp.end || 'Present'}</p>
-                    {exp.bullets && exp.bullets.length > 0 && (
-                      <ul className="mt-3 space-y-1">
-                        {exp.bullets.map((bullet, bidx) => (
-                          <li key={bidx} className="text-sm text-stone-400 flex gap-2">
-                            <span className="text-orange-400">•</span>
-                            {bullet}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                {/* Add New Experience Button */}
+                <button
+                  onClick={() => {
+                    const newExp: Experience = { title: '', company: '', location: '', start: '', end: '', employment_type: 'Full-time', bullets: [] };
+                    updateProfileSection('experience', [newExp, ...(workingProfile?.experience || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 text-stone-400 hover:text-orange-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Experience
+                </button>
+                
+                {workingProfile?.experience?.map((exp, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={exp.title}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], title: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          placeholder="Job Title"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={exp.company}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], company: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          placeholder="Company"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={exp.location || ''}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], location: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          placeholder="Location"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
+                        />
+                        <select
+                          value={exp.employment_type || 'Full-time'}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], employment_type: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
+                        >
+                          <option value="Full-time">Full-time</option>
+                          <option value="Part-time">Part-time</option>
+                          <option value="Contract">Contract</option>
+                          <option value="Freelance">Freelance</option>
+                          <option value="Internship">Internship</option>
+                        </select>
+                        <input
+                          type="text"
+                          value={exp.start}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], start: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          placeholder="Start (e.g., 2022-01)"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={exp.end || ''}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.experience || [])];
+                            updated[idx] = { ...updated[idx], end: e.target.value };
+                            updateProfileSection('experience', updated);
+                          }}
+                          placeholder="End (or 'Present')"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.experience?.filter((_, i) => i !== idx) || [];
+                          updateProfileSection('experience', updated);
+                        }}
+                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {/* Bullets */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-stone-500">Bullet points (one per line)</p>
+                      <textarea
+                        value={(exp.bullets || []).join('\n')}
+                        onChange={(e) => {
+                          const updated = [...(workingProfile.experience || [])];
+                          updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) };
+                          updateProfileSection('experience', updated);
+                        }}
+                        placeholder="• Achieved X by doing Y...\n• Led team of Z..."
+                        rows={3}
+                        className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none text-sm resize-none"
+                      />
+                    </div>
                   </div>
                 ))}
-                {(!profile.experience || profile.experience.length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No experience added yet</p>
+                {(!workingProfile?.experience || workingProfile.experience.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No experience added yet. Click the button above to add your first position.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowExperienceModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowExperienceModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowExperienceModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-orange-500 hover:bg-orange-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1561,14 +1776,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowEducationModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowEducationModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-3xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1576,29 +1791,111 @@ export default function AppPage() {
                     <GraduationCap className="h-5 w-5 text-amber-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Education</h2>
-                    <p className="text-sm text-stone-400">{profile.education?.length || 0} entries</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Education</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.education?.length || 0)} entries</p>
                   </div>
                 </div>
-                <button onClick={() => setShowEducationModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowEducationModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {profile.education?.map((edu, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
-                    <h4 className="font-semibold text-white">{edu.degree}</h4>
-                    <p className="text-amber-400 text-sm">{edu.school}</p>
-                    {(edu.start || edu.end) && <p className="text-stone-500 text-xs mt-1">{edu.start} - {edu.end || 'Present'}</p>}
-                    {edu.gpa && <p className="text-stone-400 text-xs mt-1">GPA: {edu.gpa}</p>}
+                <button
+                  onClick={() => {
+                    const newEdu: Education = { school: '', degree: '', start: '', end: '', gpa: null };
+                    updateProfileSection('education', [newEdu, ...(workingProfile?.education || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-amber-500/50 text-stone-400 hover:text-amber-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Education
+                </button>
+                
+                {workingProfile?.education?.map((edu, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={edu.degree}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.education || [])];
+                            updated[idx] = { ...updated[idx], degree: e.target.value };
+                            updateProfileSection('education', updated);
+                          }}
+                          placeholder="Degree"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={edu.school}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.education || [])];
+                            updated[idx] = { ...updated[idx], school: e.target.value };
+                            updateProfileSection('education', updated);
+                          }}
+                          placeholder="School"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={edu.start}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.education || [])];
+                            updated[idx] = { ...updated[idx], start: e.target.value };
+                            updateProfileSection('education', updated);
+                          }}
+                          placeholder="Start Year"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={edu.end}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.education || [])];
+                            updated[idx] = { ...updated[idx], end: e.target.value };
+                            updateProfileSection('education', updated);
+                          }}
+                          placeholder="End Year"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={edu.gpa || ''}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.education || [])];
+                            updated[idx] = { ...updated[idx], gpa: e.target.value || null };
+                            updateProfileSection('education', updated);
+                          }}
+                          placeholder="GPA (optional)"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none col-span-2"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.education?.filter((_, i) => i !== idx) || [];
+                          updateProfileSection('education', updated);
+                        }}
+                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
-                {(!profile.education || profile.education.length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No education added yet</p>
+                {(!workingProfile?.education || workingProfile.education.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No education added yet.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowEducationModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowEducationModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowEducationModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-amber-500 hover:bg-amber-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1613,14 +1910,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowProjectsModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowProjectsModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-3xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1628,50 +1925,100 @@ export default function AppPage() {
                     <FolderKanban className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Projects</h2>
-                    <p className="text-sm text-stone-400">{profile.projects?.length || 0} projects</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Projects</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.projects?.length || 0)} projects</p>
                   </div>
                 </div>
-                <button onClick={() => setShowProjectsModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowProjectsModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {profile.projects?.map((project, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-white">{project.name}</h4>
-                      {project.url && (
-                        <a href={project.url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      )}
-                    </div>
-                    {project.stack && project.stack.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {project.stack.map((tech, tidx) => (
-                          <span key={tidx} className="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300">{tech}</span>
-                        ))}
+                <button
+                  onClick={() => {
+                    const newProj: Project = { name: '', url: '', stack: [], bullets: [] };
+                    updateProfileSection('projects', [newProj, ...(workingProfile?.projects || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-blue-500/50 text-stone-400 hover:text-blue-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Project
+                </button>
+                
+                {workingProfile?.projects?.map((project, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-2 gap-3">
+                        <input
+                          type="text"
+                          value={project.name}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.projects || [])];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            updateProfileSection('projects', updated);
+                          }}
+                          placeholder="Project Name"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={project.url}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.projects || [])];
+                            updated[idx] = { ...updated[idx], url: e.target.value };
+                            updateProfileSection('projects', updated);
+                          }}
+                          placeholder="Project URL"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={(project.stack || []).join(', ')}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.projects || [])];
+                            updated[idx] = { ...updated[idx], stack: e.target.value.split(',').map(s => s.trim()).filter(s => s) };
+                            updateProfileSection('projects', updated);
+                          }}
+                          placeholder="Tech Stack (comma-separated)"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none col-span-2"
+                        />
                       </div>
-                    )}
-                    {project.bullets && project.bullets.length > 0 && (
-                      <ul className="mt-3 space-y-1">
-                        {project.bullets.map((bullet, bidx) => (
-                          <li key={bidx} className="text-sm text-stone-400 flex gap-2">
-                            <span className="text-blue-400">•</span>
-                            {bullet}
-                          </li>
-                        ))}
-                      </ul>
-                    )}
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.projects?.filter((_, i) => i !== idx) || [];
+                          updateProfileSection('projects', updated);
+                        }}
+                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                    <textarea
+                      value={(project.bullets || []).join('\n')}
+                      onChange={(e) => {
+                        const updated = [...(workingProfile.projects || [])];
+                        updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) };
+                        updateProfileSection('projects', updated);
+                      }}
+                      placeholder="Description bullets (one per line)"
+                      rows={2}
+                      className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none text-sm resize-none"
+                    />
                   </div>
                 ))}
-                {(!profile.projects || profile.projects.length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No projects added yet</p>
+                {(!workingProfile?.projects || workingProfile.projects.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No projects added yet.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowProjectsModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowProjectsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowProjectsModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1686,14 +2033,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowCertsModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowCertsModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-3xl max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-3xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1701,28 +2048,89 @@ export default function AppPage() {
                     <Award className="h-5 w-5 text-purple-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Certifications</h2>
-                    <p className="text-sm text-stone-400">{profile.certifications?.length || 0} certifications</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Certifications</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.certifications?.length || 0)} certifications</p>
                   </div>
                 </div>
-                <button onClick={() => setShowCertsModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowCertsModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                {profile.certifications?.map((cert, idx) => (
+                <button
+                  onClick={() => {
+                    const newCert: Certification = { name: '', issuer: '', date: '' };
+                    updateProfileSection('certifications', [newCert, ...(workingProfile?.certifications || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-purple-500/50 text-stone-400 hover:text-purple-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Certification
+                </button>
+                
+                {workingProfile?.certifications?.map((cert, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
-                    <h4 className="font-semibold text-white">{cert.name}</h4>
-                    <p className="text-purple-400 text-sm">{cert.issuer}</p>
-                    {cert.date && <p className="text-stone-500 text-xs mt-1">{cert.date}</p>}
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 grid grid-cols-3 gap-3">
+                        <input
+                          type="text"
+                          value={cert.name}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.certifications || [])];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            updateProfileSection('certifications', updated);
+                          }}
+                          placeholder="Certification Name"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={cert.issuer}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.certifications || [])];
+                            updated[idx] = { ...updated[idx], issuer: e.target.value };
+                            updateProfileSection('certifications', updated);
+                          }}
+                          placeholder="Issuing Organization"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
+                        />
+                        <input
+                          type="text"
+                          value={cert.date}
+                          onChange={(e) => {
+                            const updated = [...(workingProfile.certifications || [])];
+                            updated[idx] = { ...updated[idx], date: e.target.value };
+                            updateProfileSection('certifications', updated);
+                          }}
+                          placeholder="Date (e.g., 2023)"
+                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.certifications?.filter((_, i) => i !== idx) || [];
+                          updateProfileSection('certifications', updated);
+                        }}
+                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
-                {(!profile.certifications || profile.certifications.length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No certifications added yet</p>
+                {(!workingProfile?.certifications || workingProfile.certifications.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No certifications added yet.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowCertsModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowCertsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowCertsModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-purple-500 hover:bg-purple-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1737,14 +2145,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowLanguagesModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowLanguagesModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-lg max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1752,27 +2160,78 @@ export default function AppPage() {
                     <Languages className="h-5 w-5 text-green-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Languages</h2>
-                    <p className="text-sm text-stone-400">{profile.languages?.length || 0} languages</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Languages</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.languages?.length || 0)} languages</p>
                   </div>
                 </div>
-                <button onClick={() => setShowLanguagesModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowLanguagesModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                {profile.languages?.map((lang, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center justify-between">
-                    <h4 className="font-semibold text-white">{lang.name}</h4>
-                    <span className="text-stone-400 text-sm">{lang.level}</span>
+                <button
+                  onClick={() => {
+                    const newLang: Language = { name: '', level: 'Intermediate' };
+                    updateProfileSection('languages', [newLang, ...(workingProfile?.languages || [])]);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-green-500/50 text-stone-400 hover:text-green-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Language
+                </button>
+                
+                {workingProfile?.languages?.map((lang, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3">
+                    <input
+                      type="text"
+                      value={lang.name}
+                      onChange={(e) => {
+                        const updated = [...(workingProfile.languages || [])];
+                        updated[idx] = { ...updated[idx], name: e.target.value };
+                        updateProfileSection('languages', updated);
+                      }}
+                      placeholder="Language"
+                      className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-green-500 focus:outline-none"
+                    />
+                    <select
+                      value={lang.level}
+                      onChange={(e) => {
+                        const updated = [...(workingProfile.languages || [])];
+                        updated[idx] = { ...updated[idx], level: e.target.value };
+                        updateProfileSection('languages', updated);
+                      }}
+                      className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
+                    >
+                      <option value="Native">Native</option>
+                      <option value="Fluent">Fluent</option>
+                      <option value="Advanced">Advanced</option>
+                      <option value="Intermediate">Intermediate</option>
+                      <option value="Basic">Basic</option>
+                    </select>
+                    <button
+                      onClick={() => {
+                        const updated = workingProfile.languages?.filter((_, i) => i !== idx) || [];
+                        updateProfileSection('languages', updated);
+                      }}
+                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   </div>
                 ))}
-                {(!profile.languages || profile.languages.length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No languages added yet</p>
+                {(!workingProfile?.languages || workingProfile.languages.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No languages added yet.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowLanguagesModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowLanguagesModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLanguagesModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-green-500 hover:bg-green-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
@@ -1787,14 +2246,14 @@ export default function AppPage() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-            onClick={() => setShowLinksModal(false)}
+            onClick={() => { cancelProfileEdits(); setShowLinksModal(false); }}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-lg max-h-[80vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+              className="w-full max-w-lg max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
             >
               <div className="flex items-center justify-between p-6 border-b border-white/10">
                 <div className="flex items-center gap-3">
@@ -1802,47 +2261,73 @@ export default function AppPage() {
                     <Globe className="h-5 w-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">All Links</h2>
-                    <p className="text-sm text-stone-400">{profile.basics?.links?.filter(l => l && l.trim()).length || 0} links</p>
+                    <h2 className="text-xl font-semibold text-white">Edit Links</h2>
+                    <p className="text-sm text-stone-400">{(workingProfile?.basics?.links?.filter(l => l && l.trim()).length || 0)} links</p>
                   </div>
                 </div>
-                <button onClick={() => setShowLinksModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                <button onClick={() => { cancelProfileEdits(); setShowLinksModal(false); }} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
                   <X className="h-5 w-5" />
                 </button>
               </div>
               <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                {profile.basics?.links?.filter(l => l && l.trim()).map((link, idx) => {
-                  const platform = getPlatformInfo(link);
+                <button
+                  onClick={() => {
+                    const currentLinks = workingProfile?.basics?.links || [];
+                    const updatedBasics = { ...workingProfile?.basics, links: ['', ...currentLinks] };
+                    updateProfileSection('basics', updatedBasics as any);
+                  }}
+                  className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-cyan-500/50 text-stone-400 hover:text-cyan-400 transition flex items-center justify-center gap-2"
+                >
+                  <Plus className="h-5 w-5" />
+                  Add New Link
+                </button>
+                
+                {workingProfile?.basics?.links?.map((link, idx) => {
+                  const platform = link ? getPlatformInfo(link) : { icon: Globe, name: 'Website', color: 'text-cyan-400' };
                   const PlatformIcon = platform.icon;
-                  let displayUrl = link;
-                  try {
-                    displayUrl = new URL(link).hostname.replace('www.', '');
-                  } catch {}
                   return (
-                    <a
-                      key={idx}
-                      href={link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3 hover:border-cyan-500/30 transition group"
-                    >
-                      <div className={`w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center group-hover:bg-cyan-500/20 transition`}>
+                    <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3">
+                      <div className={`w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center`}>
                         <PlatformIcon className={`h-5 w-5 ${platform.color}`} />
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-white">{platform.name}</h4>
-                        <p className="text-stone-500 text-sm truncate">{displayUrl}</p>
-                      </div>
-                      <ExternalLink className="h-4 w-4 text-stone-500 group-hover:text-cyan-400 transition" />
-                    </a>
+                      <input
+                        type="url"
+                        value={link}
+                        onChange={(e) => {
+                          const updated = [...(workingProfile.basics?.links || [])];
+                          updated[idx] = e.target.value;
+                          const updatedBasics = { ...workingProfile.basics, links: updated };
+                          updateProfileSection('basics', updatedBasics as any);
+                        }}
+                        placeholder="https://github.com/username"
+                        className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-cyan-500 focus:outline-none"
+                      />
+                      <button
+                        onClick={() => {
+                          const updated = workingProfile.basics?.links?.filter((_, i) => i !== idx) || [];
+                          const updatedBasics = { ...workingProfile.basics, links: updated };
+                          updateProfileSection('basics', updatedBasics as any);
+                        }}
+                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   );
                 })}
-                {(!profile.basics?.links || profile.basics.links.filter(l => l && l.trim()).length === 0) && (
-                  <p className="text-stone-500 text-center py-8">No links added yet</p>
+                {(!workingProfile?.basics?.links || workingProfile.basics.links.length === 0) && (
+                  <p className="text-stone-500 text-center py-4">No links added yet.</p>
                 )}
               </div>
-              <div className="p-4 border-t border-white/10 bg-stone-950/50">
-                <button onClick={() => setShowLinksModal(false)} className="w-full py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Close</button>
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button onClick={() => { cancelProfileEdits(); setShowLinksModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
+                <button 
+                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLinksModal(false); }}
+                  disabled={isSavingProfile || !editedProfile}
+                  className="flex-1 py-3 text-white bg-cyan-500 hover:bg-cyan-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                >
+                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                </button>
               </div>
             </motion.div>
           </motion.div>
