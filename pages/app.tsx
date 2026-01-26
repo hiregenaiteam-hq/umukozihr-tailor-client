@@ -219,6 +219,15 @@ export default function AppPage() {
   // Inline editing state
   const [editedProfile, setEditedProfile] = useState<ProfileV3 | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  
+  // Track which item index is being edited in each modal (-1 = none, -2 = adding new)
+  const [editingExpIndex, setEditingExpIndex] = useState<number>(-1);
+  const [editingEduIndex, setEditingEduIndex] = useState<number>(-1);
+  const [editingProjIndex, setEditingProjIndex] = useState<number>(-1);
+  const [editingCertIndex, setEditingCertIndex] = useState<number>(-1);
+  const [editingLangIndex, setEditingLangIndex] = useState<number>(-1);
+  const [editingLinkIndex, setEditingLinkIndex] = useState<number>(-1);
+  const [editingSkillIndex, setEditingSkillIndex] = useState<number>(-1);
 
   // Helper to update a section and save to localStorage
   const updateProfileSection = <K extends keyof ProfileV3>(section: K, newData: ProfileV3[K]) => {
@@ -256,6 +265,14 @@ export default function AppPage() {
   const cancelProfileEdits = () => {
     setEditedProfile(null);
     localStorage.removeItem('profile_draft');
+    // Reset all editing indices
+    setEditingExpIndex(-1);
+    setEditingEduIndex(-1);
+    setEditingProjIndex(-1);
+    setEditingCertIndex(-1);
+    setEditingLangIndex(-1);
+    setEditingLinkIndex(-1);
+    setEditingSkillIndex(-1);
   };
 
   // Get the current working profile (edited or original)
@@ -1480,7 +1497,7 @@ export default function AppPage() {
                     <Code className="h-5 w-5 text-emerald-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Skills</h2>
+                    <h2 className="text-xl font-semibold text-white">Skills</h2>
                     <p className="text-sm text-stone-400">
                       {(workingProfile?.skills?.length || 0)} categories • {workingProfile?.skills?.reduce((acc, s) => acc + (s.keywords?.length || 0), 0) || 0} total skills
                     </p>
@@ -1501,6 +1518,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newSkill: Skill = { name: '', level: 'intermediate', keywords: [] };
                     updateProfileSection('skills', [newSkill, ...(workingProfile?.skills || [])]);
+                    setEditingSkillIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-emerald-500/50 text-stone-400 hover:text-emerald-400 transition flex items-center justify-center gap-2"
                 >
@@ -1509,70 +1527,57 @@ export default function AppPage() {
                 </button>
                 
                 {workingProfile?.skills?.map((skill, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={skill.name}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.skills || [])];
-                            updated[idx] = { ...updated[idx], name: e.target.value };
-                            updateProfileSection('skills', updated);
-                          }}
-                          placeholder="Category Name (e.g., Frontend, Backend)"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none"
-                        />
-                        <select
-                          value={skill.level}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.skills || [])];
-                            updated[idx] = { ...updated[idx], level: e.target.value as 'beginner' | 'intermediate' | 'expert' };
-                            updateProfileSection('skills', updated);
-                          }}
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-emerald-500 focus:outline-none"
-                        >
-                          <option value="beginner">Beginner</option>
-                          <option value="intermediate">Intermediate</option>
-                          <option value="expert">Expert</option>
-                        </select>
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    {editingSkillIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <input type="text" value={skill.name} onChange={(e) => { const updated = [...(workingProfile.skills || [])]; updated[idx] = { ...updated[idx], name: e.target.value }; updateProfileSection('skills', updated); }} placeholder="Category Name (e.g., Frontend)" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none" />
+                            <select value={skill.level} onChange={(e) => { const updated = [...(workingProfile.skills || [])]; updated[idx] = { ...updated[idx], level: e.target.value as 'beginner' | 'intermediate' | 'expert' }; updateProfileSection('skills', updated); }} className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-emerald-500 focus:outline-none">
+                              <option value="beginner">Beginner</option>
+                              <option value="intermediate">Intermediate</option>
+                              <option value="expert">Expert</option>
+                            </select>
+                          </div>
+                          <div className="ml-3 flex flex-col gap-2">
+                            <button onClick={() => setEditingSkillIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done editing"><CheckCircle className="h-4 w-4" /></button>
+                            <button onClick={() => { const updated = workingProfile.skills?.filter((_, i) => i !== idx) || []; updateProfileSection('skills', updated); setEditingSkillIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-xs text-stone-500">Skills/Keywords (comma-separated)</p>
+                          <input type="text" value={(skill.keywords || []).join(', ')} onChange={(e) => { const updated = [...(workingProfile.skills || [])]; updated[idx] = { ...updated[idx], keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k) }; updateProfileSection('skills', updated); }} placeholder="React, TypeScript, Node.js..." className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none text-sm" />
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.skills?.filter((_, i) => i !== idx) || [];
-                          updateProfileSection('skills', updated);
-                        }}
-                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {/* Keywords input */}
-                    <div className="space-y-2">
-                      <p className="text-xs text-stone-500">Skills/Keywords (comma-separated)</p>
-                      <input
-                        type="text"
-                        value={(skill.keywords || []).join(', ')}
-                        onChange={(e) => {
-                          const updated = [...(workingProfile.skills || [])];
-                          updated[idx] = { ...updated[idx], keywords: e.target.value.split(',').map(k => k.trim()).filter(k => k) };
-                          updateProfileSection('skills', updated);
-                        }}
-                        placeholder="React, TypeScript, Node.js, PostgreSQL..."
-                        className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-emerald-500 focus:outline-none text-sm"
-                      />
-                    </div>
-                    {/* Visual preview of keywords */}
-                    {skill.keywords && skill.keywords.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {skill.keywords.map((keyword, kidx) => (
-                          <span 
-                            key={kidx} 
-                            className="px-2 py-1 text-xs rounded-lg bg-stone-700/50 text-stone-300 border border-stone-600"
-                          >
-                            {keyword}
-                          </span>
-                        ))}
+                    ) : (
+                      /* View Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className={`font-medium ${
+                              skill.level === 'expert' ? 'text-orange-400' : 
+                              skill.level === 'intermediate' ? 'text-amber-400' : 
+                              'text-stone-400'
+                            }`}>{skill.name || 'Skill Category'}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded ${
+                              skill.level === 'expert' ? 'bg-orange-500/20 text-orange-400' : 
+                              skill.level === 'intermediate' ? 'bg-amber-500/20 text-amber-400' : 
+                              'bg-stone-700 text-stone-400'
+                            }`}>{skill.level}</span>
+                          </div>
+                          {skill.keywords && skill.keywords.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {skill.keywords.slice(0, 6).map((keyword, kidx) => (
+                                <span key={kidx} className="px-2 py-0.5 text-xs rounded bg-stone-700/50 text-stone-300">{keyword}</span>
+                              ))}
+                              {skill.keywords.length > 6 && <span className="text-xs text-stone-500">+{skill.keywords.length - 6} more</span>}
+                            </div>
+                          )}
+                        </div>
+                        <button onClick={() => setEditingSkillIndex(idx)} className="p-2 text-stone-400 hover:text-emerald-400 hover:bg-emerald-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
                       </div>
                     )}
                   </div>
@@ -1588,15 +1593,17 @@ export default function AppPage() {
                   onClick={() => { cancelProfileEdits(); setShowSkillsModal(false); }}
                   className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
                 >
-                  Cancel
+                  {editedProfile ? 'Cancel' : 'Close'}
                 </button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowSkillsModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowSkillsModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-emerald-500 hover:bg-emerald-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -1626,7 +1633,7 @@ export default function AppPage() {
                     <Briefcase className="h-5 w-5 text-orange-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Experience</h2>
+                    <h2 className="text-xl font-semibold text-white">Experience</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.experience?.length || 0)} positions</p>
                   </div>
                 </div>
@@ -1640,6 +1647,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newExp: Experience = { title: '', company: '', location: '', start: '', end: '', employment_type: 'Full-time', bullets: [] };
                     updateProfileSection('experience', [newExp, ...(workingProfile?.experience || [])]);
+                    setEditingExpIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-orange-500/50 text-stone-400 hover:text-orange-400 transition flex items-center justify-center gap-2"
                 >
@@ -1648,105 +1656,62 @@ export default function AppPage() {
                 </button>
                 
                 {workingProfile?.experience?.map((exp, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={exp.title}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], title: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          placeholder="Job Title"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={exp.company}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], company: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          placeholder="Company"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={exp.location || ''}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], location: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          placeholder="Location"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
-                        />
-                        <select
-                          value={exp.employment_type || 'Full-time'}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], employment_type: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-orange-500 focus:outline-none"
-                        >
-                          <option value="Full-time">Full-time</option>
-                          <option value="Part-time">Part-time</option>
-                          <option value="Contract">Contract</option>
-                          <option value="Freelance">Freelance</option>
-                          <option value="Internship">Internship</option>
-                        </select>
-                        <input
-                          type="text"
-                          value={exp.start}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], start: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          placeholder="Start (e.g., 2022-01)"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={exp.end || ''}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.experience || [])];
-                            updated[idx] = { ...updated[idx], end: e.target.value };
-                            updateProfileSection('experience', updated);
-                          }}
-                          placeholder="End (or 'Present')"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none"
-                        />
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    {editingExpIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <input type="text" value={exp.title} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], title: e.target.value }; updateProfileSection('experience', updated); }} placeholder="Job Title" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" />
+                            <input type="text" value={exp.company} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], company: e.target.value }; updateProfileSection('experience', updated); }} placeholder="Company" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" />
+                            <input type="text" value={exp.location || ''} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], location: e.target.value }; updateProfileSection('experience', updated); }} placeholder="Location" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" />
+                            <select value={exp.employment_type || 'Full-time'} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], employment_type: e.target.value }; updateProfileSection('experience', updated); }} className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-orange-500 focus:outline-none">
+                              <option value="Full-time">Full-time</option>
+                              <option value="Part-time">Part-time</option>
+                              <option value="Contract">Contract</option>
+                              <option value="Freelance">Freelance</option>
+                              <option value="Internship">Internship</option>
+                            </select>
+                            <input type="text" value={exp.start} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], start: e.target.value }; updateProfileSection('experience', updated); }} placeholder="Start (e.g., 2022-01)" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" />
+                            <input type="text" value={exp.end || ''} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], end: e.target.value }; updateProfileSection('experience', updated); }} placeholder="End (or 'Present')" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" />
+                          </div>
+                          <div className="ml-3 flex flex-col gap-2">
+                            <button onClick={() => setEditingExpIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done editing"><CheckCircle className="h-4 w-4" /></button>
+                            <button onClick={() => { const updated = workingProfile.experience?.filter((_, i) => i !== idx) || []; updateProfileSection('experience', updated); setEditingExpIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <p className="text-xs text-stone-500">Bullet points (one per line)</p>
+                          <textarea value={(exp.bullets || []).join('\n')} onChange={(e) => { const updated = [...(workingProfile.experience || [])]; updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) }; updateProfileSection('experience', updated); }} placeholder="• Achieved X by doing Y...\n• Led team of Z..." rows={3} className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none text-sm resize-none" />
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.experience?.filter((_, i) => i !== idx) || [];
-                          updateProfileSection('experience', updated);
-                        }}
-                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    {/* Bullets */}
-                    <div className="space-y-2">
-                      <p className="text-xs text-stone-500">Bullet points (one per line)</p>
-                      <textarea
-                        value={(exp.bullets || []).join('\n')}
-                        onChange={(e) => {
-                          const updated = [...(workingProfile.experience || [])];
-                          updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) };
-                          updateProfileSection('experience', updated);
-                        }}
-                        placeholder="• Achieved X by doing Y...\n• Led team of Z..."
-                        rows={3}
-                        className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none text-sm resize-none"
-                      />
-                    </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white">{exp.title || 'Untitled Position'}</h3>
+                            {exp.employment_type && <span className="text-xs px-2 py-0.5 rounded bg-stone-700 text-stone-400">{exp.employment_type}</span>}
+                          </div>
+                          <p className="text-orange-400 text-sm">{exp.company || 'Company'}</p>
+                          <p className="text-stone-500 text-xs mt-1">{exp.location && `${exp.location} • `}{exp.start}{exp.end ? ` - ${exp.end}` : ' - Present'}</p>
+                          {exp.bullets && exp.bullets.length > 0 && (
+                            <ul className="mt-2 space-y-1">
+                              {exp.bullets.slice(0, 2).map((bullet, bidx) => (
+                                <li key={bidx} className="text-stone-400 text-sm flex items-start gap-2">
+                                  <span className="text-orange-400 mt-1">•</span>
+                                  <span className="line-clamp-1">{bullet}</span>
+                                </li>
+                              ))}
+                              {exp.bullets.length > 2 && <li className="text-stone-500 text-xs">+{exp.bullets.length - 2} more</li>}
+                            </ul>
+                          )}
+                        </div>
+                        <button onClick={() => setEditingExpIndex(idx)} className="p-2 text-stone-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {(!workingProfile?.experience || workingProfile.experience.length === 0) && (
@@ -1754,14 +1719,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowExperienceModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowExperienceModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-orange-500 hover:bg-orange-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowExperienceModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowExperienceModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-orange-500 hover:bg-orange-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -1791,7 +1758,7 @@ export default function AppPage() {
                     <GraduationCap className="h-5 w-5 text-amber-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Education</h2>
+                    <h2 className="text-xl font-semibold text-white">Education</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.education?.length || 0)} entries</p>
                   </div>
                 </div>
@@ -1804,6 +1771,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newEdu: Education = { school: '', degree: '', start: '', end: '', gpa: null };
                     updateProfileSection('education', [newEdu, ...(workingProfile?.education || [])]);
+                    setEditingEduIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-amber-500/50 text-stone-400 hover:text-amber-400 transition flex items-center justify-center gap-2"
                 >
@@ -1812,75 +1780,37 @@ export default function AppPage() {
                 </button>
                 
                 {workingProfile?.education?.map((edu, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={edu.degree}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.education || [])];
-                            updated[idx] = { ...updated[idx], degree: e.target.value };
-                            updateProfileSection('education', updated);
-                          }}
-                          placeholder="Degree"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={edu.school}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.education || [])];
-                            updated[idx] = { ...updated[idx], school: e.target.value };
-                            updateProfileSection('education', updated);
-                          }}
-                          placeholder="School"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={edu.start}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.education || [])];
-                            updated[idx] = { ...updated[idx], start: e.target.value };
-                            updateProfileSection('education', updated);
-                          }}
-                          placeholder="Start Year"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={edu.end}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.education || [])];
-                            updated[idx] = { ...updated[idx], end: e.target.value };
-                            updateProfileSection('education', updated);
-                          }}
-                          placeholder="End Year"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={edu.gpa || ''}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.education || [])];
-                            updated[idx] = { ...updated[idx], gpa: e.target.value || null };
-                            updateProfileSection('education', updated);
-                          }}
-                          placeholder="GPA (optional)"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none col-span-2"
-                        />
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    {editingEduIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <input type="text" value={edu.degree} onChange={(e) => { const updated = [...(workingProfile.education || [])]; updated[idx] = { ...updated[idx], degree: e.target.value }; updateProfileSection('education', updated); }} placeholder="Degree" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none" />
+                            <input type="text" value={edu.school} onChange={(e) => { const updated = [...(workingProfile.education || [])]; updated[idx] = { ...updated[idx], school: e.target.value }; updateProfileSection('education', updated); }} placeholder="School" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none" />
+                            <input type="text" value={edu.start} onChange={(e) => { const updated = [...(workingProfile.education || [])]; updated[idx] = { ...updated[idx], start: e.target.value }; updateProfileSection('education', updated); }} placeholder="Start Year" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none" />
+                            <input type="text" value={edu.end} onChange={(e) => { const updated = [...(workingProfile.education || [])]; updated[idx] = { ...updated[idx], end: e.target.value }; updateProfileSection('education', updated); }} placeholder="End Year" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none" />
+                            <input type="text" value={edu.gpa || ''} onChange={(e) => { const updated = [...(workingProfile.education || [])]; updated[idx] = { ...updated[idx], gpa: e.target.value || null }; updateProfileSection('education', updated); }} placeholder="GPA (optional)" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-amber-500 focus:outline-none col-span-2" />
+                          </div>
+                          <div className="ml-3 flex flex-col gap-2">
+                            <button onClick={() => setEditingEduIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done editing"><CheckCircle className="h-4 w-4" /></button>
+                            <button onClick={() => { const updated = workingProfile.education?.filter((_, i) => i !== idx) || []; updateProfileSection('education', updated); setEditingEduIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.education?.filter((_, i) => i !== idx) || [];
-                          updateProfileSection('education', updated);
-                        }}
-                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">{edu.degree || 'Degree'}</h3>
+                          <p className="text-amber-400 text-sm">{edu.school || 'School'}</p>
+                          <p className="text-stone-500 text-xs mt-1">{edu.start}{edu.end ? ` - ${edu.end}` : ''}{edu.gpa ? ` • GPA: ${edu.gpa}` : ''}</p>
+                        </div>
+                        <button onClick={() => setEditingEduIndex(idx)} className="p-2 text-stone-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {(!workingProfile?.education || workingProfile.education.length === 0) && (
@@ -1888,14 +1818,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowEducationModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowEducationModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-amber-500 hover:bg-amber-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowEducationModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowEducationModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-amber-500 hover:bg-amber-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -1925,7 +1857,7 @@ export default function AppPage() {
                     <FolderKanban className="h-5 w-5 text-blue-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Projects</h2>
+                    <h2 className="text-xl font-semibold text-white">Projects</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.projects?.length || 0)} projects</p>
                   </div>
                 </div>
@@ -1938,6 +1870,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newProj: Project = { name: '', url: '', stack: [], bullets: [] };
                     updateProfileSection('projects', [newProj, ...(workingProfile?.projects || [])]);
+                    setEditingProjIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-blue-500/50 text-stone-400 hover:text-blue-400 transition flex items-center justify-center gap-2"
                 >
@@ -1946,64 +1879,48 @@ export default function AppPage() {
                 </button>
                 
                 {workingProfile?.projects?.map((project, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 space-y-3">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          value={project.name}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.projects || [])];
-                            updated[idx] = { ...updated[idx], name: e.target.value };
-                            updateProfileSection('projects', updated);
-                          }}
-                          placeholder="Project Name"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={project.url}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.projects || [])];
-                            updated[idx] = { ...updated[idx], url: e.target.value };
-                            updateProfileSection('projects', updated);
-                          }}
-                          placeholder="Project URL"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={(project.stack || []).join(', ')}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.projects || [])];
-                            updated[idx] = { ...updated[idx], stack: e.target.value.split(',').map(s => s.trim()).filter(s => s) };
-                            updateProfileSection('projects', updated);
-                          }}
-                          placeholder="Tech Stack (comma-separated)"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none col-span-2"
-                        />
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    {editingProjIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-start">
+                          <div className="flex-1 grid grid-cols-2 gap-3">
+                            <input type="text" value={project.name} onChange={(e) => { const updated = [...(workingProfile.projects || [])]; updated[idx] = { ...updated[idx], name: e.target.value }; updateProfileSection('projects', updated); }} placeholder="Project Name" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none" />
+                            <input type="text" value={project.url} onChange={(e) => { const updated = [...(workingProfile.projects || [])]; updated[idx] = { ...updated[idx], url: e.target.value }; updateProfileSection('projects', updated); }} placeholder="Project URL" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none" />
+                            <input type="text" value={(project.stack || []).join(', ')} onChange={(e) => { const updated = [...(workingProfile.projects || [])]; updated[idx] = { ...updated[idx], stack: e.target.value.split(',').map(s => s.trim()).filter(s => s) }; updateProfileSection('projects', updated); }} placeholder="Tech Stack (comma-separated)" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none col-span-2" />
+                          </div>
+                          <div className="ml-3 flex flex-col gap-2">
+                            <button onClick={() => setEditingProjIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done editing"><CheckCircle className="h-4 w-4" /></button>
+                            <button onClick={() => { const updated = workingProfile.projects?.filter((_, i) => i !== idx) || []; updateProfileSection('projects', updated); setEditingProjIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                          </div>
+                        </div>
+                        <textarea value={(project.bullets || []).join('\n')} onChange={(e) => { const updated = [...(workingProfile.projects || [])]; updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) }; updateProfileSection('projects', updated); }} placeholder="Description bullets (one per line)" rows={2} className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none text-sm resize-none" />
                       </div>
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.projects?.filter((_, i) => i !== idx) || [];
-                          updateProfileSection('projects', updated);
-                        }}
-                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <textarea
-                      value={(project.bullets || []).join('\n')}
-                      onChange={(e) => {
-                        const updated = [...(workingProfile.projects || [])];
-                        updated[idx] = { ...updated[idx], bullets: e.target.value.split('\n').filter(b => b.trim()) };
-                        updateProfileSection('projects', updated);
-                      }}
-                      placeholder="Description bullets (one per line)"
-                      rows={2}
-                      className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-blue-500 focus:outline-none text-sm resize-none"
-                    />
+                    ) : (
+                      /* View Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold text-white">{project.name || 'Untitled Project'}</h3>
+                            {project.url && <a href={project.url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-blue-400 hover:text-blue-300"><ExternalLink className="h-3 w-3" /></a>}
+                          </div>
+                          {project.stack && project.stack.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {project.stack.slice(0, 5).map((tech, tidx) => (
+                                <span key={tidx} className="px-2 py-0.5 text-xs rounded bg-blue-500/20 text-blue-300">{tech}</span>
+                              ))}
+                              {project.stack.length > 5 && <span className="text-xs text-stone-500">+{project.stack.length - 5}</span>}
+                            </div>
+                          )}
+                          {project.bullets && project.bullets.length > 0 && (
+                            <p className="text-stone-400 text-sm mt-2 line-clamp-2">{project.bullets[0]}</p>
+                          )}
+                        </div>
+                        <button onClick={() => setEditingProjIndex(idx)} className="p-2 text-stone-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {(!workingProfile?.projects || workingProfile.projects.length === 0) && (
@@ -2011,14 +1928,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowProjectsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowProjectsModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowProjectsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowProjectsModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-blue-500 hover:bg-blue-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -2048,7 +1967,7 @@ export default function AppPage() {
                     <Award className="h-5 w-5 text-purple-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Certifications</h2>
+                    <h2 className="text-xl font-semibold text-white">Certifications</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.certifications?.length || 0)} certifications</p>
                   </div>
                 </div>
@@ -2061,6 +1980,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newCert: Certification = { name: '', issuer: '', date: '' };
                     updateProfileSection('certifications', [newCert, ...(workingProfile?.certifications || [])]);
+                    setEditingCertIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-purple-500/50 text-stone-400 hover:text-purple-400 transition flex items-center justify-center gap-2"
                 >
@@ -2070,52 +1990,32 @@ export default function AppPage() {
                 
                 {workingProfile?.certifications?.map((cert, idx) => (
                   <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1 grid grid-cols-3 gap-3">
-                        <input
-                          type="text"
-                          value={cert.name}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.certifications || [])];
-                            updated[idx] = { ...updated[idx], name: e.target.value };
-                            updateProfileSection('certifications', updated);
-                          }}
-                          placeholder="Certification Name"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={cert.issuer}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.certifications || [])];
-                            updated[idx] = { ...updated[idx], issuer: e.target.value };
-                            updateProfileSection('certifications', updated);
-                          }}
-                          placeholder="Issuing Organization"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
-                        />
-                        <input
-                          type="text"
-                          value={cert.date}
-                          onChange={(e) => {
-                            const updated = [...(workingProfile.certifications || [])];
-                            updated[idx] = { ...updated[idx], date: e.target.value };
-                            updateProfileSection('certifications', updated);
-                          }}
-                          placeholder="Date (e.g., 2023)"
-                          className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none"
-                        />
+                    {editingCertIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1 grid grid-cols-3 gap-3">
+                          <input type="text" value={cert.name} onChange={(e) => { const updated = [...(workingProfile.certifications || [])]; updated[idx] = { ...updated[idx], name: e.target.value }; updateProfileSection('certifications', updated); }} placeholder="Certification Name" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none" />
+                          <input type="text" value={cert.issuer} onChange={(e) => { const updated = [...(workingProfile.certifications || [])]; updated[idx] = { ...updated[idx], issuer: e.target.value }; updateProfileSection('certifications', updated); }} placeholder="Issuing Organization" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none" />
+                          <input type="text" value={cert.date} onChange={(e) => { const updated = [...(workingProfile.certifications || [])]; updated[idx] = { ...updated[idx], date: e.target.value }; updateProfileSection('certifications', updated); }} placeholder="Date (e.g., 2023)" className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-purple-500 focus:outline-none" />
+                        </div>
+                        <div className="ml-3 flex flex-col gap-2">
+                          <button onClick={() => setEditingCertIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done editing"><CheckCircle className="h-4 w-4" /></button>
+                          <button onClick={() => { const updated = workingProfile.certifications?.filter((_, i) => i !== idx) || []; updateProfileSection('certifications', updated); setEditingCertIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.certifications?.filter((_, i) => i !== idx) || [];
-                          updateProfileSection('certifications', updated);
-                        }}
-                        className="ml-3 p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-semibold text-white">{cert.name || 'Certification'}</h3>
+                          <p className="text-purple-400 text-sm">{cert.issuer || 'Issuer'}</p>
+                          {cert.date && <p className="text-stone-500 text-xs mt-1">{cert.date}</p>}
+                        </div>
+                        <button onClick={() => setEditingCertIndex(idx)} className="p-2 text-stone-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {(!workingProfile?.certifications || workingProfile.certifications.length === 0) && (
@@ -2123,14 +2023,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowCertsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowCertsModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-purple-500 hover:bg-purple-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowCertsModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowCertsModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-purple-500 hover:bg-purple-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -2160,7 +2062,7 @@ export default function AppPage() {
                     <Languages className="h-5 w-5 text-green-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Languages</h2>
+                    <h2 className="text-xl font-semibold text-white">Languages</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.languages?.length || 0)} languages</p>
                   </div>
                 </div>
@@ -2173,6 +2075,7 @@ export default function AppPage() {
                   onClick={() => {
                     const newLang: Language = { name: '', level: 'Intermediate' };
                     updateProfileSection('languages', [newLang, ...(workingProfile?.languages || [])]);
+                    setEditingLangIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-green-500/50 text-stone-400 hover:text-green-400 transition flex items-center justify-center gap-2"
                 >
@@ -2181,42 +2084,33 @@ export default function AppPage() {
                 </button>
                 
                 {workingProfile?.languages?.map((lang, idx) => (
-                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3">
-                    <input
-                      type="text"
-                      value={lang.name}
-                      onChange={(e) => {
-                        const updated = [...(workingProfile.languages || [])];
-                        updated[idx] = { ...updated[idx], name: e.target.value };
-                        updateProfileSection('languages', updated);
-                      }}
-                      placeholder="Language"
-                      className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-green-500 focus:outline-none"
-                    />
-                    <select
-                      value={lang.level}
-                      onChange={(e) => {
-                        const updated = [...(workingProfile.languages || [])];
-                        updated[idx] = { ...updated[idx], level: e.target.value };
-                        updateProfileSection('languages', updated);
-                      }}
-                      className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none"
-                    >
-                      <option value="Native">Native</option>
-                      <option value="Fluent">Fluent</option>
-                      <option value="Advanced">Advanced</option>
-                      <option value="Intermediate">Intermediate</option>
-                      <option value="Basic">Basic</option>
-                    </select>
-                    <button
-                      onClick={() => {
-                        const updated = workingProfile.languages?.filter((_, i) => i !== idx) || [];
-                        updateProfileSection('languages', updated);
-                      }}
-                      className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                    {editingLangIndex === idx ? (
+                      /* Edit Mode */
+                      <div className="flex items-center gap-3">
+                        <input type="text" value={lang.name} onChange={(e) => { const updated = [...(workingProfile.languages || [])]; updated[idx] = { ...updated[idx], name: e.target.value }; updateProfileSection('languages', updated); }} placeholder="Language" className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-green-500 focus:outline-none" />
+                        <select value={lang.level} onChange={(e) => { const updated = [...(workingProfile.languages || [])]; updated[idx] = { ...updated[idx], level: e.target.value }; updateProfileSection('languages', updated); }} className="bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white focus:border-green-500 focus:outline-none">
+                          <option value="Native">Native</option>
+                          <option value="Fluent">Fluent</option>
+                          <option value="Advanced">Advanced</option>
+                          <option value="Intermediate">Intermediate</option>
+                          <option value="Basic">Basic</option>
+                        </select>
+                        <button onClick={() => setEditingLangIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done"><CheckCircle className="h-4 w-4" /></button>
+                        <button onClick={() => { const updated = workingProfile.languages?.filter((_, i) => i !== idx) || []; updateProfileSection('languages', updated); setEditingLangIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                      </div>
+                    ) : (
+                      /* View Mode */
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="font-medium text-white">{lang.name || 'Language'}</span>
+                          <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-400">{lang.level}</span>
+                        </div>
+                        <button onClick={() => setEditingLangIndex(idx)} className="p-2 text-stone-400 hover:text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Edit">
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
                 {(!workingProfile?.languages || workingProfile.languages.length === 0) && (
@@ -2224,14 +2118,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowLanguagesModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLanguagesModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-green-500 hover:bg-green-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowLanguagesModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLanguagesModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-green-500 hover:bg-green-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
@@ -2261,7 +2157,7 @@ export default function AppPage() {
                     <Globe className="h-5 w-5 text-cyan-400" />
                   </div>
                   <div>
-                    <h2 className="text-xl font-semibold text-white">Edit Links</h2>
+                    <h2 className="text-xl font-semibold text-white">Links</h2>
                     <p className="text-sm text-stone-400">{(workingProfile?.basics?.links?.filter(l => l && l.trim()).length || 0)} links</p>
                   </div>
                 </div>
@@ -2275,6 +2171,7 @@ export default function AppPage() {
                     const currentLinks = workingProfile?.basics?.links || [];
                     const updatedBasics = { ...workingProfile?.basics, links: ['', ...currentLinks] };
                     updateProfileSection('basics', updatedBasics as any);
+                    setEditingLinkIndex(0);
                   }}
                   className="w-full p-4 rounded-xl border-2 border-dashed border-stone-700 hover:border-cyan-500/50 text-stone-400 hover:text-cyan-400 transition flex items-center justify-center gap-2"
                 >
@@ -2286,32 +2183,34 @@ export default function AppPage() {
                   const platform = link ? getPlatformInfo(link) : { icon: Globe, name: 'Website', color: 'text-cyan-400' };
                   const PlatformIcon = platform.icon;
                   return (
-                    <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center`}>
-                        <PlatformIcon className={`h-5 w-5 ${platform.color}`} />
-                      </div>
-                      <input
-                        type="url"
-                        value={link}
-                        onChange={(e) => {
-                          const updated = [...(workingProfile.basics?.links || [])];
-                          updated[idx] = e.target.value;
-                          const updatedBasics = { ...workingProfile.basics, links: updated };
-                          updateProfileSection('basics', updatedBasics as any);
-                        }}
-                        placeholder="https://github.com/username"
-                        className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-cyan-500 focus:outline-none"
-                      />
-                      <button
-                        onClick={() => {
-                          const updated = workingProfile.basics?.links?.filter((_, i) => i !== idx) || [];
-                          const updatedBasics = { ...workingProfile.basics, links: updated };
-                          updateProfileSection('basics', updatedBasics as any);
-                        }}
-                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                    <div key={idx} className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                      {editingLinkIndex === idx ? (
+                        /* Edit Mode */
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center">
+                            <PlatformIcon className={`h-5 w-5 ${platform.color}`} />
+                          </div>
+                          <input type="url" value={link} onChange={(e) => { const updated = [...(workingProfile.basics?.links || [])]; updated[idx] = e.target.value; const updatedBasics = { ...workingProfile.basics, links: updated }; updateProfileSection('basics', updatedBasics as any); }} placeholder="https://github.com/username" className="flex-1 bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-cyan-500 focus:outline-none" />
+                          <button onClick={() => setEditingLinkIndex(-1)} className="p-2 text-green-400 hover:bg-green-500/10 rounded-lg transition" title="Done"><CheckCircle className="h-4 w-4" /></button>
+                          <button onClick={() => { const updated = workingProfile.basics?.links?.filter((_, i) => i !== idx) || []; const updatedBasics = { ...workingProfile.basics, links: updated }; updateProfileSection('basics', updatedBasics as any); setEditingLinkIndex(-1); }} className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition" title="Delete"><Trash2 className="h-4 w-4" /></button>
+                        </div>
+                      ) : (
+                        /* View Mode */
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-lg bg-stone-700/50 flex items-center justify-center">
+                              <PlatformIcon className={`h-5 w-5 ${platform.color}`} />
+                            </div>
+                            <div>
+                              <span className="font-medium text-white">{platform.name}</span>
+                              {link && <p className="text-stone-500 text-xs truncate max-w-[200px]">{link}</p>}
+                            </div>
+                          </div>
+                          <button onClick={() => setEditingLinkIndex(idx)} className="p-2 text-stone-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition" title="Edit">
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -2320,14 +2219,16 @@ export default function AppPage() {
                 )}
               </div>
               <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
-                <button onClick={() => { cancelProfileEdits(); setShowLinksModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">Cancel</button>
-                <button 
-                  onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLinksModal(false); }}
-                  disabled={isSavingProfile || !editedProfile}
-                  className="flex-1 py-3 text-white bg-cyan-500 hover:bg-cyan-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
-                >
-                  {isSavingProfile ? 'Saving...' : 'Save Changes'}
-                </button>
+                <button onClick={() => { cancelProfileEdits(); setShowLinksModal(false); }} className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium">{editedProfile ? 'Cancel' : 'Close'}</button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowLinksModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-cyan-500 hover:bg-cyan-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
               </div>
             </motion.div>
           </motion.div>
