@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, avatar as avatarApi, SubscriptionStatus } from '@/lib/api';
 import { config } from '@/lib/config';
-import { ProfileV3, HistoryItem, Basics } from '@/lib/types';
+import { ProfileV3, HistoryItem } from '@/lib/types';
 import CompletenessBar from '@/components/CompletenessBar';
 import JDComposer from '@/components/JDComposer';
 import RunCard from '@/components/RunCard';
@@ -235,18 +235,6 @@ export default function AppPage() {
     if (!currentProfile) return;
     
     const updated = { ...currentProfile, [section]: newData };
-    setEditedProfile(updated);
-    // Auto-save to localStorage for crash recovery
-    localStorage.setItem('profile_draft', JSON.stringify(updated));
-  };
-
-  // Helper to update basics section specifically
-  const updateBasics = (newBasics: Partial<Basics>) => {
-    const currentProfile = editedProfile || profile;
-    if (!currentProfile) return;
-    
-    const updatedBasics = { ...currentProfile.basics, ...newBasics };
-    const updated = { ...currentProfile, basics: updatedBasics };
     setEditedProfile(updated);
     // Auto-save to localStorage for crash recovery
     localStorage.setItem('profile_draft', JSON.stringify(updated));
@@ -887,73 +875,26 @@ export default function AppPage() {
                   />
                 </motion.div>
                 <div className="flex-1">
-                  {/* Name - Inline Edit */}
-                  <div className="flex items-center gap-2 mb-1">
-                    {workingProfile?.basics.full_name ? (
-                      <h2 className="text-xl sm:text-2xl font-bold text-white flex-1">
-                        {workingProfile.basics.full_name}
-                      </h2>
-                    ) : (
-                      <h2 className="text-xl sm:text-2xl font-bold text-stone-400 italic flex-1">
-                        Complete Your Profile
-                      </h2>
-                    )}
-                    <button 
-                      onClick={() => {
-                        const newName = prompt('Enter your full name:', workingProfile?.basics.full_name || '');
-                        if (newName !== null && newName.trim() !== workingProfile?.basics.full_name) {
-                          updateBasics({ full_name: newName.trim() });
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 transition-colors"
-                      title="Edit name"
-                    >
-                      <Pencil className="h-4 w-4 text-stone-400" />
-                    </button>
-                  </div>
-                  
-                  {/* Email - Inline Edit */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <p className="text-stone-400 text-sm sm:text-base flex-1">
-                      {workingProfile?.basics.email || 'No email provided'}
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
+                    {profile.basics.full_name || 'Complete Your Profile'}
+                  </h2>
+                  <p className="text-stone-400 mb-3 text-sm sm:text-base">{profile.basics.email}</p>
+                  {profile.basics.location && (
+                    <p className="text-stone-500 text-sm flex items-center gap-1">
+                      <MapPin className="h-3 w-3" />
+                      {profile.basics.location}
                     </p>
-                    <button 
-                      onClick={() => {
-                        const newEmail = prompt('Enter your email:', workingProfile?.basics.email || '');
-                        if (newEmail !== null && newEmail.trim() !== workingProfile?.basics.email) {
-                          updateBasics({ email: newEmail.trim() });
-                        }
-                      }}
-                      className="p-1 rounded hover:bg-white/10 transition-colors"
-                      title="Edit email"
-                    >
-                      <Pencil className="h-4 w-4 text-stone-400" />
-                    </button>
-                  </div>
-                  
-                  {/* Location - Inline Edit */}
-                  {workingProfile?.basics.location && (
-                    <div className="flex items-center gap-2">
-                      <p className="text-stone-500 text-sm flex items-center gap-1 flex-1">
-                        <MapPin className="h-3 w-3" />
-                        {workingProfile.basics.location}
-                      </p>
-                      <button 
-                        onClick={() => {
-                          const newLocation = prompt('Enter your location:', workingProfile?.basics.location || '');
-                          if (newLocation !== null && newLocation.trim() !== workingProfile?.basics.location) {
-                            updateBasics({ location: newLocation.trim() });
-                          }
-                        }}
-                        className="p-1 rounded hover:bg-white/10 transition-colors"
-                        title="Edit location"
-                      >
-                        <Pencil className="h-4 w-4 text-stone-400" />
-                      </button>
-                    </div>
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
+                  <button
+                    onClick={() => router.push('/onboarding?edit=true')}
+                    className="btn-secondary flex items-center gap-2 flex-1 sm:flex-none justify-center"
+                  >
+                    <Settings className="h-4 w-4" />
+                    <span className="hidden sm:inline">Edit Profile</span>
+                    <span className="sm:hidden">Edit</span>
+                  </button>
                 <button
                   onClick={() => profileFileInputRef.current?.click()}
                   disabled={isUploadingResume}
