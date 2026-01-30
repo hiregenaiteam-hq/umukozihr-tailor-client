@@ -171,6 +171,7 @@ export interface HistoryItem {
   job_id: string;
   company: string;
   title: string;
+  job_title?: string; // Alias for title
   region: string;
   status: string;
   profile_version?: number;
@@ -188,6 +189,9 @@ export interface HistoryItem {
     [key: string]: any;
   };
   created_at: string;
+  // Job landing celebration fields
+  job_landed?: boolean;
+  landed_at?: string;
 }
 
 export interface HistoryResponse {

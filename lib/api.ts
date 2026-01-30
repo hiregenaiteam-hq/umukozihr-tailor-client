@@ -162,7 +162,15 @@ export const history = {
 
   // Re-generate from a past run
   regenerate: (runId: string) =>
-    api.post(`/history/${runId}/regenerate`)
+    api.post(`/history/${runId}/regenerate`),
+  
+  // v1.5: Mark a job as landed (user got the job!)
+  markLanded: (runId: string) =>
+    api.post(`/history/${runId}/landed`),
+  
+  // v1.5: Get job landing statistics and history
+  getLandedStats: () =>
+    api.get('/history/landed'),
 };
 
 // Admin endpoints (v1.3 final)

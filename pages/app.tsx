@@ -231,6 +231,20 @@ export default function AppPage() {
   const [editingLinkIndex, setEditingLinkIndex] = useState<number>(-1);
   const [editingSkillIndex, setEditingSkillIndex] = useState<number>(-1);
 
+  // Job Landing Celebration state
+  const [showLandedModal, setShowLandedModal] = useState(false);
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  const [isMarkingLanded, setIsMarkingLanded] = useState(false);
+  const [celebrationData, setCelebrationData] = useState<{
+    company: string;
+    title: string;
+    message: string;
+    linkedinShareUrl: string;
+    linkedinShareText: string;
+    totalLanded: number;
+  } | null>(null);
+  const [showConfetti, setShowConfetti] = useState(false);
+
   // Helper to update a section and save to localStorage
   const updateProfileSection = <K extends keyof ProfileV3>(section: K, newData: ProfileV3[K]) => {
     const currentProfile = editedProfile || profile;
@@ -280,6 +294,42 @@ export default function AppPage() {
 
   // Get the current working profile (edited or original)
   const workingProfile = editedProfile || profile;
+
+  // Handle marking a job as landed
+  const handleMarkLanded = async (runId: string) => {
+    setIsMarkingLanded(true);
+    try {
+      const response = await historyApi.markLanded(runId);
+      const data = response.data;
+      
+      // Store celebration data
+      setCelebrationData({
+        company: data.company,
+        title: data.title,
+        message: data.message,
+        linkedinShareUrl: data.linkedin_share_url,
+        linkedinShareText: data.linkedin_share_text,
+        totalLanded: data.total_landed,
+      });
+      
+      // Close job selection modal, show celebration
+      setShowLandedModal(false);
+      setShowCelebrationModal(true);
+      setShowConfetti(true);
+      
+      // Stop confetti after 5 seconds
+      setTimeout(() => setShowConfetti(false), 5000);
+      
+      // Refresh history to show updated status
+      loadHistory();
+      
+      toast.success(`Congratulations on landing at ${data.company}!`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to mark job as landed');
+    } finally {
+      setIsMarkingLanded(false);
+    }
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -1358,7 +1408,7 @@ export default function AppPage() {
         {activeTab === 'history' && (
           <div className="animate-fade-in-up">
             <div className="glass-card p-6 mb-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="neu-raised w-12 h-12 rounded-xl flex items-center justify-center">
                     <Clock className="h-6 w-6 text-orange-400" />
@@ -1368,6 +1418,22 @@ export default function AppPage() {
                     <p className="text-sm text-stone-400">{historyTotal} total runs</p>
                   </div>
                 </div>
+                
+                {/* I Landed a Job! Button */}
+                {historyItems.length > 0 && (
+                  <motion.button
+                    onClick={() => setShowLandedModal(true)}
+                    className="relative group px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-400 hover:to-green-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-green-500/25 hover:shadow-green-500/40"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">🎉</span>
+                      <span>I Landed a Job!</span>
+                    </div>
+                    <div className="absolute inset-0 rounded-xl bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </motion.button>
+                )}
               </div>
             </div>
 
@@ -2374,6 +2440,266 @@ export default function AppPage() {
                     {isSavingProfile ? 'Saving...' : 'Save Changes'}
                   </button>
                 )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Job Landing Selection Modal */}
+      <AnimatePresence>
+        {showLandedModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowLandedModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="p-6 border-b border-white/10 bg-gradient-to-r from-emerald-500/10 to-green-500/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-lg shadow-green-500/30">
+                      <span className="text-3xl">🎉</span>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Congratulations!</h2>
+                      <p className="text-emerald-400">Which job did you land?</p>
+                    </div>
+                  </div>
+                  <button 
+                    onClick={() => setShowLandedModal(false)} 
+                    className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              
+              {/* Job List */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <p className="text-stone-400 text-sm mb-4">
+                  Select the position you landed. We'll celebrate with you!
+                </p>
+                <div className="space-y-3">
+                  {historyItems.filter(run => !run.job_landed).map((run) => (
+                    <motion.button
+                      key={run.run_id}
+                      onClick={() => handleMarkLanded(run.run_id)}
+                      disabled={isMarkingLanded}
+                      className="w-full p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 hover:border-emerald-500/50 hover:bg-emerald-500/5 transition-all text-left group"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-white group-hover:text-emerald-400 transition truncate">
+                              {run.job_title || 'Unknown Position'}
+                            </h3>
+                          </div>
+                          <p className="text-orange-400 text-sm">{run.company || 'Unknown Company'}</p>
+                          <div className="flex items-center gap-3 mt-1">
+                            <span className="text-stone-500 text-xs flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {run.region || 'Global'}
+                            </span>
+                            <span className="text-stone-500 text-xs">
+                              {new Date(run.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center group-hover:bg-emerald-500 transition">
+                            {isMarkingLanded ? (
+                              <div className="w-5 h-5 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                            ) : (
+                              <CheckCircle className="h-5 w-5 text-emerald-400 group-hover:text-white transition" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                  
+                  {historyItems.filter(run => !run.job_landed).length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 rounded-2xl bg-stone-800 flex items-center justify-center mx-auto mb-4">
+                        <CheckCircle className="h-8 w-8 text-stone-600" />
+                      </div>
+                      <p className="text-stone-400">All your applications have been marked!</p>
+                      <p className="text-stone-500 text-sm mt-1">Generate more resumes to track new opportunities</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Footer */}
+              <div className="p-4 border-t border-white/10 bg-stone-950/50">
+                <p className="text-center text-stone-500 text-xs">
+                  Marking a job as landed helps us celebrate your success!
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Celebration Success Modal */}
+      <AnimatePresence>
+        {showCelebrationModal && celebrationData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowCelebrationModal(false)}
+          >
+            {/* Confetti Animation */}
+            {showConfetti && (
+              <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                {[...Array(50)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-3 h-3 rounded-sm"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      backgroundColor: ['#10b981', '#f59e0b', '#3b82f6', '#ec4899', '#8b5cf6'][Math.floor(Math.random() * 5)],
+                    }}
+                    initial={{ y: -20, opacity: 1, rotate: 0 }}
+                    animate={{
+                      y: window.innerHeight + 100,
+                      opacity: [1, 1, 0],
+                      rotate: Math.random() * 720 - 360,
+                      x: Math.random() * 200 - 100,
+                    }}
+                    transition={{
+                      duration: 3 + Math.random() * 2,
+                      delay: Math.random() * 0.5,
+                      ease: "easeOut",
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+            
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 40 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              {/* Success Badge Header */}
+              <div className="relative pt-8 pb-6 px-6 bg-gradient-to-b from-emerald-500/20 to-transparent">
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(16,185,129,0.2),transparent_70%)]" />
+                
+                {/* Close button */}
+                <button 
+                  onClick={() => setShowCelebrationModal(false)} 
+                  className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                
+                {/* Badge */}
+                <motion.div 
+                  className="relative mx-auto w-28 h-28"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", damping: 12, delay: 0.2 }}
+                >
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 shadow-2xl shadow-emerald-500/50" />
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-emerald-500 to-green-700 flex items-center justify-center">
+                    <span className="text-5xl">🏆</span>
+                  </div>
+                  <motion.div 
+                    className="absolute -inset-2 rounded-full border-4 border-emerald-400/50"
+                    initial={{ scale: 0.8, opacity: 0 }}
+                    animate={{ scale: 1.1, opacity: [0, 1, 0] }}
+                    transition={{ duration: 1.5, repeat: 2 }}
+                  />
+                </motion.div>
+                
+                {/* Title */}
+                <motion.div 
+                  className="text-center mt-6"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h2 className="text-3xl font-bold text-white mb-1">You Did It!</h2>
+                  <p className="text-emerald-400 font-medium">Job #{celebrationData.totalLanded} Landed</p>
+                </motion.div>
+              </div>
+              
+              {/* Job Details */}
+              <motion.div 
+                className="px-6 py-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <div className="bg-stone-800/50 rounded-2xl p-5 border border-stone-700/50">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center text-2xl font-bold text-white shadow-lg shadow-orange-500/30">
+                      {celebrationData.company.charAt(0)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-bold text-white text-lg truncate">{celebrationData.title}</h3>
+                      <p className="text-orange-400 truncate">{celebrationData.company}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Celebration Message */}
+                <div className="mt-6 text-center">
+                  <p className="text-stone-300 leading-relaxed">
+                    {celebrationData.message}
+                  </p>
+                </div>
+              </motion.div>
+              
+              {/* Actions */}
+              <motion.div 
+                className="px-6 pb-6 space-y-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+              >
+                {/* LinkedIn Share Button */}
+                <a
+                  href={celebrationData.linkedinShareUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 w-full py-4 bg-[#0077B5] hover:bg-[#006699] text-white font-semibold rounded-xl transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40"
+                >
+                  <Linkedin className="h-5 w-5" />
+                  Share on LinkedIn
+                </a>
+                
+                <button
+                  onClick={() => setShowCelebrationModal(false)}
+                  className="w-full py-3 text-stone-400 hover:text-white hover:bg-white/5 rounded-xl transition font-medium"
+                >
+                  Close
+                </button>
+              </motion.div>
+              
+              {/* Footer message */}
+              <div className="px-6 pb-6">
+                <p className="text-center text-stone-500 text-xs">
+                  We're proud of you. Keep achieving great things!
+                </p>
               </div>
             </motion.div>
           </motion.div>
