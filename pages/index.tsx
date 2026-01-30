@@ -16,33 +16,21 @@ import {
 import toast from 'react-hot-toast';
 
 // ============================================
-// ANIMATED HERO BACKGROUND
+// ANIMATED HERO BACKGROUND (Optimized)
 // ============================================
 function AuroraBackground() {
   return (
     <div className="absolute inset-0 overflow-hidden">
-      {/* Animated gradient background */}
-      <motion.div
-        className="absolute inset-[-100%]"
+      {/* Static gradient background - removed animation to prevent jitter */}
+      <div
+        className="absolute inset-[-50%]"
         style={{
           background: `
-            repeating-linear-gradient(100deg, 
-              rgba(249, 115, 22, 0.15) 10%, 
-              rgba(251, 146, 60, 0.1) 15%, 
-              rgba(245, 158, 11, 0.12) 20%, 
-              rgba(249, 115, 22, 0.15) 25%, 
-              rgba(251, 146, 60, 0.1) 30%)
+            radial-gradient(ellipse 80% 50% at 50% 20%, 
+              rgba(249, 115, 22, 0.15) 0%, 
+              rgba(251, 146, 60, 0.08) 40%, 
+              transparent 70%)
           `,
-          backgroundSize: "300% 100%",
-          filter: "blur(80px)",
-        }}
-        animate={{
-          backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
-        }}
-        transition={{
-          duration: 20,
-          repeat: Infinity,
-          ease: "linear",
         }}
       />
       {/* Grid pattern */}
@@ -57,31 +45,21 @@ function AuroraBackground() {
           maskImage: "radial-gradient(ellipse 80% 50% at 50% 0%, #000 70%, transparent 110%)",
         }}
       />
-      {/* Floating orbs */}
-      <motion.div
-        className="absolute top-20 left-10 w-96 h-96 rounded-full bg-orange-500/20 blur-[100px]"
-        animate={{ 
-          x: [0, 30, 0], 
-          y: [0, -20, 0],
-          scale: [1, 1.1, 1] 
-        }}
-        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+      {/* Static orbs - using CSS animation instead of JS for better performance */}
+      <div 
+        className="absolute top-20 left-10 w-96 h-96 rounded-full bg-orange-500/20 blur-[100px] animate-pulse-slow"
+        style={{ animationDuration: '8s' }}
       />
-      <motion.div
-        className="absolute bottom-20 right-10 w-[500px] h-[500px] rounded-full bg-amber-500/15 blur-[120px]"
-        animate={{ 
-          x: [0, -40, 0], 
-          y: [0, 30, 0],
-          scale: [1, 1.15, 1] 
-        }}
-        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut", delay: 2 }}
+      <div 
+        className="absolute bottom-20 right-10 w-[500px] h-[500px] rounded-full bg-amber-500/15 blur-[120px] animate-pulse-slow"
+        style={{ animationDuration: '10s', animationDelay: '2s' }}
       />
     </div>
   );
 }
 
 // ============================================
-// ANIMATED LETTER TITLE
+// ANIMATED LETTER TITLE (Optimized - word-by-word instead of letter-by-letter)
 // ============================================
 function AnimatedTitle({ text, className }: { text: string; className?: string }) {
   const words = text.split(" ");
@@ -89,25 +67,19 @@ function AnimatedTitle({ text, className }: { text: string; className?: string }
   return (
     <h1 className={cn("text-5xl md:text-6xl lg:text-7xl font-bold leading-tight", className)}>
       {words.map((word, wordIndex) => (
-        <span key={wordIndex} className="inline-block mr-4 last:mr-0">
-          {word.split("").map((letter, letterIndex) => (
-            <motion.span
-              key={`${wordIndex}-${letterIndex}`}
-              initial={{ y: 100, opacity: 0, filter: "blur(8px)" }}
-              animate={{ y: 0, opacity: 1, filter: "blur(0px)" }}
-              transition={{
-                delay: wordIndex * 0.1 + letterIndex * 0.03,
-                type: "spring",
-                stiffness: 100,
-                damping: 15,
-              }}
-              className="inline-block"
-            >
-              {letter}
-            </motion.span>
-          ))}
-          {wordIndex < words.length - 1 && <span>&nbsp;</span>}
-        </span>
+        <motion.span
+          key={wordIndex}
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: wordIndex * 0.15,
+            duration: 0.5,
+            ease: [0.25, 0.46, 0.45, 0.94], // easeOutQuad - smoother than spring
+          }}
+          className="inline-block mr-4 last:mr-0"
+        >
+          {word}
+        </motion.span>
       ))}
     </h1>
   );
@@ -122,7 +94,7 @@ const companyLogos = [
   { name: "Apple", src: "/media/apple-11.svg", dark: true },
   { name: "Meta", src: "/media/meta-3.svg", dark: false },
   { name: "OpenAI", src: "/media/openai-wordmark.svg", dark: true },
-  { name: "Anthropic", src: "/media/anthropic-1.svg", dark: true },
+  { name: "Anthropic", src: "/media/anthropic-1.svg", dark: false },
   { name: "NVIDIA", src: "/media/nvidia.svg", dark: false },
   { name: "Tesla", src: "/media/tesla-motors.svg", dark: false },
   { name: "SpaceX", src: "/media/spacex.svg", dark: true },
@@ -550,14 +522,14 @@ export default function Home() {
       {/* ============================================ */}
       {/* HERO SECTION */}
       {/* ============================================ */}
-      <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-6 pt-20 pb-32">
+      <section className="relative z-10 flex flex-col items-center justify-center px-6 pt-8 pb-16">
         <div className="max-w-6xl mx-auto text-center">
           {/* Badge */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 px-4 py-2 mb-8 rounded-full border border-orange-500/30 bg-orange-500/10 backdrop-blur-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 mb-6 rounded-full border border-orange-500/30 bg-orange-500/10 backdrop-blur-sm"
           >
             <Sparkles className="w-4 h-4 text-orange-400" />
             <span className="text-sm font-medium text-orange-300">AI-Powered Resume Tailoring</span>
@@ -585,7 +557,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1, duration: 0.6 }}
-            className="text-xl text-stone-400 max-w-2xl mx-auto mb-10"
+            className="text-xl text-stone-400 max-w-2xl mx-auto mb-8"
           >
             Stop applying into the void. Our AI tailors your resume to beat ATS systems 
             and catch recruiters' eyes in seconds—not hours.
@@ -596,7 +568,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 1.2, duration: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mb-16"
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-10"
           >
             <motion.button
               onClick={() => { setAuthMode('sign-up'); setShowAuthModal(true); }}

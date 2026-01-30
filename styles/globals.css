@@ -243,6 +243,17 @@
   50% { transform: translateY(-5px); }
 }
 
+@keyframes pulse-slow {
+  0%, 100% { 
+    opacity: 0.2;
+    transform: scale(1);
+  }
+  50% { 
+    opacity: 0.35;
+    transform: scale(1.05);
+  }
+}
+
 @keyframes typewriter {
   from { width: 0; }
   to { width: 100%; }
@@ -840,6 +851,10 @@
 
   .animate-bounce-gentle {
     animation: bounce-gentle 2s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse-slow 8s ease-in-out infinite;
   }
 
   /* Stagger delays */
