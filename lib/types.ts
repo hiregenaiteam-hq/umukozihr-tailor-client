@@ -192,6 +192,11 @@ export interface HistoryItem {
   // Job landing celebration fields
   job_landed?: boolean;
   landed_at?: string;
+  // Gamification: Interview & Offer tracking (v1.6)
+  got_interview?: boolean;
+  interview_at?: string;
+  got_offer?: boolean;
+  offer_at?: string;
 }
 
 export interface HistoryResponse {
@@ -229,3 +234,67 @@ export const createEmptyProfile = (): ProfileV3 => ({
     templates: ['minimal']
   }
 });
+
+
+// =============================================
+// Gamification System Types (v1.6)
+// =============================================
+
+export interface Achievement {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  tier: 'tier_1' | 'tier_2' | 'tier_3';
+  xp: number;
+  color: string;
+  unlocked: boolean;
+  unlocked_at?: string;
+  pro_only: boolean;
+}
+
+export interface Challenge {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  type: string;
+  target: number;
+  current: number;
+  xp: number;
+  period: 'weekly' | 'monthly';
+  ends_at: string;
+  completed: boolean;
+  pro_only: boolean;
+}
+
+export interface JourneyStats {
+  applications: number;
+  interviews: number;
+  offers: number;
+  landed: number;
+  current_streak: number;
+  longest_streak: number;
+  total_xp: number;
+}
+
+export interface JourneyResponse {
+  stats: JourneyStats;
+  achievements: Achievement[];
+  active_challenges: Challenge[];
+  recently_unlocked: Achievement[];
+}
+
+export interface MarkMilestoneResponse {
+  success: boolean;
+  company: string;
+  title: string;
+  milestone_type: 'interview' | 'offer';
+  marked_at: string;
+  total_count: number;
+  new_achievements: Achievement[];
+  xp_earned: number;
+  message: string;
+  linkedin_share_url: string;
+  linkedin_share_text: string;
+}

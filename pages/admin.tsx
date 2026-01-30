@@ -9,7 +9,8 @@ import {
   TrendingUp, Clock, CheckCircle, XCircle,
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
   Globe, Briefcase, Sparkles, DollarSign, Crown,
-  MapPin, Target, Percent, Building2, Flag, Trophy, PartyPopper
+  MapPin, Target, Percent, Building2, Flag, Trophy, PartyPopper,
+  Flame, Phone, Gift, Medal, Star
 } from 'lucide-react';
 
 interface DashboardData {
@@ -83,6 +84,23 @@ interface DashboardData {
     users_with_landed_jobs: number;
     top_companies: { company: string; count: number }[];
     landing_rate: number;
+  };
+  gamification: {
+    total_interviews: number;
+    total_offers: number;
+    interviews_today: number;
+    offers_today: number;
+    interviews_this_week: number;
+    offers_this_week: number;
+    users_with_interviews: number;
+    users_with_offers: number;
+    interview_rate: number;
+    offer_rate: number;
+    total_xp_awarded: number;
+    achievements_unlocked: number;
+    avg_streak_days: number;
+    max_streak_days: number;
+    users_with_streaks: number;
   };
   signups_trend: { date: string; count: number }[];
   generations_trend: { date: string; count: number }[];
@@ -598,6 +616,127 @@ export default function AdminPage() {
                     </div>
                   </div>
                 )}
+              </section>
+            )}
+
+            {/* Gamification Stats - v1.6 */}
+            {dashboard.gamification && (
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Flame className="h-5 w-5 text-orange-400" />
+                  Gamification & Engagement
+                  <span className="text-xs text-amber-400 font-normal ml-2">Drive user retention & Pro conversions</span>
+                </h2>
+                
+                {/* Interview & Offer Pipeline */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                  <StatCard 
+                    title="Total Interviews" 
+                    value={dashboard.gamification.total_interviews} 
+                    subtitle={`${dashboard.gamification.interview_rate}% of applications`}
+                    icon={Phone} 
+                    color="blue" 
+                  />
+                  <StatCard 
+                    title="Total Offers" 
+                    value={dashboard.gamification.total_offers} 
+                    subtitle={`${dashboard.gamification.offer_rate}% of interviews`}
+                    icon={Gift} 
+                    color="green" 
+                  />
+                  <StatCard 
+                    title="Interviews Today" 
+                    value={dashboard.gamification.interviews_today} 
+                    subtitle={`This week: ${dashboard.gamification.interviews_this_week}`}
+                    icon={TrendingUp} 
+                    color="purple" 
+                  />
+                  <StatCard 
+                    title="Offers Today" 
+                    value={dashboard.gamification.offers_today} 
+                    subtitle={`This week: ${dashboard.gamification.offers_this_week}`}
+                    icon={Star} 
+                    color="orange" 
+                  />
+                </div>
+                
+                {/* XP & Achievements */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                      <Star className="h-4 w-4 text-amber-400" />
+                      XP System
+                    </h3>
+                    <div className="text-center">
+                      <p className="text-4xl font-bold bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+                        {dashboard.gamification.total_xp_awarded.toLocaleString()}
+                      </p>
+                      <p className="text-stone-500 text-sm mt-2">Total XP awarded</p>
+                    </div>
+                  </div>
+                  
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                      <Medal className="h-4 w-4 text-purple-400" />
+                      Achievements
+                    </h3>
+                    <div className="text-center">
+                      <p className="text-4xl font-bold text-purple-400">
+                        {dashboard.gamification.achievements_unlocked}
+                      </p>
+                      <p className="text-stone-500 text-sm mt-2">Badges unlocked</p>
+                    </div>
+                  </div>
+                  
+                  <div className="glass-card p-6">
+                    <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                      <Flame className="h-4 w-4 text-orange-400" />
+                      Streak Champions
+                    </h3>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="glass-subtle p-3 rounded-xl text-center">
+                        <p className="text-2xl font-bold text-orange-400">{dashboard.gamification.max_streak_days}</p>
+                        <p className="text-xs text-stone-500">Max Streak</p>
+                      </div>
+                      <div className="glass-subtle p-3 rounded-xl text-center">
+                        <p className="text-2xl font-bold text-amber-400">{dashboard.gamification.avg_streak_days}</p>
+                        <p className="text-xs text-stone-500">Avg Streak</p>
+                      </div>
+                    </div>
+                    <p className="text-stone-500 text-xs text-center mt-2">
+                      {dashboard.gamification.users_with_streaks} users with active streaks
+                    </p>
+                  </div>
+                </div>
+                
+                {/* User Engagement Funnel */}
+                <div className="glass-card p-6">
+                  <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                    <Target className="h-4 w-4 text-green-400" />
+                    User Journey Funnel
+                  </h3>
+                  <div className="grid grid-cols-4 gap-2">
+                    <div className="glass-subtle p-4 rounded-xl text-center border-t-4 border-blue-500">
+                      <p className="text-xs text-stone-400 mb-1">Applied</p>
+                      <p className="text-2xl font-bold text-blue-400">{dashboard.generation.total_generations}</p>
+                    </div>
+                    <div className="glass-subtle p-4 rounded-xl text-center border-t-4 border-purple-500">
+                      <p className="text-xs text-stone-400 mb-1">Interviews</p>
+                      <p className="text-2xl font-bold text-purple-400">{dashboard.gamification.users_with_interviews}</p>
+                      <p className="text-xs text-stone-500 mt-1">{dashboard.gamification.interview_rate}%</p>
+                    </div>
+                    <div className="glass-subtle p-4 rounded-xl text-center border-t-4 border-amber-500">
+                      <p className="text-xs text-stone-400 mb-1">Offers</p>
+                      <p className="text-2xl font-bold text-amber-400">{dashboard.gamification.users_with_offers}</p>
+                      <p className="text-xs text-stone-500 mt-1">{dashboard.gamification.offer_rate}%</p>
+                    </div>
+                    <div className="glass-subtle p-4 rounded-xl text-center border-t-4 border-emerald-500">
+                      <p className="text-xs text-stone-400 mb-1">Landed</p>
+                      <p className="text-2xl font-bold text-emerald-400">{dashboard.job_landing?.users_with_landed_jobs || 0}</p>
+                      <p className="text-xs text-stone-500 mt-1">{dashboard.job_landing?.landing_rate || 0}%</p>
+                    </div>
+                  </div>
+                </div>
               </section>
             )}
           </div>

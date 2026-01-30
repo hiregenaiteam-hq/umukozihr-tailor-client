@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
-import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, avatar as avatarApi, SubscriptionStatus } from '@/lib/api';
+import { profile as profileApi, generation as generationApi, history as historyApi, upload as uploadApi, subscription as subscriptionApi, avatar as avatarApi, journey as journeyApi, SubscriptionStatus } from '@/lib/api';
 import { config } from '@/lib/config';
-import { ProfileV3, HistoryItem } from '@/lib/types';
+import { ProfileV3, HistoryItem, JourneyResponse, Achievement, Challenge, JourneyStats, MarkMilestoneResponse } from '@/lib/types';
 import CompletenessBar from '@/components/CompletenessBar';
 import JDComposer from '@/components/JDComposer';
 import RunCard from '@/components/RunCard';
@@ -19,7 +19,8 @@ import {
   GraduationCap, Code, Play, Trash2, Download,
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera,
   Award, Languages, Globe, ExternalLink, FolderKanban, X, Plus, Pencil,
-  Github, Linkedin, Twitter, Youtube, Dribbble, Figma, Instagram, Facebook
+  Github, Linkedin, Twitter, Youtube, Dribbble, Figma, Instagram, Facebook,
+  Flame, Trophy, Target, Phone, Star, Gift, Crown, Medal, Rocket, Layers, Lock
 } from 'lucide-react';
 import { Experience, Education, Project, Certification, Language, Skill } from '@/lib/types';
 
@@ -245,6 +246,17 @@ export default function AppPage() {
   } | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
 
+  // v1.6 Gamification: Journey & Achievements state
+  const [journeyData, setJourneyData] = useState<JourneyResponse | null>(null);
+  const [isLoadingJourney, setIsLoadingJourney] = useState(false);
+  const [showInterviewModal, setShowInterviewModal] = useState(false);
+  const [showOfferModal, setShowOfferModal] = useState(false);
+  const [isMarkingMilestone, setIsMarkingMilestone] = useState(false);
+  const [milestoneCelebrationData, setMilestoneCelebrationData] = useState<MarkMilestoneResponse | null>(null);
+  const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
+  const [showAchievementUnlock, setShowAchievementUnlock] = useState(false);
+  const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<Achievement[]>([]);
+
   // Helper to update a section and save to localStorage
   const updateProfileSection = <K extends keyof ProfileV3>(section: K, newData: ProfileV3[K]) => {
     const currentProfile = editedProfile || profile;
@@ -331,6 +343,91 @@ export default function AppPage() {
     }
   };
 
+  // v1.6: Load journey data (stats, achievements, challenges)
+  const loadJourney = async () => {
+    setIsLoadingJourney(true);
+    try {
+      const response = await journeyApi.get();
+      setJourneyData(response.data);
+      
+      // Check for newly unlocked achievements
+      if (response.data.recently_unlocked && response.data.recently_unlocked.length > 0) {
+        setNewlyUnlockedAchievements(response.data.recently_unlocked);
+        setShowAchievementUnlock(true);
+        setShowConfetti(true);
+        setTimeout(() => setShowConfetti(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error loading journey:', error);
+    } finally {
+      setIsLoadingJourney(false);
+    }
+  };
+
+  // v1.6: Handle marking interview
+  const handleMarkInterview = async (runId: string) => {
+    setIsMarkingMilestone(true);
+    try {
+      const response = await historyApi.markInterview(runId);
+      const data = response.data;
+      
+      setMilestoneCelebrationData(data);
+      setShowInterviewModal(false);
+      setShowMilestoneCelebration(true);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+      
+      // Check for new achievements
+      if (data.new_achievements && data.new_achievements.length > 0) {
+        setNewlyUnlockedAchievements(data.new_achievements);
+        setTimeout(() => {
+          setShowMilestoneCelebration(false);
+          setShowAchievementUnlock(true);
+        }, 2000);
+      }
+      
+      loadHistory();
+      loadJourney();
+      toast.success(`Great news! Interview at ${data.company}!`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to mark interview');
+    } finally {
+      setIsMarkingMilestone(false);
+    }
+  };
+
+  // v1.6: Handle marking offer
+  const handleMarkOffer = async (runId: string) => {
+    setIsMarkingMilestone(true);
+    try {
+      const response = await historyApi.markOffer(runId);
+      const data = response.data;
+      
+      setMilestoneCelebrationData(data);
+      setShowOfferModal(false);
+      setShowMilestoneCelebration(true);
+      setShowConfetti(true);
+      setTimeout(() => setShowConfetti(false), 5000);
+      
+      // Check for new achievements
+      if (data.new_achievements && data.new_achievements.length > 0) {
+        setNewlyUnlockedAchievements(data.new_achievements);
+        setTimeout(() => {
+          setShowMilestoneCelebration(false);
+          setShowAchievementUnlock(true);
+        }, 2000);
+      }
+      
+      loadHistory();
+      loadJourney();
+      toast.success(`Amazing! Offer from ${data.company}!`);
+    } catch (error: any) {
+      toast.error(error.response?.data?.detail || 'Failed to mark offer');
+    } finally {
+      setIsMarkingMilestone(false);
+    }
+  };
+
   useEffect(() => {
     setMounted(true);
     
@@ -362,6 +459,7 @@ export default function AppPage() {
     loadProfile();
     loadHistory();
     loadSubscriptionStatus();
+    loadJourney();
   }, []);
 
   const loadProfile = async () => {
@@ -986,6 +1084,210 @@ export default function AppPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* My Job Hunt Journey Section */}
+            {journeyData && (
+              <motion.div 
+                className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl p-6 sm:p-8"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                {/* Decorative gradient */}
+                <div className="absolute top-0 left-0 w-48 h-48 bg-purple-500/10 rounded-full blur-3xl" />
+                <div className="absolute bottom-0 right-0 w-32 h-32 bg-orange-500/10 rounded-full blur-2xl" />
+                
+                <div className="relative">
+                  {/* Header */}
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className="neu-flat w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-orange-500/20 to-purple-500/20">
+                        <Trophy className="h-6 w-6 text-orange-400" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-bold text-white">My Job Hunt Journey</h3>
+                        <p className="text-sm text-stone-400">Track your progress & earn achievements</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/20">
+                      <Zap className="h-4 w-4 text-orange-400" />
+                      <span className="text-orange-400 font-bold">{journeyData.stats.total_xp} XP</span>
+                    </div>
+                  </div>
+
+                  {/* Streak Display */}
+                  {journeyData.stats.current_streak > 0 && (
+                    <div className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-gradient-to-r from-red-500/10 to-orange-500/10 border border-red-500/20">
+                      <motion.div 
+                        className="flex items-center justify-center w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-orange-500"
+                        animate={{ scale: [1, 1.1, 1] }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        <Flame className="h-6 w-6 text-white" />
+                      </motion.div>
+                      <div>
+                        <p className="text-lg font-bold text-white">{journeyData.stats.current_streak} Day Streak!</p>
+                        <p className="text-sm text-stone-400">Personal Best: {journeyData.stats.longest_streak} days</p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Stats Cards */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mb-6">
+                    <motion.div 
+                      className="p-4 rounded-xl bg-gradient-to-br from-blue-500/10 to-blue-600/5 border border-blue-500/20 text-center"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold text-blue-400">{journeyData.stats.applications}</p>
+                      <p className="text-xs sm:text-sm text-stone-400">Applications</p>
+                    </motion.div>
+                    <motion.div 
+                      className="p-4 rounded-xl bg-gradient-to-br from-purple-500/10 to-purple-600/5 border border-purple-500/20 text-center"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold text-purple-400">{journeyData.stats.interviews}</p>
+                      <p className="text-xs sm:text-sm text-stone-400">Interviews</p>
+                    </motion.div>
+                    <motion.div 
+                      className="p-4 rounded-xl bg-gradient-to-br from-amber-500/10 to-amber-600/5 border border-amber-500/20 text-center"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold text-amber-400">{journeyData.stats.offers}</p>
+                      <p className="text-xs sm:text-sm text-stone-400">Offers</p>
+                    </motion.div>
+                    <motion.div 
+                      className="p-4 rounded-xl bg-gradient-to-br from-green-500/10 to-green-600/5 border border-green-500/20 text-center"
+                      whileHover={{ scale: 1.02 }}
+                    >
+                      <p className="text-2xl sm:text-3xl font-bold text-green-400">{journeyData.stats.landed}</p>
+                      <p className="text-xs sm:text-sm text-stone-400">Landed</p>
+                    </motion.div>
+                  </div>
+
+                  {/* Badges Earned */}
+                  <div className="mb-6">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="text-sm font-semibold text-stone-300">
+                        Badges Earned ({journeyData.achievements.filter(a => a.unlocked).length}/{journeyData.achievements.length})
+                      </h4>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {journeyData.achievements.map((achievement) => (
+                        <motion.div
+                          key={achievement.id}
+                          className={`relative group p-3 rounded-xl border ${
+                            achievement.unlocked 
+                              ? 'bg-gradient-to-br from-stone-800/50 to-stone-900/50 border-white/10' 
+                              : 'bg-stone-900/30 border-stone-800/30 opacity-50'
+                          }`}
+                          whileHover={{ scale: 1.05 }}
+                          title={achievement.description}
+                        >
+                          <div 
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center ${achievement.unlocked ? '' : 'grayscale'}`}
+                            style={{ backgroundColor: achievement.unlocked ? `${achievement.color}20` : 'transparent' }}
+                          >
+                            {achievement.pro_only && !achievement.unlocked ? (
+                              <Lock className="h-4 w-4 text-stone-500" />
+                            ) : (
+                              <Award 
+                                className="h-4 w-4" 
+                                style={{ color: achievement.unlocked ? achievement.color : '#6b7280' }} 
+                              />
+                            )}
+                          </div>
+                          {/* Tooltip */}
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-stone-800 border border-white/10 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
+                            <p className="font-semibold text-white">{achievement.name}</p>
+                            <p className="text-stone-400">{achievement.description}</p>
+                            {achievement.pro_only && <p className="text-orange-400 mt-1">Pro Only</p>}
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Active Challenges */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-stone-300 mb-3">Active Challenges</h4>
+                    <div className="space-y-3">
+                      {journeyData.active_challenges.map((challenge) => (
+                        <div 
+                          key={challenge.id}
+                          className={`p-4 rounded-xl border ${
+                            challenge.pro_only 
+                              ? 'bg-stone-900/30 border-stone-800/30 opacity-60' 
+                              : 'bg-stone-800/30 border-white/5'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-3">
+                              {challenge.pro_only ? (
+                                <Lock className="h-4 w-4 text-orange-400" />
+                              ) : challenge.completed ? (
+                                <CheckCircle className="h-4 w-4 text-green-400" />
+                              ) : (
+                                <Target className="h-4 w-4 text-purple-400" />
+                              )}
+                              <span className="text-sm font-medium text-white">{challenge.name}</span>
+                            </div>
+                            <span className="text-xs px-2 py-1 rounded-full bg-purple-500/20 text-purple-400">
+                              +{challenge.xp} XP
+                            </span>
+                          </div>
+                          <p className="text-xs text-stone-400 mb-2">{challenge.description}</p>
+                          {!challenge.pro_only && (
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 h-2 bg-stone-700/50 rounded-full overflow-hidden">
+                                <motion.div 
+                                  className={`h-full rounded-full ${challenge.completed ? 'bg-green-500' : 'bg-purple-500'}`}
+                                  initial={{ width: 0 }}
+                                  animate={{ width: `${Math.min((challenge.current / challenge.target) * 100, 100)}%` }}
+                                  transition={{ duration: 0.5 }}
+                                />
+                              </div>
+                              <span className="text-xs text-stone-400">
+                                {challenge.current}/{challenge.target}
+                              </span>
+                            </div>
+                          )}
+                          {challenge.pro_only && (
+                            <p className="text-xs text-orange-400 flex items-center gap-1">
+                              <Lock className="h-3 w-3" /> Unlock with Pro
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex flex-wrap gap-3 mt-6 pt-6 border-t border-white/10">
+                    <button
+                      onClick={() => setShowInterviewModal(true)}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <Phone className="h-4 w-4 text-purple-400" />
+                      <span>Got an Interview!</span>
+                    </button>
+                    <button
+                      onClick={() => setShowOfferModal(true)}
+                      className="btn-secondary flex items-center gap-2"
+                    >
+                      <Gift className="h-4 w-4 text-amber-400" />
+                      <span>Got an Offer!</span>
+                    </button>
+                    <button
+                      onClick={() => setShowLandedModal(true)}
+                      className="btn-primary flex items-center gap-2"
+                    >
+                      <Trophy className="h-4 w-4" />
+                      <span>I Landed a Job!</span>
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
 
             {/* Profile Sections */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -2700,6 +3002,359 @@ export default function AppPage() {
                 <p className="text-center text-stone-500 text-xs">
                   We're proud of you. Keep achieving great things!
                 </p>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Interview Selection Modal */}
+      <AnimatePresence>
+        {showInterviewModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowInterviewModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 bg-gradient-to-r from-purple-500/10 to-indigo-500/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <Phone className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Got an Interview!</h2>
+                      <p className="text-purple-400">Which job called you back?</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowInterviewModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <p className="text-stone-400 text-sm mb-4">Select the position you got an interview for:</p>
+                <div className="space-y-3">
+                  {historyItems.filter(run => !run.got_interview).map((run) => (
+                    <motion.button
+                      key={run.run_id}
+                      onClick={() => handleMarkInterview(run.run_id)}
+                      disabled={isMarkingMilestone}
+                      className="w-full p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 hover:border-purple-500/50 hover:bg-purple-500/5 transition-all text-left group"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-white group-hover:text-purple-400 transition truncate">{run.job_title || 'Unknown Position'}</h3>
+                          <p className="text-orange-400 text-sm">{run.company || 'Unknown Company'}</p>
+                          <span className="text-stone-500 text-xs">{new Date(run.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center group-hover:bg-purple-500 transition">
+                            {isMarkingMilestone ? (
+                              <div className="w-5 h-5 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin" />
+                            ) : (
+                              <Phone className="h-5 w-5 text-purple-400 group-hover:text-white transition" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                  {historyItems.filter(run => !run.got_interview).length === 0 && (
+                    <div className="text-center py-8">
+                      <Phone className="h-8 w-8 text-stone-600 mx-auto mb-4" />
+                      <p className="text-stone-400">All your applications have been marked!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Offer Selection Modal */}
+      <AnimatePresence>
+        {showOfferModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => setShowOfferModal(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              <div className="p-6 border-b border-white/10 bg-gradient-to-r from-amber-500/10 to-orange-500/10">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-lg shadow-amber-500/30">
+                      <Gift className="h-7 w-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-bold text-white">Received an Offer!</h2>
+                      <p className="text-amber-400">Which company extended an offer?</p>
+                    </div>
+                  </div>
+                  <button onClick={() => setShowOfferModal(false)} className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-6">
+                <p className="text-stone-400 text-sm mb-4">Select the position you received an offer for:</p>
+                <div className="space-y-3">
+                  {historyItems.filter(run => !run.got_offer).map((run) => (
+                    <motion.button
+                      key={run.run_id}
+                      onClick={() => handleMarkOffer(run.run_id)}
+                      disabled={isMarkingMilestone}
+                      className="w-full p-4 rounded-xl bg-stone-800/50 border border-stone-700/50 hover:border-amber-500/50 hover:bg-amber-500/5 transition-all text-left group"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold text-white group-hover:text-amber-400 transition truncate">{run.job_title || 'Unknown Position'}</h3>
+                          <p className="text-orange-400 text-sm">{run.company || 'Unknown Company'}</p>
+                          <span className="text-stone-500 text-xs">{new Date(run.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <div className="ml-4 flex-shrink-0">
+                          <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500 transition">
+                            {isMarkingMilestone ? (
+                              <div className="w-5 h-5 border-2 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+                            ) : (
+                              <Gift className="h-5 w-5 text-amber-400 group-hover:text-white transition" />
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </motion.button>
+                  ))}
+                  {historyItems.filter(run => !run.got_offer).length === 0 && (
+                    <div className="text-center py-8">
+                      <Gift className="h-8 w-8 text-stone-600 mx-auto mb-4" />
+                      <p className="text-stone-400">All your applications have been marked!</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Milestone Celebration Modal */}
+      <AnimatePresence>
+        {showMilestoneCelebration && milestoneCelebrationData && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowMilestoneCelebration(false)}
+          >
+            {showConfetti && (
+              <div className="fixed inset-0 pointer-events-none overflow-hidden">
+                {[...Array(40)].map((_, i) => (
+                  <motion.div
+                    key={i}
+                    className="absolute w-3 h-3 rounded-sm"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      backgroundColor: milestoneCelebrationData.milestone_type === 'interview' 
+                        ? ['#8b5cf6', '#a855f7', '#6366f1', '#ec4899'][Math.floor(Math.random() * 4)]
+                        : ['#f59e0b', '#fbbf24', '#f97316', '#ef4444'][Math.floor(Math.random() * 4)],
+                    }}
+                    initial={{ y: -20, opacity: 1, rotate: 0 }}
+                    animate={{
+                      y: window.innerHeight + 100,
+                      opacity: [1, 1, 0],
+                      rotate: Math.random() * 720 - 360,
+                      x: Math.random() * 200 - 100,
+                    }}
+                    transition={{ duration: 3 + Math.random() * 2, delay: Math.random() * 0.5, ease: "easeOut" }}
+                  />
+                ))}
+              </div>
+            )}
+            
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 40 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <div className={`relative pt-8 pb-6 px-6 bg-gradient-to-b ${
+                milestoneCelebrationData.milestone_type === 'interview' 
+                  ? 'from-purple-500/20' 
+                  : 'from-amber-500/20'
+              } to-transparent`}>
+                <button onClick={() => setShowMilestoneCelebration(false)} className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+                
+                <motion.div 
+                  className="relative mx-auto w-24 h-24"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", damping: 12, delay: 0.2 }}
+                >
+                  <div className={`absolute inset-0 rounded-full bg-gradient-to-br ${
+                    milestoneCelebrationData.milestone_type === 'interview' 
+                      ? 'from-purple-400 to-indigo-600 shadow-purple-500/50' 
+                      : 'from-amber-400 to-orange-600 shadow-amber-500/50'
+                  } shadow-2xl`} />
+                  <div className={`absolute inset-2 rounded-full bg-gradient-to-br ${
+                    milestoneCelebrationData.milestone_type === 'interview' 
+                      ? 'from-purple-500 to-indigo-700' 
+                      : 'from-amber-500 to-orange-700'
+                  } flex items-center justify-center`}>
+                    {milestoneCelebrationData.milestone_type === 'interview' ? (
+                      <Phone className="h-10 w-10 text-white" />
+                    ) : (
+                      <Gift className="h-10 w-10 text-white" />
+                    )}
+                  </div>
+                </motion.div>
+                
+                <motion.div className="text-center mt-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <h2 className="text-2xl font-bold text-white mb-1">
+                    {milestoneCelebrationData.milestone_type === 'interview' ? 'Interview Secured!' : 'Offer Received!'}
+                  </h2>
+                  <p className={milestoneCelebrationData.milestone_type === 'interview' ? 'text-purple-400' : 'text-amber-400'}>
+                    #{milestoneCelebrationData.total_count} {milestoneCelebrationData.milestone_type}
+                  </p>
+                </motion.div>
+              </div>
+              
+              <div className="px-6 py-4">
+                <div className="bg-stone-800/50 rounded-xl p-4 border border-stone-700/50">
+                  <h3 className="font-bold text-white truncate">{milestoneCelebrationData.title}</h3>
+                  <p className="text-orange-400 text-sm">{milestoneCelebrationData.company}</p>
+                </div>
+                
+                {milestoneCelebrationData.xp_earned > 0 && (
+                  <div className="mt-4 flex items-center justify-center gap-2 p-3 rounded-xl bg-gradient-to-r from-orange-500/20 to-amber-500/20 border border-orange-500/20">
+                    <Zap className="h-5 w-5 text-orange-400" />
+                    <span className="text-orange-400 font-bold">+{milestoneCelebrationData.xp_earned} XP Earned!</span>
+                  </div>
+                )}
+                
+                <p className="text-center text-stone-300 text-sm mt-4">{milestoneCelebrationData.message}</p>
+              </div>
+              
+              <div className="px-6 pb-6 space-y-3">
+                <a
+                  href={milestoneCelebrationData.linkedin_share_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-3 w-full py-3 bg-[#0077B5] hover:bg-[#006699] text-white font-semibold rounded-xl transition-all"
+                >
+                  <Linkedin className="h-5 w-5" />
+                  Share on LinkedIn
+                </a>
+                <button onClick={() => setShowMilestoneCelebration(false)} className="w-full py-3 text-stone-400 hover:text-white hover:bg-white/5 rounded-xl transition font-medium">
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Achievement Unlock Modal */}
+      <AnimatePresence>
+        {showAchievementUnlock && newlyUnlockedAchievements.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md"
+            onClick={() => setShowAchievementUnlock(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0, y: 40 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.8, opacity: 0, y: 40 }}
+              transition={{ type: "spring", damping: 20, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl"
+            >
+              <div className="relative pt-8 pb-6 px-6 bg-gradient-to-b from-orange-500/20 to-transparent">
+                <button onClick={() => setShowAchievementUnlock(false)} className="absolute top-4 right-4 p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition">
+                  <X className="h-5 w-5" />
+                </button>
+                
+                <motion.div 
+                  className="relative mx-auto w-24 h-24"
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
+                  transition={{ type: "spring", damping: 12, delay: 0.2 }}
+                >
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-orange-400 to-amber-600 shadow-2xl shadow-orange-500/50" />
+                  <div className="absolute inset-2 rounded-full bg-gradient-to-br from-orange-500 to-amber-700 flex items-center justify-center">
+                    <Award className="h-10 w-10 text-white" />
+                  </div>
+                </motion.div>
+                
+                <motion.div className="text-center mt-6" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
+                  <h2 className="text-2xl font-bold text-white mb-1">Achievement Unlocked!</h2>
+                  <p className="text-orange-400">New badge earned</p>
+                </motion.div>
+              </div>
+              
+              <div className="px-6 py-4 space-y-3">
+                {newlyUnlockedAchievements.map((achievement) => (
+                  <motion.div
+                    key={achievement.id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    className="flex items-center gap-4 p-4 rounded-xl bg-stone-800/50 border border-white/10"
+                  >
+                    <div 
+                      className="w-12 h-12 rounded-xl flex items-center justify-center"
+                      style={{ backgroundColor: `${achievement.color}20` }}
+                    >
+                      <Award className="h-6 w-6" style={{ color: achievement.color }} />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-white">{achievement.name}</h3>
+                      <p className="text-sm text-stone-400">{achievement.description}</p>
+                    </div>
+                    <div className="text-orange-400 font-bold">+{achievement.xp} XP</div>
+                  </motion.div>
+                ))}
+              </div>
+              
+              <div className="px-6 pb-6">
+                <button 
+                  onClick={() => {
+                    setShowAchievementUnlock(false);
+                    setNewlyUnlockedAchievements([]);
+                  }} 
+                  className="w-full py-3 bg-gradient-to-r from-orange-500 to-amber-500 text-white font-semibold rounded-xl hover:opacity-90 transition"
+                >
+                  Awesome!
+                </button>
               </div>
             </motion.div>
           </motion.div>

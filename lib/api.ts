@@ -171,6 +171,14 @@ export const history = {
   // v1.5: Get job landing statistics and history
   getLandedStats: () =>
     api.get('/history/landed'),
+  
+  // v1.6: Mark that user got an interview
+  markInterview: (runId: string) =>
+    api.post(`/history/${runId}/interview`),
+  
+  // v1.6: Mark that user got an offer
+  markOffer: (runId: string) =>
+    api.post(`/history/${runId}/offer`),
 };
 
 // Admin endpoints (v1.3 final)
@@ -248,6 +256,17 @@ export const avatar = {
   },
   get: () => api.get('/profile/avatar'),
   delete: () => api.delete('/profile/avatar'),
+};
+
+// v1.6 Gamification: Journey & Achievements
+export const journey = {
+  // Get user's job hunt journey (stats, achievements, challenges)
+  get: () =>
+    api.get('/profile/journey'),
+  
+  // Check and unlock any earned achievements
+  checkAchievements: () =>
+    api.post('/profile/journey/check-achievements'),
 };
 
 // v1.4 Subscription endpoints
