@@ -9,7 +9,7 @@ import {
   TrendingUp, Clock, CheckCircle, XCircle,
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
   Globe, Briefcase, Sparkles, DollarSign, Crown,
-  MapPin, Target, Percent, Building2, Flag
+  MapPin, Target, Percent, Building2, Flag, Trophy, PartyPopper
 } from 'lucide-react';
 
 interface DashboardData {
@@ -74,6 +74,15 @@ interface DashboardData {
     top_countries: { name: string; code: string; count: number }[];
     top_cities: { city: string; country: string; count: number }[];
     unknown_location: number;
+  };
+  job_landing: {
+    total_landed: number;
+    landed_today: number;
+    landed_this_week: number;
+    landed_this_month: number;
+    users_with_landed_jobs: number;
+    top_companies: { company: string; count: number }[];
+    landing_rate: number;
   };
   signups_trend: { date: string; count: number }[];
   generations_trend: { date: string; count: number }[];
@@ -523,6 +532,72 @@ export default function AdminPage() {
                     <p className="text-xl font-bold text-red-400">{dashboard.subscription.expired_subscriptions}</p>
                   </div>
                 </div>
+              </section>
+            )}
+
+            {/* Job Landing Celebration Stats - v1.5 */}
+            {dashboard.job_landing && (
+              <section>
+                <h2 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                  <Trophy className="h-5 w-5 text-orange-400" />
+                  Job Landing Celebrations
+                  <span className="text-xs text-emerald-400 font-normal ml-2">Users who got hired!</span>
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  <StatCard 
+                    title="Total Jobs Landed" 
+                    value={dashboard.job_landing.total_landed} 
+                    subtitle={`${dashboard.job_landing.landing_rate}% landing rate`}
+                    icon={Trophy} 
+                    color="green" 
+                  />
+                  <StatCard 
+                    title="Landed Today" 
+                    value={dashboard.job_landing.landed_today} 
+                    subtitle={`This week: ${dashboard.job_landing.landed_this_week}`}
+                    icon={PartyPopper} 
+                    color="purple" 
+                  />
+                  <StatCard 
+                    title="Users with Jobs" 
+                    value={dashboard.job_landing.users_with_landed_jobs} 
+                    subtitle="Users who landed at least 1 job"
+                    icon={Users} 
+                    color="blue" 
+                  />
+                  <StatCard 
+                    title="This Month" 
+                    value={dashboard.job_landing.landed_this_month} 
+                    icon={TrendingUp} 
+                    color="orange" 
+                  />
+                </div>
+                
+                {/* Top Companies */}
+                {dashboard.job_landing.top_companies.length > 0 && (
+                  <div className="mt-4">
+                    <div className="glass-card p-6">
+                      <h3 className="text-sm font-medium text-stone-300 mb-4 flex items-center gap-2">
+                        <Briefcase className="h-4 w-4 text-emerald-400" />
+                        Top Companies Where Users Landed
+                      </h3>
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                        {dashboard.job_landing.top_companies.slice(0, 10).map((item, idx) => (
+                          <div 
+                            key={item.company} 
+                            className="glass-subtle p-3 rounded-xl text-center border border-emerald-500/20"
+                          >
+                            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-emerald-500/20 to-green-500/20 flex items-center justify-center mx-auto mb-2 text-lg font-bold text-emerald-400">
+                              {item.company.charAt(0)}
+                            </div>
+                            <p className="text-white font-medium text-sm truncate">{item.company}</p>
+                            <p className="text-emerald-400 text-xs">{item.count} landed</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </section>
             )}
           </div>
