@@ -209,6 +209,7 @@ export default function AppPage() {
   const [showSkillsModal, setShowSkillsModal] = useState(false);
   
   // Section modal states
+  const [showBasicsModal, setShowBasicsModal] = useState(false);
   const [showExperienceModal, setShowExperienceModal] = useState(false);
   const [showEducationModal, setShowEducationModal] = useState(false);
   const [showProjectsModal, setShowProjectsModal] = useState(false);
@@ -221,6 +222,7 @@ export default function AppPage() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   
   // Track which item index is being edited in each modal (-1 = none, -2 = adding new)
+  const [editingBasics, setEditingBasics] = useState(false);
   const [editingExpIndex, setEditingExpIndex] = useState<number>(-1);
   const [editingEduIndex, setEditingEduIndex] = useState<number>(-1);
   const [editingProjIndex, setEditingProjIndex] = useState<number>(-1);
@@ -266,6 +268,7 @@ export default function AppPage() {
     setEditedProfile(null);
     localStorage.removeItem('profile_draft');
     // Reset all editing indices
+    setEditingBasics(false);
     setEditingExpIndex(-1);
     setEditingEduIndex(-1);
     setEditingProjIndex(-1);
@@ -874,10 +877,16 @@ export default function AppPage() {
                     className="hidden"
                   />
                 </motion.div>
-                <div className="flex-1">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1">
-                    {profile.basics.full_name || 'Complete Your Profile'}
-                  </h2>
+                <div 
+                  className="flex-1 cursor-pointer group/info"
+                  onClick={() => setShowBasicsModal(true)}
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 group-hover/info:text-orange-400 transition">
+                      {profile.basics.full_name || 'Complete Your Profile'}
+                    </h2>
+                    <Pencil className="h-4 w-4 text-stone-500 opacity-0 group-hover/info:opacity-100 transition" />
+                  </div>
                   <p className="text-stone-400 mb-3 text-sm sm:text-base">{profile.basics.email}</p>
                   {profile.basics.location && (
                     <p className="text-stone-500 text-sm flex items-center gap-1">
@@ -887,14 +896,6 @@ export default function AppPage() {
                   )}
                 </div>
                 <div className="flex flex-wrap items-center gap-2 sm:gap-3 w-full md:w-auto">
-                  <button
-                    onClick={() => router.push('/onboarding?edit=true')}
-                    className="btn-secondary flex items-center gap-2 flex-1 sm:flex-none justify-center"
-                  >
-                    <Settings className="h-4 w-4" />
-                    <span className="hidden sm:inline">Edit Profile</span>
-                    <span className="sm:hidden">Edit</span>
-                  </button>
                 <button
                   onClick={() => profileFileInputRef.current?.click()}
                   disabled={isUploadingResume}
@@ -1472,6 +1473,150 @@ export default function AppPage() {
           </div>
         </div>
       )}
+
+      {/* Basics Modal - Edit Name, Email, Location */}
+      <AnimatePresence>
+        {showBasicsModal && profile && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => { cancelProfileEdits(); setShowBasicsModal(false); }}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg max-h-[85vh] bg-stone-900 border border-white/10 rounded-2xl overflow-hidden flex flex-col"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-6 border-b border-white/10">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-orange-500/20 flex items-center justify-center">
+                    <User className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-white">Basic Info</h2>
+                    <p className="text-sm text-stone-400">Edit your name, email, and location</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => { cancelProfileEdits(); setShowBasicsModal(false); }}
+                  className="p-2 text-stone-400 hover:text-white hover:bg-white/10 rounded-lg transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6">
+                <div className="p-4 rounded-xl bg-stone-800/50 border border-stone-700/50">
+                  {editingBasics ? (
+                    /* Edit Mode */
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <label className="text-xs text-stone-500 uppercase tracking-wide">Full Name</label>
+                        <input 
+                          type="text" 
+                          value={workingProfile?.basics?.full_name || ''} 
+                          onChange={(e) => { 
+                            const current = workingProfile || profile;
+                            updateProfileSection('basics', { ...current.basics, full_name: e.target.value }); 
+                          }} 
+                          placeholder="John Doe" 
+                          className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-stone-500 uppercase tracking-wide">Email Address</label>
+                        <input 
+                          type="email" 
+                          value={workingProfile?.basics?.email || ''} 
+                          onChange={(e) => { 
+                            const current = workingProfile || profile;
+                            updateProfileSection('basics', { ...current.basics, email: e.target.value }); 
+                          }} 
+                          placeholder="john@example.com" 
+                          className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" 
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-xs text-stone-500 uppercase tracking-wide">Location</label>
+                        <input 
+                          type="text" 
+                          value={workingProfile?.basics?.location || ''} 
+                          onChange={(e) => { 
+                            const current = workingProfile || profile;
+                            updateProfileSection('basics', { ...current.basics, location: e.target.value }); 
+                          }} 
+                          placeholder="San Francisco, CA" 
+                          className="w-full bg-stone-700/50 border border-stone-600 rounded-lg px-3 py-2 text-white placeholder:text-stone-500 focus:border-orange-500 focus:outline-none" 
+                        />
+                      </div>
+                      <button 
+                        onClick={() => setEditingBasics(false)} 
+                        className="w-full py-2 text-green-400 hover:bg-green-500/10 rounded-lg transition flex items-center justify-center gap-2"
+                      >
+                        <CheckCircle className="h-4 w-4" />
+                        Done Editing
+                      </button>
+                    </div>
+                  ) : (
+                    /* View Mode */
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1 space-y-3">
+                        <div>
+                          <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Full Name</p>
+                          <p className="text-white font-medium">{workingProfile?.basics?.full_name || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Email Address</p>
+                          <p className="text-stone-300">{workingProfile?.basics?.email || 'Not set'}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-stone-500 uppercase tracking-wide mb-1">Location</p>
+                          <p className="text-stone-300 flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {workingProfile?.basics?.location || 'Not set'}
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={() => setEditingBasics(true)} 
+                        className="p-2 text-stone-400 hover:text-orange-400 hover:bg-orange-500/10 rounded-lg transition" 
+                        title="Edit"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Modal Footer */}
+              <div className="p-4 border-t border-white/10 bg-stone-950/50 flex gap-3">
+                <button
+                  onClick={() => { cancelProfileEdits(); setShowBasicsModal(false); }}
+                  className="flex-1 py-3 text-white bg-stone-800 hover:bg-stone-700 rounded-xl transition font-medium"
+                >
+                  {editedProfile ? 'Cancel' : 'Close'}
+                </button>
+                {editedProfile && (
+                  <button 
+                    onClick={async () => { const success = await saveProfileChanges(); if (success) setShowBasicsModal(false); }}
+                    disabled={isSavingProfile}
+                    className="flex-1 py-3 text-white bg-orange-500 hover:bg-orange-600 disabled:bg-stone-700 disabled:text-stone-500 rounded-xl transition font-medium"
+                  >
+                    {isSavingProfile ? 'Saving...' : 'Save Changes'}
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Skills Modal - Editable */}
       <AnimatePresence>
