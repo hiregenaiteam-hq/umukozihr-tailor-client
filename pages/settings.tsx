@@ -20,10 +20,16 @@ import {
   ExternalLink,
   AlertTriangle,
   LogOut,
-  Settings
+  Settings,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  Share2
 } from "lucide-react";
 import { HeaderLogo } from "../components/Logo";
-import { subscription, SubscriptionStatus, profile } from "../lib/api";
+import { subscription, SubscriptionStatus, profile, share } from "../lib/api";
+import toast from "react-hot-toast";
 
 // Animation variants
 const containerVariants = {
@@ -49,6 +55,11 @@ interface SettingsState {
   email: string;
   showDeleteConfirm: boolean;
   deleteLoading: boolean;
+  isPublic: boolean;
+  username: string;
+  profileViews: number;
+  visibilityLoading: boolean;
+  copied: boolean;
 }
 
 export default function SettingsPage() {
@@ -59,6 +70,11 @@ export default function SettingsPage() {
     email: "",
     showDeleteConfirm: false,
     deleteLoading: false,
+    isPublic: true,
+    username: "",
+    profileViews: 0,
+    visibilityLoading: false,
+    copied: false,
   });
 
   useEffect(() => {
@@ -77,7 +93,22 @@ export default function SettingsPage() {
     }
     
     fetchSubscriptionStatus();
+    fetchShareSettings();
   }, []);
+
+  const fetchShareSettings = async () => {
+    try {
+      const response = await share.getSettings();
+      setState(prev => ({
+        ...prev,
+        isPublic: response.data.is_public ?? true,
+        username: response.data.username || "",
+        profileViews: response.data.profile_views || 0,
+      }));
+    } catch (error) {
+      console.error("Failed to fetch share settings");
+    }
+  };
 
   const fetchSubscriptionStatus = async () => {
     try {
@@ -107,6 +138,31 @@ export default function SettingsPage() {
   const handleLogout = () => {
     localStorage.removeItem("token");
     router.push("/");
+  };
+
+  const handleToggleVisibility = async () => {
+    setState(prev => ({ ...prev, visibilityLoading: true }));
+    try {
+      const newValue = !state.isPublic;
+      await share.updateSettings(newValue);
+      setState(prev => ({ ...prev, isPublic: newValue, visibilityLoading: false }));
+      toast.success(newValue ? "Profile is now public" : "Profile is now private");
+    } catch (error) {
+      toast.error("Failed to update visibility");
+      setState(prev => ({ ...prev, visibilityLoading: false }));
+    }
+  };
+
+  const handleCopyProfileLink = () => {
+    if (!state.username) {
+      toast.error("No username set");
+      return;
+    }
+    const profileUrl = `https://tailor.umukozihr.com/p/${state.username}`;
+    navigator.clipboard.writeText(profileUrl);
+    setState(prev => ({ ...prev, copied: true }));
+    toast.success("Profile link copied!");
+    setTimeout(() => setState(prev => ({ ...prev, copied: false })), 2000);
   };
 
   const sub = state.subscription;
@@ -337,20 +393,93 @@ export default function SettingsPage() {
             <motion.section variants={itemVariants} className="mb-8">
               <h2 className="text-sm font-medium text-stone-400 uppercase tracking-wider mb-4 flex items-center gap-2">
                 <Shield className="w-4 h-4" />
-                Privacy
+                Privacy & Profile
               </h2>
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl overflow-hidden">
-                <motion.button
-                  onClick={() => router.push("/app")}
-                  className="w-full p-5 flex items-center justify-between hover:bg-white/5 transition-colors group"
-                  whileHover={{ x: 3 }}
-                >
-                  <div className="text-left">
-                    <p className="text-white font-medium">Profile Visibility</p>
-                    <p className="text-stone-400 text-sm">Manage your public profile settings</p>
+                {/* Profile Visibility Toggle */}
+                <div className="p-5 flex items-center justify-between border-b border-white/5">
+                  <div className="flex items-center gap-4">
+                    <div className={`p-3 rounded-xl ${state.isPublic ? 'bg-green-500/20' : 'bg-stone-800'}`}>
+                      {state.isPublic ? (
+                        <Eye className="w-5 h-5 text-green-400" />
+                      ) : (
+                        <EyeOff className="w-5 h-5 text-stone-400" />
+                      )}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">Profile Visibility</p>
+                      <p className="text-stone-400 text-sm">
+                        {state.isPublic ? "Anyone can view your profile" : "Only you can see your profile"}
+                      </p>
+                    </div>
                   </div>
-                  <ChevronRight className="w-5 h-5 text-stone-500 group-hover:text-orange-400 transition-colors" />
-                </motion.button>
+                  <motion.button
+                    onClick={handleToggleVisibility}
+                    disabled={state.visibilityLoading}
+                    className={`relative w-14 h-8 rounded-full transition-colors ${
+                      state.isPublic ? 'bg-green-500' : 'bg-stone-700'
+                    }`}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    {state.visibilityLoading ? (
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      </div>
+                    ) : (
+                      <motion.div
+                        className="w-6 h-6 bg-white rounded-full shadow-md absolute top-1"
+                        animate={{ left: state.isPublic ? 'calc(100% - 28px)' : '4px' }}
+                        transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                      />
+                    )}
+                  </motion.button>
+                </div>
+
+                {/* Profile Link */}
+                {state.username && (
+                  <div className="p-5 flex items-center justify-between border-b border-white/5">
+                    <div>
+                      <p className="text-white font-medium">Your Profile Link</p>
+                      <p className="text-stone-400 text-sm font-mono">tailor.umukozihr.com/p/{state.username}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <motion.button
+                        onClick={handleCopyProfileLink}
+                        className="p-2.5 bg-stone-800 rounded-xl hover:bg-stone-700 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        {state.copied ? (
+                          <Check className="w-5 h-5 text-green-400" />
+                        ) : (
+                          <Copy className="w-5 h-5 text-stone-400" />
+                        )}
+                      </motion.button>
+                      <motion.button
+                        onClick={() => window.open(`/p/${state.username}`, '_blank')}
+                        className="p-2.5 bg-stone-800 rounded-xl hover:bg-stone-700 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <ExternalLink className="w-5 h-5 text-stone-400" />
+                      </motion.button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Profile Views */}
+                <div className="p-5 flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 bg-purple-500/20 rounded-xl">
+                      <Globe className="w-5 h-5 text-purple-400" />
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">Profile Views</p>
+                      <p className="text-stone-400 text-sm">Total views on your public profile</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-purple-400">{state.profileViews}</span>
+                </div>
               </div>
             </motion.section>
 

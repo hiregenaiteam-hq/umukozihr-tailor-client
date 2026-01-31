@@ -20,7 +20,7 @@ import {
   Clock, CheckCircle, AlertCircle, Zap, Shield, Share2, Upload, AlertTriangle, Home, ArrowLeft, Camera,
   Award, Languages, Globe, ExternalLink, FolderKanban, X, Plus, Pencil,
   Github, Linkedin, Twitter, Youtube, Dribbble, Figma, Instagram, Facebook,
-  Flame, Trophy, Target, Phone, Star, Gift, Crown, Medal, Rocket, Layers, Lock
+  Flame, Trophy, Target, Phone, Star, Gift, Crown, Medal, Rocket, Layers, Lock, Copy, Check
 } from 'lucide-react';
 import { Experience, Education, Project, Certification, Language, Skill } from '@/lib/types';
 
@@ -235,6 +235,7 @@ export default function AppPage() {
   // Job Landing Celebration state
   const [showLandedModal, setShowLandedModal] = useState(false);
   const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  const [showProfileSharePrompt, setShowProfileSharePrompt] = useState(false);
   const [isMarkingLanded, setIsMarkingLanded] = useState(false);
   const [celebrationData, setCelebrationData] = useState<{
     company: string;
@@ -254,8 +255,30 @@ export default function AppPage() {
   const [isMarkingMilestone, setIsMarkingMilestone] = useState(false);
   const [milestoneCelebrationData, setMilestoneCelebrationData] = useState<MarkMilestoneResponse | null>(null);
   const [showMilestoneCelebration, setShowMilestoneCelebration] = useState(false);
+  const [milestoneShareCopied, setMilestoneShareCopied] = useState(false);
   const [showAchievementUnlock, setShowAchievementUnlock] = useState(false);
+  const [achievementShareCopied, setAchievementShareCopied] = useState<string | null>(null);
   const [newlyUnlockedAchievements, setNewlyUnlockedAchievements] = useState<Achievement[]>([]);
+
+  // Generate share text for achievements
+  const getAchievementShareText = (achievement: Achievement): string => {
+    const texts: Record<string, string> = {
+      'resume_rookie': `🎯 Just unlocked "Resume Rookie" badge on UmukoziHR! Created my first AI-tailored resume. The job hunt begins! #JobSearch #UmukoziHR #CareerGrowth`,
+      'application_machine': `🚀 Unlocked "Application Machine" badge! 5 tailored resumes and counting. Each application is a step closer to my dream job! #JobHunting #UmukoziHR #Productivity`,
+      'phone_ringer': `📞 BIG NEWS! Just unlocked "Phone Ringer" badge - landed my first interview! The AI-tailored approach is working! #Interview #JobSearch #UmukoziHR`,
+      'in_demand': `⭐ Incredible! Just received my first job offer and unlocked "In Demand" badge! Hard work paying off! #JobOffer #UmukoziHR #CareerWin`,
+      'hired': `🏆 I DID IT! Unlocked "Hired!" badge - officially landed the job! Thanks UmukoziHR for the AI-powered resume magic! #Hired #NewJob #UmukoziHR`,
+      'seven_day_warrior': `🔥 7-day streak! Unlocked "7-Day Warrior" badge on UmukoziHR. Consistency is key in the job hunt! #JobSearch #Consistency #UmukoziHR`,
+      'mass_applicant': `💪 25 tailored applications! Unlocked "Mass Applicant" badge. Playing the numbers game right! #JobHunting #UmukoziHR #Persistence`,
+      'interview_magnet': `🧲 Unlocked "Interview Magnet" badge with 5 interviews! My resume game is strong! #Interviews #UmukoziHR #CareerSuccess`,
+      'choice_maker': `🎁 3 job offers! Unlocked "Choice Maker" badge. What a great problem to have! #JobOffers #UmukoziHR #InDemand`,
+      'thirty_day_champion': `👑 30-DAY STREAK! Unlocked "30-Day Champion" Pro badge. Dedication pays off! #JobSearch #UmukoziHR #ProPlayer`,
+      'century_club': `💯 100 tailored applications! Unlocked "Century Club" Pro badge. Persistence is my superpower! #JobHunting #UmukoziHR #ProUser`,
+      'interview_master': `🎯 10 interviews! Unlocked "Interview Master" Pro badge. My profile must be fire! #Interviews #UmukoziHR #ProAchiever`,
+      'multi_hired': `🏅 Unlocked "Multi-Hired" Pro badge - landed 3 different jobs! Career flexibility unlocked! #MultipleOffers #UmukoziHR #ProSuccess`
+    };
+    return texts[achievement.id] || `🏆 Just unlocked "${achievement.name}" badge on UmukoziHR! ${achievement.description} #Achievement #UmukoziHR #JobSearch`;
+  };
 
   // Helper to update a section and save to localStorage
   const updateProfileSection = <K extends keyof ProfileV3>(section: K, newData: ProfileV3[K]) => {
@@ -658,6 +681,16 @@ export default function AppPage() {
       setCurrentRun(response.data);
       setJobQueue([]);
       loadHistory();
+      
+      // Occasionally show profile share prompt (1 in 4 chance, after at least 3 generations)
+      const historyCount = historyTotal + 1;
+      const lastPromptDismissed = localStorage.getItem('profile_share_dismissed');
+      const lastDismissedTime = lastPromptDismissed ? parseInt(lastPromptDismissed) : 0;
+      const daysSinceLastDismiss = (Date.now() - lastDismissedTime) / (1000 * 60 * 60 * 24);
+      
+      if (historyCount >= 3 && Math.random() < 0.25 && daysSinceLastDismiss > 3) {
+        setTimeout(() => setShowProfileSharePrompt(true), 2000);
+      }
     } catch (error: any) {
       toast.dismiss('generation-progress');
       toast.error(error.response?.data?.detail || 'Failed to generate documents');
@@ -3263,10 +3296,37 @@ export default function AppPage() {
               </div>
               
               <div className="px-6 pb-6 space-y-3">
+                {/* Share Text Preview */}
+                <div className="bg-stone-800/50 rounded-xl p-4 border border-stone-700/50">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs text-stone-400 uppercase tracking-wider">Share Text</span>
+                    <button
+                      onClick={() => {
+                        navigator.clipboard.writeText(milestoneCelebrationData.linkedin_share_text);
+                        setMilestoneShareCopied(true);
+                        toast.success('Copied to clipboard!');
+                        setTimeout(() => setMilestoneShareCopied(false), 2000);
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 bg-stone-700 hover:bg-stone-600 rounded-lg text-xs text-stone-300 transition"
+                    >
+                      {milestoneShareCopied ? (
+                        <><Check className="h-3.5 w-3.5 text-green-400" /> Copied!</>
+                      ) : (
+                        <><Copy className="h-3.5 w-3.5" /> Copy</>
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-sm text-stone-300 leading-relaxed">{milestoneCelebrationData.linkedin_share_text}</p>
+                </div>
+                
                 <a
-                  href={milestoneCelebrationData.linkedin_share_url}
+                  href={`https://www.linkedin.com/feed/?shareActive=true`}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => {
+                    navigator.clipboard.writeText(milestoneCelebrationData.linkedin_share_text);
+                    toast.success('Text copied! Paste it in LinkedIn.');
+                  }}
                   className="flex items-center justify-center gap-3 w-full py-3 bg-[#0077B5] hover:bg-[#006699] text-white font-semibold rounded-xl transition-all"
                 >
                   <Linkedin className="h-5 w-5" />
@@ -3328,19 +3388,56 @@ export default function AppPage() {
                     key={achievement.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    className="flex items-center gap-4 p-4 rounded-xl bg-stone-800/50 border border-white/10"
+                    className="p-4 rounded-xl bg-stone-800/50 border border-white/10"
                   >
-                    <div 
-                      className="w-12 h-12 rounded-xl flex items-center justify-center"
-                      style={{ backgroundColor: `${achievement.color}20` }}
-                    >
-                      <Award className="h-6 w-6" style={{ color: achievement.color }} />
+                    <div className="flex items-center gap-4">
+                      <div 
+                        className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${achievement.color}20` }}
+                      >
+                        <Award className="h-6 w-6" style={{ color: achievement.color }} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-white">{achievement.name}</h3>
+                        <p className="text-sm text-stone-400 truncate">{achievement.description}</p>
+                      </div>
+                      <div className="text-orange-400 font-bold flex-shrink-0">+{achievement.xp} XP</div>
                     </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-white">{achievement.name}</h3>
-                      <p className="text-sm text-stone-400">{achievement.description}</p>
+                    
+                    {/* Share this achievement */}
+                    <div className="mt-3 pt-3 border-t border-white/5">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const text = getAchievementShareText(achievement);
+                            navigator.clipboard.writeText(text);
+                            setAchievementShareCopied(achievement.id);
+                            toast.success('Share text copied!');
+                            setTimeout(() => setAchievementShareCopied(null), 2000);
+                          }}
+                          className="flex-1 flex items-center justify-center gap-2 py-2 bg-stone-700 hover:bg-stone-600 rounded-lg text-xs text-stone-300 transition"
+                        >
+                          {achievementShareCopied === achievement.id ? (
+                            <><Check className="h-3.5 w-3.5 text-green-400" /> Copied!</>
+                          ) : (
+                            <><Copy className="h-3.5 w-3.5" /> Copy Share Text</>
+                          )}
+                        </button>
+                        <a
+                          href="https://www.linkedin.com/feed/?shareActive=true"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => {
+                            const text = getAchievementShareText(achievement);
+                            navigator.clipboard.writeText(text);
+                            toast.success('Text copied! Paste it in LinkedIn.');
+                          }}
+                          className="flex items-center justify-center gap-2 px-4 py-2 bg-[#0077B5] hover:bg-[#006699] rounded-lg text-xs text-white transition"
+                        >
+                          <Linkedin className="h-3.5 w-3.5" /> Share
+                        </a>
+                      </div>
                     </div>
-                    <div className="text-orange-400 font-bold">+{achievement.xp} XP</div>
                   </motion.div>
                 ))}
               </div>
@@ -3368,6 +3465,68 @@ export default function AppPage() {
         trigger={upgradeTrigger}
         remaining={subscriptionStatus?.generations_remaining ?? 0}
       />
+
+      {/* Profile Share Prompt - Occasional prompt to share profile as portfolio */}
+      <AnimatePresence>
+        {showProfileSharePrompt && profile?.basics?.full_name && (
+          <motion.div
+            initial={{ y: 100, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 100, opacity: 0 }}
+            className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50"
+          >
+            <div className="bg-gradient-to-r from-stone-900 via-stone-900 to-stone-950 border border-orange-500/30 rounded-2xl shadow-2xl shadow-orange-500/10 p-5">
+              <div className="flex items-start gap-4">
+                <div className="p-3 bg-gradient-to-br from-orange-500/20 to-amber-500/20 rounded-xl">
+                  <Share2 className="h-6 w-6 text-orange-400" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="font-bold text-white mb-1">Share Your Portfolio!</h3>
+                  <p className="text-sm text-stone-400 mb-3">
+                    Your UmukoziHR profile makes a great portfolio. Share it on LinkedIn to boost your visibility!
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => {
+                        const username = profile?.basics?.full_name?.toLowerCase().replace(/\s+/g, '-') || '';
+                        const shareText = `Check out my professional portfolio! I've been using UmukoziHR to tailor my resumes for each job application. 🚀\n\nhttps://tailor.umukozihr.com/p/${username}\n\n#JobSearch #Portfolio #CareerGrowth #UmukoziHR`;
+                        navigator.clipboard.writeText(shareText);
+                        toast.success('Portfolio link copied!');
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-stone-800 hover:bg-stone-700 rounded-lg text-sm text-white transition"
+                    >
+                      <Copy className="h-4 w-4" /> Copy Link
+                    </button>
+                    <a
+                      href="https://www.linkedin.com/feed/?shareActive=true"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => {
+                        const username = profile?.basics?.full_name?.toLowerCase().replace(/\s+/g, '-') || '';
+                        const shareText = `Check out my professional portfolio! I've been using UmukoziHR to tailor my resumes for each job application. 🚀\n\nhttps://tailor.umukozihr.com/p/${username}\n\n#JobSearch #Portfolio #CareerGrowth #UmukoziHR`;
+                        navigator.clipboard.writeText(shareText);
+                        toast.success('Text copied! Paste in LinkedIn.');
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-[#0077B5] hover:bg-[#006699] rounded-lg text-sm text-white transition"
+                    >
+                      <Linkedin className="h-4 w-4" /> Share
+                    </a>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setShowProfileSharePrompt(false);
+                    localStorage.setItem('profile_share_dismissed', Date.now().toString());
+                  }}
+                  className="p-1 text-stone-500 hover:text-white transition"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
