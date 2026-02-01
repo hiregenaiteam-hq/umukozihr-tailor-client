@@ -10,7 +10,7 @@ import {
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
   Globe, Briefcase, Sparkles, DollarSign, Crown,
   MapPin, Target, Percent, Building2, Flag, Trophy, PartyPopper,
-  Flame, Phone, Gift, Medal, Star, Mail, Send
+  Flame, Phone, Gift, Medal, Star, Mail, Send, FileEdit, Trash2, ChevronDown, History
 } from 'lucide-react';
 
 interface DashboardData {
@@ -229,7 +229,118 @@ export default function AdminPage() {
   const [broadcastBody, setBroadcastBody] = useState('');
   const [broadcastTestMode, setBroadcastTestMode] = useState(true);
   const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
-  const [emailStats, setEmailStats] = useState<{ total_users: number; subscribed_users: number; unsubscribed_users: number } | null>(null);
+  const [emailStats, setEmailStats] = useState<{ total_users: number; subscribed_users: number; unsubscribed_users: number; emailed_today: number; emailed_this_week: number } | null>(null);
+  const [showTemplates, setShowTemplates] = useState(false);
+  const [broadcastHistory, setBroadcastHistory] = useState<{ subject: string; date: string; recipients: number }[]>([]);
+
+  // Email templates
+  const emailTemplates = [
+    {
+      name: 'New Feature Announcement',
+      subject: 'New Feature: [Feature Name] is here!',
+      body: `Hey there!
+
+We're excited to announce a brand new feature that's going to make your job search even easier.
+
+[Describe the feature here]
+
+Head over to UmukoziHR Resume Tailor to try it out!
+
+Happy job hunting,
+The UmukoziHR Team`
+    },
+    {
+      name: 'Weekly Tips',
+      subject: 'Your Weekly Job Search Tips',
+      body: `Hey there!
+
+Here are this week's tips to boost your job search:
+
+1. [Tip 1]
+2. [Tip 2]
+3. [Tip 3]
+
+Remember, every tailored resume brings you closer to your dream job!
+
+Keep pushing,
+The UmukoziHR Team`
+    },
+    {
+      name: 'Maintenance Notice',
+      subject: 'Scheduled Maintenance Notice',
+      body: `Hey there!
+
+We wanted to give you a heads up that we'll be performing scheduled maintenance on [DATE] from [TIME] to [TIME].
+
+During this time, the platform may be briefly unavailable.
+
+We apologize for any inconvenience and thank you for your patience!
+
+Best,
+The UmukoziHR Team`
+    },
+    {
+      name: 'Success Story',
+      subject: 'Inspiring Success: [Name] Landed Their Dream Job!',
+      body: `Hey there!
+
+We love sharing success stories from our community!
+
+[Name] just landed a role as [Job Title] at [Company] using UmukoziHR Resume Tailor.
+
+Here's what they said:
+"[Quote from user]"
+
+You could be next! Keep tailoring those resumes.
+
+Cheers,
+The UmukoziHR Team`
+    }
+  ];
+
+  // Load draft from localStorage on mount
+  useEffect(() => {
+    const savedDraft = localStorage.getItem('broadcast_draft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        if (draft.subject) setBroadcastSubject(draft.subject);
+        if (draft.body) setBroadcastBody(draft.body);
+      } catch (e) {}
+    }
+    
+    const savedHistory = localStorage.getItem('broadcast_history');
+    if (savedHistory) {
+      try {
+        setBroadcastHistory(JSON.parse(savedHistory));
+      } catch (e) {}
+    }
+  }, []);
+
+  // Auto-save draft
+  useEffect(() => {
+    if (broadcastSubject || broadcastBody) {
+      localStorage.setItem('broadcast_draft', JSON.stringify({
+        subject: broadcastSubject,
+        body: broadcastBody,
+        savedAt: new Date().toISOString()
+      }));
+    }
+  }, [broadcastSubject, broadcastBody]);
+
+  const clearDraft = () => {
+    setBroadcastSubject('');
+    setBroadcastBody('');
+    localStorage.removeItem('broadcast_draft');
+    toast.success('Draft cleared');
+  };
+
+  const applyTemplate = (template: typeof emailTemplates[0]) => {
+    setBroadcastSubject(template.subject);
+    setBroadcastBody(template.body);
+    setShowTemplates(false);
+    toast.success(`Template "${template.name}" loaded`);
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -286,10 +397,21 @@ export default function AdminPage() {
             ? 'Test email sent to your inbox!' 
             : `Broadcast sent to ${data.successful_sends} users!`
         );
+        
+        // Save to history if not test mode
         if (!broadcastTestMode) {
+          const newHistory = [
+            { subject: broadcastSubject, date: new Date().toISOString(), recipients: data.successful_sends || 0 },
+            ...broadcastHistory.slice(0, 9) // Keep last 10
+          ];
+          setBroadcastHistory(newHistory);
+          localStorage.setItem('broadcast_history', JSON.stringify(newHistory));
+          
+          // Clear form after successful live send
           setBroadcastSubject('');
           setBroadcastBody('');
           setBroadcastTestMode(true);
+          localStorage.removeItem('broadcast_draft');
         }
       } else {
         toast.error(data.message || 'Failed to send broadcast');
@@ -847,7 +969,7 @@ export default function AdminPage() {
         {activeTab === 'broadcast' && (
           <div className="space-y-6 animate-fade-in-up">
             {/* Email Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <div className="glass-card p-5">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
@@ -875,103 +997,206 @@ export default function AdminPage() {
                 </div>
                 <p className="text-2xl font-bold text-red-400">{emailStats?.unsubscribed_users || 0}</p>
               </div>
+              <div className="glass-card p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-purple-500/10">
+                    <Mail className="h-5 w-5 text-purple-400" />
+                  </div>
+                  <p className="text-sm text-stone-400">Emailed Today</p>
+                </div>
+                <p className="text-2xl font-bold text-purple-400">{emailStats?.emailed_today || 0}</p>
+              </div>
+              <div className="glass-card p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-orange-500/10">
+                    <TrendingUp className="h-5 w-5 text-orange-400" />
+                  </div>
+                  <p className="text-sm text-stone-400">This Week</p>
+                </div>
+                <p className="text-2xl font-bold text-orange-400">{emailStats?.emailed_this_week || 0}</p>
+              </div>
             </div>
 
-            {/* Broadcast Form */}
-            <div className="glass-card p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="neu-raised w-12 h-12 rounded-2xl flex items-center justify-center">
-                  <Mail className="h-6 w-6 text-orange-400" />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* Broadcast Form */}
+              <div className="lg:col-span-2 glass-card p-8">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="neu-raised w-12 h-12 rounded-2xl flex items-center justify-center">
+                      <Mail className="h-6 w-6 text-orange-400" />
+                    </div>
+                    <div>
+                      <h2 className="text-lg font-semibold text-white">Send Broadcast Email</h2>
+                      <p className="text-sm text-stone-400">Send an email to all subscribed users</p>
+                    </div>
+                  </div>
+                  
+                  {/* Templates Dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={() => setShowTemplates(!showTemplates)}
+                      className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-xl text-stone-300 hover:bg-white/10 transition-colors"
+                    >
+                      <FileEdit className="h-4 w-4" />
+                      Templates
+                      <ChevronDown className={`h-4 w-4 transition-transform ${showTemplates ? 'rotate-180' : ''}`} />
+                    </button>
+                    {showTemplates && (
+                      <div className="absolute right-0 mt-2 w-64 bg-stone-900 border border-white/10 rounded-xl shadow-xl z-20 overflow-hidden">
+                        {emailTemplates.map((template, idx) => (
+                          <button
+                            key={idx}
+                            onClick={() => applyTemplate(template)}
+                            className="w-full px-4 py-3 text-left hover:bg-white/5 transition-colors border-b border-white/5 last:border-0"
+                          >
+                            <p className="text-sm font-medium text-white">{template.name}</p>
+                            <p className="text-xs text-stone-500 truncate">{template.subject}</p>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div>
-                  <h2 className="text-lg font-semibold text-white">Send Broadcast Email</h2>
-                  <p className="text-sm text-stone-400">Send an email to all subscribed users</p>
+
+                <div className="space-y-5">
+                  {/* Subject */}
+                  <div>
+                    <label className="block text-sm font-medium text-stone-300 mb-2">Subject</label>
+                    <input
+                      type="text"
+                      value={broadcastSubject}
+                      onChange={(e) => setBroadcastSubject(e.target.value)}
+                      placeholder="Exciting News from UmukoziHR!"
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
+                    />
+                  </div>
+
+                  {/* Body */}
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-sm font-medium text-stone-300">Message</label>
+                      <span className="text-xs text-stone-500">{broadcastBody.length} characters</span>
+                    </div>
+                    <textarea
+                      value={broadcastBody}
+                      onChange={(e) => setBroadcastBody(e.target.value)}
+                      placeholder="Hey everyone! We're excited to announce..."
+                      rows={10}
+                      className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 resize-none font-mono text-sm"
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <p className="text-xs text-stone-500">Line breaks preserved. Styled with UmukoziHR branding.</p>
+                      {(broadcastSubject || broadcastBody) && (
+                        <button
+                          onClick={clearDraft}
+                          className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Clear Draft
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Test Mode Toggle */}
+                  <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div>
+                      <p className="text-sm font-medium text-white">Test Mode</p>
+                      <p className="text-xs text-stone-400">Send only to your admin email first</p>
+                    </div>
+                    <button
+                      onClick={() => setBroadcastTestMode(!broadcastTestMode)}
+                      className={`relative w-14 h-7 rounded-full transition-colors ${
+                        broadcastTestMode ? 'bg-orange-500' : 'bg-white/20'
+                      }`}
+                    >
+                      <div
+                        className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                          broadcastTestMode ? 'left-8' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Warning for live mode */}
+                  {!broadcastTestMode && (
+                    <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                      <div className="flex items-start gap-3">
+                        <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="text-sm font-medium text-amber-400">Live Mode Enabled</p>
+                          <p className="text-xs text-amber-400/80 mt-1">
+                            This will send to all {emailStats?.subscribed_users || user_activity.total_users} subscribed users. Make sure you've tested first!
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Send Button */}
+                  <button
+                    onClick={handleSendBroadcast}
+                    disabled={isSendingBroadcast || !broadcastSubject.trim() || !broadcastBody.trim()}
+                    className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                      broadcastTestMode
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white'
+                        : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'
+                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                  >
+                    {isSendingBroadcast ? (
+                      <>
+                        <RefreshCw className="h-5 w-5 animate-spin" />
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="h-5 w-5" />
+                        {broadcastTestMode ? 'Send Test Email' : `Send to ${emailStats?.subscribed_users || user_activity.total_users} Users`}
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 
-              <div className="space-y-5">
-                {/* Subject */}
-                <div>
-                  <label className="block text-sm font-medium text-stone-300 mb-2">Subject</label>
-                  <input
-                    type="text"
-                    value={broadcastSubject}
-                    onChange={(e) => setBroadcastSubject(e.target.value)}
-                    placeholder="Exciting News from UmukoziHR!"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
-                  />
+              {/* Broadcast History */}
+              <div className="glass-card p-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <History className="h-5 w-5 text-orange-400" />
+                  <h3 className="text-sm font-medium text-white">Sent History</h3>
                 </div>
-
-                {/* Body */}
-                <div>
-                  <label className="block text-sm font-medium text-stone-300 mb-2">Message</label>
-                  <textarea
-                    value={broadcastBody}
-                    onChange={(e) => setBroadcastBody(e.target.value)}
-                    placeholder="Hey everyone! We're excited to announce..."
-                    rows={8}
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 resize-none"
-                  />
-                  <p className="text-xs text-stone-500 mt-2">Line breaks will be preserved. Email will be styled with UmukoziHR branding.</p>
-                </div>
-
-                {/* Test Mode Toggle */}
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                  <div>
-                    <p className="text-sm font-medium text-white">Test Mode</p>
-                    <p className="text-xs text-stone-400">Send only to your admin email first</p>
-                  </div>
-                  <button
-                    onClick={() => setBroadcastTestMode(!broadcastTestMode)}
-                    className={`relative w-14 h-7 rounded-full transition-colors ${
-                      broadcastTestMode ? 'bg-orange-500' : 'bg-white/20'
-                    }`}
-                  >
-                    <div
-                      className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
-                        broadcastTestMode ? 'left-8' : 'left-1'
-                      }`}
-                    />
-                  </button>
-                </div>
-
-                {/* Warning for live mode */}
-                {!broadcastTestMode && (
-                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-amber-400">Live Mode Enabled</p>
-                        <p className="text-xs text-amber-400/80 mt-1">
-                          This will send to all {emailStats?.subscribed_users || user_activity.total_users} subscribed users. Make sure you've tested first!
-                        </p>
+                
+                {broadcastHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {broadcastHistory.map((item, idx) => (
+                      <div key={idx} className="p-3 bg-white/5 rounded-lg border border-white/5">
+                        <p className="text-sm text-white font-medium truncate">{item.subject}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-xs text-stone-500">
+                            {new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                          <p className="text-xs text-green-400">{item.recipients} sent</p>
+                        </div>
                       </div>
-                    </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <Mail className="h-8 w-8 text-stone-600 mx-auto mb-2" />
+                    <p className="text-sm text-stone-500">No broadcasts sent yet</p>
+                    <p className="text-xs text-stone-600 mt-1">Your sent broadcasts will appear here</p>
                   </div>
                 )}
 
-                {/* Send Button */}
-                <button
-                  onClick={handleSendBroadcast}
-                  disabled={isSendingBroadcast || !broadcastSubject.trim() || !broadcastBody.trim()}
-                  className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
-                    broadcastTestMode
-                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white'
-                      : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'
-                  } disabled:opacity-50 disabled:cursor-not-allowed`}
-                >
-                  {isSendingBroadcast ? (
-                    <>
-                      <RefreshCw className="h-5 w-5 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="h-5 w-5" />
-                      {broadcastTestMode ? 'Send Test Email' : `Send to ${emailStats?.subscribed_users || user_activity.total_users} Users`}
-                    </>
-                  )}
-                </button>
+                {/* Quick Info */}
+                <div className="mt-6 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-xs text-blue-400 font-medium mb-2">Auto Emails (Automatic)</p>
+                  <ul className="text-xs text-blue-400/70 space-y-1">
+                    <li>• Welcome email on signup</li>
+                    <li>• 48h inactivity nudge</li>
+                    <li>• Weekly digest (Mondays 9am)</li>
+                    <li>• Achievement celebrations</li>
+                  </ul>
+                </div>
               </div>
             </div>
           </div>
