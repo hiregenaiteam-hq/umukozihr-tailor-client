@@ -10,7 +10,7 @@ import {
   ArrowLeft, RefreshCw, Shield, Zap, BarChart3,
   Globe, Briefcase, Sparkles, DollarSign, Crown,
   MapPin, Target, Percent, Building2, Flag, Trophy, PartyPopper,
-  Flame, Phone, Gift, Medal, Star
+  Flame, Phone, Gift, Medal, Star, Mail, Send
 } from 'lucide-react';
 
 interface DashboardData {
@@ -106,7 +106,7 @@ interface DashboardData {
   generations_trend: { date: string; count: number }[];
 }
 
-type TabType = 'overview' | 'users' | 'generations' | 'errors';
+type TabType = 'overview' | 'users' | 'generations' | 'errors' | 'broadcast';
 
 // StatCard Component
 function StatCard({ title, value, subtitle, icon: Icon, color }: {
@@ -223,6 +223,13 @@ export default function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [mounted, setMounted] = useState(false);
+  
+  // Broadcast state
+  const [broadcastSubject, setBroadcastSubject] = useState('');
+  const [broadcastBody, setBroadcastBody] = useState('');
+  const [broadcastTestMode, setBroadcastTestMode] = useState(true);
+  const [isSendingBroadcast, setIsSendingBroadcast] = useState(false);
+  const [emailStats, setEmailStats] = useState<{ total_users: number; subscribed_users: number; unsubscribed_users: number } | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -235,6 +242,14 @@ export default function AdminPage() {
       const response = await adminApi.getDashboard();
       setDashboard(response.data);
       setError(null);
+      
+      // Also load email stats
+      try {
+        const statsResponse = await adminApi.getEmailStats();
+        setEmailStats(statsResponse.data);
+      } catch (e) {
+        console.log('Email stats not available');
+      }
     } catch (err: any) {
       if (err.response?.status === 403) {
         setError('Admin access required.');
@@ -247,6 +262,42 @@ export default function AdminPage() {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+    }
+  };
+
+  const handleSendBroadcast = async () => {
+    if (!broadcastSubject.trim() || !broadcastBody.trim()) {
+      toast.error('Please enter subject and message');
+      return;
+    }
+
+    setIsSendingBroadcast(true);
+    try {
+      const response = await adminApi.sendBroadcast({
+        subject: broadcastSubject,
+        body: broadcastBody,
+        test_mode: broadcastTestMode
+      });
+      
+      const data = response.data;
+      if (data.success) {
+        toast.success(
+          broadcastTestMode 
+            ? 'Test email sent to your inbox!' 
+            : `Broadcast sent to ${data.successful_sends} users!`
+        );
+        if (!broadcastTestMode) {
+          setBroadcastSubject('');
+          setBroadcastBody('');
+          setBroadcastTestMode(true);
+        }
+      } else {
+        toast.error(data.message || 'Failed to send broadcast');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Failed to send broadcast');
+    } finally {
+      setIsSendingBroadcast(false);
     }
   };
 
@@ -290,7 +341,8 @@ export default function AdminPage() {
     { id: 'overview' as TabType, label: 'Overview', icon: BarChart3 },
     { id: 'users' as TabType, label: 'Users', icon: Users },
     { id: 'generations' as TabType, label: 'Generations', icon: FileText },
-    { id: 'errors' as TabType, label: 'Errors', icon: AlertTriangle }
+    { id: 'errors' as TabType, label: 'Errors', icon: AlertTriangle },
+    { id: 'broadcast' as TabType, label: 'Broadcast', icon: Mail }
   ];
 
   return (
@@ -789,6 +841,139 @@ export default function AdminPage() {
           <div className="glass-card p-8 animate-fade-in-up">
             <h2 className="text-lg font-semibold text-white mb-6">System Errors</h2>
             <DistributionChart data={system_health.errors_by_type} title="Errors by Type (This Week)" />
+          </div>
+        )}
+
+        {activeTab === 'broadcast' && (
+          <div className="space-y-6 animate-fade-in-up">
+            {/* Email Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="glass-card p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-blue-500/10">
+                    <Users className="h-5 w-5 text-blue-400" />
+                  </div>
+                  <p className="text-sm text-stone-400">Total Users</p>
+                </div>
+                <p className="text-2xl font-bold text-white">{emailStats?.total_users || user_activity.total_users}</p>
+              </div>
+              <div className="glass-card p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-green-500/10">
+                    <CheckCircle className="h-5 w-5 text-green-400" />
+                  </div>
+                  <p className="text-sm text-stone-400">Subscribed</p>
+                </div>
+                <p className="text-2xl font-bold text-green-400">{emailStats?.subscribed_users || user_activity.total_users}</p>
+              </div>
+              <div className="glass-card p-5">
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="neu-flat w-10 h-10 rounded-xl flex items-center justify-center bg-red-500/10">
+                    <XCircle className="h-5 w-5 text-red-400" />
+                  </div>
+                  <p className="text-sm text-stone-400">Unsubscribed</p>
+                </div>
+                <p className="text-2xl font-bold text-red-400">{emailStats?.unsubscribed_users || 0}</p>
+              </div>
+            </div>
+
+            {/* Broadcast Form */}
+            <div className="glass-card p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="neu-raised w-12 h-12 rounded-2xl flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-orange-400" />
+                </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-white">Send Broadcast Email</h2>
+                  <p className="text-sm text-stone-400">Send an email to all subscribed users</p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {/* Subject */}
+                <div>
+                  <label className="block text-sm font-medium text-stone-300 mb-2">Subject</label>
+                  <input
+                    type="text"
+                    value={broadcastSubject}
+                    onChange={(e) => setBroadcastSubject(e.target.value)}
+                    placeholder="Exciting News from UmukoziHR!"
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50"
+                  />
+                </div>
+
+                {/* Body */}
+                <div>
+                  <label className="block text-sm font-medium text-stone-300 mb-2">Message</label>
+                  <textarea
+                    value={broadcastBody}
+                    onChange={(e) => setBroadcastBody(e.target.value)}
+                    placeholder="Hey everyone! We're excited to announce..."
+                    rows={8}
+                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500/50 focus:border-orange-500/50 resize-none"
+                  />
+                  <p className="text-xs text-stone-500 mt-2">Line breaks will be preserved. Email will be styled with UmukoziHR branding.</p>
+                </div>
+
+                {/* Test Mode Toggle */}
+                <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                  <div>
+                    <p className="text-sm font-medium text-white">Test Mode</p>
+                    <p className="text-xs text-stone-400">Send only to your admin email first</p>
+                  </div>
+                  <button
+                    onClick={() => setBroadcastTestMode(!broadcastTestMode)}
+                    className={`relative w-14 h-7 rounded-full transition-colors ${
+                      broadcastTestMode ? 'bg-orange-500' : 'bg-white/20'
+                    }`}
+                  >
+                    <div
+                      className={`absolute top-1 w-5 h-5 bg-white rounded-full transition-transform ${
+                        broadcastTestMode ? 'left-8' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                {/* Warning for live mode */}
+                {!broadcastTestMode && (
+                  <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-amber-400">Live Mode Enabled</p>
+                        <p className="text-xs text-amber-400/80 mt-1">
+                          This will send to all {emailStats?.subscribed_users || user_activity.total_users} subscribed users. Make sure you've tested first!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Send Button */}
+                <button
+                  onClick={handleSendBroadcast}
+                  disabled={isSendingBroadcast || !broadcastSubject.trim() || !broadcastBody.trim()}
+                  className={`w-full py-4 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${
+                    broadcastTestMode
+                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-400 hover:to-blue-500 text-white'
+                      : 'bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-white'
+                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {isSendingBroadcast ? (
+                    <>
+                      <RefreshCw className="h-5 w-5 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-5 w-5" />
+                      {broadcastTestMode ? 'Send Test Email' : `Send to ${emailStats?.subscribed_users || user_activity.total_users} Users`}
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </main>

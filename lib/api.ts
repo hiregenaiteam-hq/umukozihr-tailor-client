@@ -201,7 +201,19 @@ export const admin = {
   
   // Make user admin
   makeAdmin: (userId: string) =>
-    api.post(`/admin/users/${userId}/make-admin`)
+    api.post(`/admin/users/${userId}/make-admin`),
+  
+  // Send broadcast email
+  sendBroadcast: (data: { subject: string; body: string; html?: string; test_mode: boolean }) =>
+    api.post('/admin/email/broadcast', data),
+  
+  // Send targeted email
+  sendEmail: (data: { to: string[]; subject: string; body: string; html?: string }) =>
+    api.post('/admin/email/send', data),
+  
+  // Get email stats
+  getEmailStats: () =>
+    api.get('/admin/email/stats')
 };
 
 // v1.4 Public Profile & Share endpoints
