@@ -5,7 +5,7 @@
  * It exchanges the auth code for a session and syncs with our backend.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { auth, profile as profileApi } from '../../lib/api';
@@ -15,6 +15,7 @@ export default function AuthCallback() {
   const router = useRouter();
   const [status, setStatus] = useState('Processing sign in...');
   const [error, setError] = useState<string | null>(null);
+  const syncAttemptedRef = useRef(false);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -37,7 +38,8 @@ export default function AuthCallback() {
           
           // Listen for auth state change
           const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'SIGNED_IN' && session) {
+            if (event === 'SIGNED_IN' && session && !syncAttemptedRef.current) {
+              syncAttemptedRef.current = true;
               await syncUserAndRedirect(session);
               subscription.unsubscribe();
             }
@@ -46,7 +48,11 @@ export default function AuthCallback() {
           return;
         }
 
-        await syncUserAndRedirect(session);
+        // Session exists, sync immediately (but only once)
+        if (!syncAttemptedRef.current) {
+          syncAttemptedRef.current = true;
+          await syncUserAndRedirect(session);
+        }
       } catch (err: any) {
         console.error('Auth callback error:', err);
         setError(err.message || 'Authentication failed');
