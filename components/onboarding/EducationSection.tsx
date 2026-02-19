@@ -82,7 +82,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                 </label>
                 <input
                   type="text"
-                  value={edu.school}
+                  value={edu.school || ''}
                   onChange={(e) => updateEducation(index, 'school', e.target.value)}
                   className="input-glass"
                   placeholder="University of California, Berkeley"
@@ -96,7 +96,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                 </label>
                 <input
                   type="text"
-                  value={edu.degree}
+                  value={edu.degree || ''}
                   onChange={(e) => updateEducation(index, 'degree', e.target.value)}
                   className="input-glass"
                   placeholder="Bachelor of Science in Computer Science"
@@ -108,7 +108,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                 <label className="block text-sm font-medium text-stone-300 mb-2">Start Date</label>
                 <input
                   type="month"
-                  value={edu.start}
+                  value={edu.start || ''}
                   onChange={(e) => updateEducation(index, 'start', e.target.value)}
                   className="input-glass"
                 />
@@ -118,7 +118,7 @@ export default function EducationSection({ data, onChange }: EducationSectionPro
                 <label className="block text-sm font-medium text-stone-300 mb-2">End Date</label>
                 <input
                   type="month"
-                  value={edu.end}
+                  value={edu.end || ''}
                   onChange={(e) => updateEducation(index, 'end', e.target.value)}
                   className="input-glass"
                 />

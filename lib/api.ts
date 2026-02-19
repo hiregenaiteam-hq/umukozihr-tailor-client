@@ -102,6 +102,28 @@ api.interceptors.response.use(
   }
 );
 
+function normalizeProfilePayload(profileData: any) {
+  if (!profileData || typeof profileData !== 'object') {
+    return profileData;
+  }
+
+  const education = Array.isArray(profileData.education)
+    ? profileData.education.map((edu: any) => ({
+        ...edu,
+        school: edu?.school ?? '',
+        degree: edu?.degree ?? '',
+        start: edu?.start ?? '',
+        end: edu?.end ?? '',
+        gpa: edu?.gpa ?? null,
+      }))
+    : [];
+
+  return {
+    ...profileData,
+    education,
+  };
+}
+
 // Auth endpoints
 export const auth = {
   signup: (email: string, password: string) =>
@@ -121,7 +143,7 @@ export const profile = {
 
   // v1.3: Update profile with versioning
   update: (profileData: any) =>
-    api.put('/profile', { profile: profileData }),
+    api.put('/profile', { profile: normalizeProfilePayload(profileData) }),
 
   // v1.3: Get completeness score
   getCompleteness: () =>
