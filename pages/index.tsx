@@ -125,7 +125,7 @@ function LogoMarquee() {
                 alt={logo.name} 
                 className={cn(
                   "h-8 w-auto max-w-[140px] object-contain",
-                  logo.dark && "invert brightness-0 invert"
+                  logo.dark && "invert brightness-0"
                 )}
               />
             </div>
@@ -142,7 +142,7 @@ function LogoMarquee() {
                 alt={logo.name} 
                 className={cn(
                   "h-8 w-auto max-w-[140px] object-contain",
-                  logo.dark && "invert brightness-0 invert"
+                  logo.dark && "invert brightness-0"
                 )}
               />
             </div>
