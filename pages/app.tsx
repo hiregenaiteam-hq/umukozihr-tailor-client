@@ -693,7 +693,15 @@ export default function AppPage() {
       }
     } catch (error: any) {
       toast.dismiss('generation-progress');
-      toast.error(error.response?.data?.detail || 'Failed to generate documents');
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+      if (status === 429) {
+        toast.error(detail || 'AI provider is rate limited. Please retry shortly.');
+      } else if (status === 502) {
+        toast.error(detail || 'AI provider is temporarily unavailable. Please retry.');
+      } else {
+        toast.error(detail || 'Failed to generate documents');
+      }
     } finally {
       setIsGenerating(false);
       setGenerationProgress(null);
@@ -711,7 +719,15 @@ export default function AppPage() {
       setActiveTab('generate');
     } catch (error: any) {
       toast.dismiss();
-      toast.error(error.response?.data?.detail || 'Regeneration failed');
+      const status = error?.response?.status;
+      const detail = error?.response?.data?.detail;
+      if (status === 429) {
+        toast.error(detail || 'AI provider is rate limited. Please retry shortly.');
+      } else if (status === 502) {
+        toast.error(detail || 'AI provider is temporarily unavailable. Please retry.');
+      } else {
+        toast.error(detail || 'Regeneration failed');
+      }
     }
   };
 
