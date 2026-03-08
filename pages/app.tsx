@@ -85,6 +85,39 @@ interface JobQueue {
   jd_text: string;
 }
 
+const getFriendlyGenerationErrorMessage = (
+  error: any,
+  action: 'generate' | 'regenerate'
+) => {
+  const status = error?.response?.status;
+  const detail = error?.response?.data?.detail;
+  const retryAfterHeader =
+    error?.response?.headers?.['retry-after'] ??
+    error?.response?.headers?.['Retry-After'];
+  const retryAfterSeconds = Number.parseInt(String(retryAfterHeader ?? ''), 10);
+  const actionText =
+    action === 'regenerate' ? 'regenerate your documents' : 'generate your documents';
+
+  if (status === 429) {
+    if (Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0) {
+      return `We are temporarily unable to ${actionText}. Please try again in about ${retryAfterSeconds} seconds.`;
+    }
+    return `We are temporarily unable to ${actionText}. Please try again shortly.`;
+  }
+
+  if (status === 502) {
+    return `We are temporarily unable to ${actionText}. Please try again shortly.`;
+  }
+
+  if (typeof detail === 'string' && detail.trim()) {
+    return detail;
+  }
+
+  return action === 'regenerate'
+    ? 'We could not regenerate your documents right now. Please try again.'
+    : 'We could not generate your documents right now. Please try again.';
+};
+
 // Floating orb for background
 function FloatingOrb({ className, delay = 0 }: { className: string; delay?: number }) {
   return (
@@ -693,15 +726,7 @@ export default function AppPage() {
       }
     } catch (error: any) {
       toast.dismiss('generation-progress');
-      const status = error?.response?.status;
-      const detail = error?.response?.data?.detail;
-      if (status === 429) {
-        toast.error(detail || 'AI provider is rate limited. Please retry shortly.');
-      } else if (status === 502) {
-        toast.error(detail || 'AI provider is temporarily unavailable. Please retry.');
-      } else {
-        toast.error(detail || 'Failed to generate documents');
-      }
+      toast.error(getFriendlyGenerationErrorMessage(error, 'generate'));
     } finally {
       setIsGenerating(false);
       setGenerationProgress(null);
@@ -719,15 +744,7 @@ export default function AppPage() {
       setActiveTab('generate');
     } catch (error: any) {
       toast.dismiss();
-      const status = error?.response?.status;
-      const detail = error?.response?.data?.detail;
-      if (status === 429) {
-        toast.error(detail || 'AI provider is rate limited. Please retry shortly.');
-      } else if (status === 502) {
-        toast.error(detail || 'AI provider is temporarily unavailable. Please retry.');
-      } else {
-        toast.error(detail || 'Regeneration failed');
-      }
+      toast.error(getFriendlyGenerationErrorMessage(error, 'regenerate'));
     }
   };
 
