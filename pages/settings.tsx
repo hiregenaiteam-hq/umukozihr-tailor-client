@@ -6,9 +6,7 @@ import {
   ArrowLeft, 
   User, 
   CreditCard, 
-  Lock, 
   Shield, 
-  Bell, 
   Globe, 
   Trash2, 
   ChevronRight,
@@ -25,10 +23,11 @@ import {
   EyeOff,
   Copy,
   Check,
-  Share2
+  Mail
 } from "lucide-react";
 import { HeaderLogo } from "../components/Logo";
-import { subscription, SubscriptionStatus, profile, share } from "../lib/api";
+import { auth, subscription, SubscriptionStatus, profile, share } from "../lib/api";
+import { getNextUpgradeTier, getSubscriptionTierMeta, normalizeSubscriptionTier } from "../lib/subscription-ui";
 import toast from "react-hot-toast";
 
 // Animation variants
@@ -60,6 +59,7 @@ interface SettingsState {
   profileViews: number;
   visibilityLoading: boolean;
   copied: boolean;
+  verificationLoading: boolean;
 }
 
 export default function SettingsPage() {
@@ -75,6 +75,7 @@ export default function SettingsPage() {
     profileViews: 0,
     visibilityLoading: false,
     copied: false,
+    verificationLoading: false,
   });
 
   useEffect(() => {
@@ -166,7 +167,27 @@ export default function SettingsPage() {
   };
 
   const sub = state.subscription;
-  const isDormant = !sub?.is_live;
+  const currentTier = normalizeSubscriptionTier(sub?.tier, sub?.is_pro);
+  const currentTierMeta = getSubscriptionTierMeta(sub);
+  const nextUpgradeTier = getNextUpgradeTier(sub);
+  const isVerified = sub?.is_verified !== false;
+  const hasUnlimitedGenerations = sub?.features.unlimited_generations || currentTier === "bounty";
+  const usageLimit = sub?.generations_limit && sub.generations_limit > 0 ? sub.generations_limit : 1;
+  const usagePercent = hasUnlimitedGenerations
+    ? 100
+    : Math.min(100, ((sub?.generations_used || 0) / usageLimit) * 100);
+
+  const handleResendVerification = async () => {
+    setState(prev => ({ ...prev, verificationLoading: true }));
+    try {
+      await auth.resendVerification();
+      toast.success("Verification email sent. Please check your inbox.");
+    } catch (error) {
+      toast.error("We could not resend the verification email right now.");
+    } finally {
+      setState(prev => ({ ...prev, verificationLoading: false }));
+    }
+  };
 
   if (state.loading) {
     return (
@@ -237,14 +258,52 @@ export default function SettingsPage() {
                 Account
               </h2>
               <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl overflow-hidden">
-                <div className="p-5 flex items-center justify-between border-b border-white/5">
-                  <div>
-                    <p className="text-white font-medium">Email</p>
-                    <p className="text-stone-400 text-sm">{state.email}</p>
+                <div className="p-5 border-b border-white/5">
+                  <div className="flex items-center justify-between gap-4">
+                    <div>
+                      <p className="text-white font-medium">Email</p>
+                      <p className="text-stone-400 text-sm">{state.email}</p>
+                    </div>
+                    <div
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        isVerified
+                          ? "bg-green-500/10 border border-green-500/20 text-green-400"
+                          : "bg-amber-500/10 border border-amber-500/20 text-amber-300"
+                      }`}
+                    >
+                      {isVerified ? "Verified" : "Verification required"}
+                    </div>
                   </div>
-                  <div className="px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium">
-                    Verified
-                  </div>
+
+                  {!isVerified && (
+                    <div className="mt-4 rounded-xl border border-amber-500/20 bg-amber-500/10 p-4">
+                      <div className="flex items-start gap-3">
+                        <Mail className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
+                        <div className="flex-1">
+                          <p className="text-sm text-amber-100">
+                            Verify your email before generating documents on any plan.
+                          </p>
+                          <button
+                            onClick={handleResendVerification}
+                            disabled={state.verificationLoading}
+                            className="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-400/15 text-amber-200 hover:bg-amber-400/20 transition-colors text-sm disabled:opacity-60"
+                          >
+                            {state.verificationLoading ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-amber-200/30 border-t-amber-200 rounded-full animate-spin" />
+                                Sending...
+                              </>
+                            ) : (
+                              <>
+                                <Mail className="w-4 h-4" />
+                                Resend verification email
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <motion.button
                   onClick={() => router.push("/onboarding")}
@@ -266,14 +325,18 @@ export default function SettingsPage() {
                 <CreditCard className="w-4 h-4" />
                 Subscription
               </h2>
-              <div className={`rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl overflow-hidden ${isDormant ? "opacity-80" : ""}`}>
+              <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-stone-900/90 via-stone-900/70 to-stone-950/90 backdrop-blur-xl overflow-hidden">
                 {/* Current Plan */}
                 <div className="p-5 border-b border-white/5">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      {sub?.is_pro ? (
+                      {currentTier === "bounty" ? (
                         <div className="p-3 bg-gradient-to-br from-orange-500 to-amber-500 rounded-xl shadow-lg shadow-orange-500/20">
                           <Crown className="w-6 h-6 text-white" />
+                        </div>
+                      ) : currentTier === "launch" ? (
+                        <div className="p-3 bg-gradient-to-br from-orange-500/30 to-amber-500/20 rounded-xl border border-orange-500/20">
+                          <Sparkles className="w-6 h-6 text-orange-300" />
                         </div>
                       ) : (
                         <div className="p-3 bg-stone-800 rounded-xl border border-stone-700">
@@ -282,17 +345,20 @@ export default function SettingsPage() {
                       )}
                       <div>
                         <p className="text-white font-semibold text-lg">
-                          {sub?.is_pro ? "Pro Plan" : "Free Plan"}
+                          {currentTierMeta.name}
                         </p>
                         <p className="text-stone-400 text-sm">
-                          {sub?.is_pro ? "Unlimited tailored resumes" : "5 resumes per month"}
+                          {currentTier === "free"
+                            ? "1 generation every 30 days"
+                            : currentTier === "launch"
+                            ? "10 single-job generations every 30 days"
+                            : "Unlimited generations plus full workflow tools"}
                         </p>
                       </div>
                     </div>
-                    {isDormant && (
-                      <span className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs rounded-full flex items-center gap-1.5">
-                        <Lock className="w-3 h-3" />
-                        Coming Soon
+                    {!isVerified && (
+                      <span className="px-3 py-1.5 bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs rounded-full">
+                        Verify to use
                       </span>
                     )}
                   </div>
@@ -302,10 +368,10 @@ export default function SettingsPage() {
                 <div className="p-5 border-b border-white/5">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-stone-400 text-sm">Monthly Usage</p>
-                    {sub?.usage_resets_at && (
+                    {(sub?.usage_reset_at || sub?.usage_resets_at) && (
                       <p className="text-stone-500 text-xs flex items-center gap-1">
                         <RefreshCw className="w-3 h-3" />
-                        Resets {new Date(sub.usage_resets_at).toLocaleDateString()}
+                        Resets {new Date(sub?.usage_reset_at || sub?.usage_resets_at || "").toLocaleDateString()}
                       </p>
                     )}
                   </div>
@@ -313,54 +379,57 @@ export default function SettingsPage() {
                     <div className="flex-1 h-2.5 bg-stone-800 rounded-full overflow-hidden">
                       <motion.div 
                         className={`h-full rounded-full ${
-                          sub?.generations_remaining === 0 
+                          hasUnlimitedGenerations
+                            ? "bg-gradient-to-r from-orange-500 to-amber-400"
+                            : sub?.generations_remaining === 0 
                             ? "bg-red-500" 
                             : sub?.generations_remaining && sub.generations_remaining <= 2
                             ? "bg-amber-500"
                             : "bg-gradient-to-r from-green-500 to-emerald-400"
                         }`}
                         initial={{ width: 0 }}
-                        animate={{
-                          width: sub?.generations_limit === -1 
-                            ? "10%" 
-                            : `${Math.min(100, ((sub?.generations_used || 0) / (sub?.generations_limit || 5)) * 100)}%`
-                        }}
+                        animate={{ width: `${usagePercent}%` }}
                         transition={{ duration: 0.8, ease: "easeOut" }}
                       />
                     </div>
                     <span className="text-sm text-stone-300 whitespace-nowrap font-medium">
-                      {sub?.features.unlimited_generations ? (
-                        <span className="text-green-400">Unlimited</span>
+                      {hasUnlimitedGenerations ? (
+                        <span className="text-orange-300">Unlimited</span>
                       ) : (
-                        `${sub?.generations_used || 0} / ${sub?.generations_limit || 5}`
+                        `${sub?.generations_used || 0} / ${usageLimit}`
                       )}
                     </span>
                   </div>
+                  {!isVerified && (
+                    <p className="mt-3 text-xs text-amber-300">
+                      Verification is still required before any generation can start.
+                    </p>
+                  )}
                 </div>
 
                 {/* Upgrade CTA */}
-                {!sub?.is_pro && (
+                {currentTier !== "bounty" && (
                   <motion.button
                     onClick={() => router.push("/pricing")}
-                    disabled={isDormant}
-                    className={`w-full p-5 flex items-center justify-between transition-colors group ${
-                      isDormant 
-                        ? "cursor-not-allowed" 
-                        : "hover:bg-white/5"
-                    }`}
-                    whileHover={!isDormant ? { x: 3 } : {}}
+                    className="w-full p-5 flex items-center justify-between transition-colors group hover:bg-white/5"
+                    whileHover={{ x: 3 }}
                   >
                     <div className="flex items-center gap-4">
                       <div className="p-2 bg-orange-500/20 rounded-xl">
-                        <Sparkles className="w-5 h-5 text-orange-400" />
+                        {nextUpgradeTier === "launch" ? (
+                          <Sparkles className="w-5 h-5 text-orange-400" />
+                        ) : (
+                          <Crown className="w-5 h-5 text-orange-300" />
+                        )}
                       </div>
                       <div className="text-left">
-                        <p className="text-white font-medium">Upgrade to Pro</p>
+                        <p className="text-white font-medium">
+                          Upgrade to {nextUpgradeTier === "launch" ? "Launch" : "Bounty"}
+                        </p>
                         <p className="text-stone-400 text-sm">
-                          {isDormant 
-                            ? "Payment system coming soon" 
-                            : "Unlimited resumes, batch upload, and more"
-                          }
+                          {nextUpgradeTier === "launch"
+                            ? "Get 10 generations every 30 days for focused single-job use"
+                            : "Unlock unlimited generations, batch upload, ZIP download, priority queue, and extra templates"}
                         </p>
                       </div>
                     </div>
@@ -368,8 +437,19 @@ export default function SettingsPage() {
                   </motion.button>
                 )}
 
-                {/* Pro features */}
-                {sub?.is_pro && sub.expires_at && (
+                {currentTier === "bounty" && (
+                  <div className="p-5 border-b border-white/5">
+                    <div className="flex items-start gap-3">
+                      <Shield className="w-4 h-4 text-amber-300 mt-0.5 flex-shrink-0" />
+                      <p className="text-sm text-stone-300">
+                        Bounty includes batch upload, ZIP downloads, priority queue, and extra templates.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Renewal */}
+                {currentTier !== "free" && sub?.expires_at && (
                   <div className="p-5">
                     <div className="flex items-center gap-2 text-stone-400 text-sm">
                       <Calendar className="w-4 h-4" />
@@ -378,15 +458,6 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
-
-              {/* Dormant notice */}
-              {isDormant && (
-                <p className="mt-4 text-sm text-stone-500 flex items-center gap-2 bg-stone-900/50 p-3 rounded-xl border border-stone-800">
-                  <Lock className="w-4 h-4 flex-shrink-0" />
-                  Subscription features are greyed out until payment system is live. 
-                  Enjoy unlimited access for now!
-                </p>
-              )}
             </motion.section>
 
             {/* Privacy Section */}

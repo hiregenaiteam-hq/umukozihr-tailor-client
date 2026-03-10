@@ -416,7 +416,7 @@ export default function Home() {
       if (authMode === 'sign-up') {
         const response = await auth.signup(email, password);
         localStorage.setItem('token', response.data.access_token);
-        toast.success('Account created!');
+        toast.success(response.data.message || 'Account created!');
         router.push('/onboarding');
       } else {
         const response = await auth.login(email, password);

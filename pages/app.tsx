@@ -13,6 +13,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import ShareButtons from '@/components/ShareButtons';
 import { HeaderLogo } from '@/components/Logo';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { UpgradeModalTrigger, normalizeSubscriptionTier } from '@/lib/subscription-ui';
 import { 
   User, FileText, History, LogOut, Settings, 
   Sparkles, ChevronRight, Briefcase, MapPin, 
@@ -85,12 +86,39 @@ interface JobQueue {
   jd_text: string;
 }
 
+interface GenerationErrorDetail {
+  message?: string;
+  reason_code?: string;
+  upgrade_target?: string;
+  remaining?: number;
+}
+
+const getUpgradeTriggerForSubscription = (
+  status: SubscriptionStatus | null
+): UpgradeModalTrigger => {
+  if (status?.is_verified === false) {
+    return 'verification_required';
+  }
+
+  const tier = normalizeSubscriptionTier(status?.tier, status?.is_pro);
+
+  if (tier === 'launch') {
+    return 'launch_limit_reached';
+  }
+
+  if (tier === 'free') {
+    return 'free_limit_reached';
+  }
+
+  return 'general';
+};
+
 const getFriendlyGenerationErrorMessage = (
   error: any,
   action: 'generate' | 'regenerate'
 ) => {
   const status = error?.response?.status;
-  const detail = error?.response?.data?.detail;
+  const detail = error?.response?.data?.detail as string | GenerationErrorDetail | undefined;
   const retryAfterHeader =
     error?.response?.headers?.['retry-after'] ??
     error?.response?.headers?.['Retry-After'];
@@ -109,13 +137,51 @@ const getFriendlyGenerationErrorMessage = (
     return `We are temporarily unable to ${actionText}. Please try again shortly.`;
   }
 
+  if (detail && typeof detail === 'object' && typeof detail.message === 'string' && detail.message.trim()) {
+    return detail.message;
+  }
+
   if (typeof detail === 'string' && detail.trim()) {
-    return detail;
+    const raw = detail.trim();
+    // Don't expose raw technical/provider errors to users
+    if (/resource_exhausted|quota|llm|resource_exhausted|http\s+\d{3}|error:/i.test(raw)) {
+      return action === 'regenerate'
+        ? 'We could not regenerate your documents right now. Please try again shortly.'
+        : 'We could not generate your documents right now. Please try again shortly.';
+    }
+    return raw;
   }
 
   return action === 'regenerate'
     ? 'We could not regenerate your documents right now. Please try again.'
     : 'We could not generate your documents right now. Please try again.';
+};
+
+const getUpgradeTriggerFromError = (
+  error: any,
+  fallback: SubscriptionStatus | null
+): UpgradeModalTrigger | null => {
+  const detail = error?.response?.data?.detail as GenerationErrorDetail | string | undefined;
+  if (detail && typeof detail === 'object' && typeof detail.reason_code === 'string') {
+    switch (detail.reason_code) {
+      case 'verification_required':
+        return 'verification_required';
+      case 'launch_limit_reached':
+        return 'launch_limit_reached';
+      case 'free_limit_reached':
+        return 'free_limit_reached';
+      case 'batch_upgrade_required':
+        return 'batch_upload';
+      default:
+        return null;
+    }
+  }
+
+  if (error?.response?.status === 403 && fallback) {
+    return getUpgradeTriggerForSubscription(fallback);
+  }
+
+  return null;
 };
 
 // Floating orb for background
@@ -237,7 +303,7 @@ export default function AppPage() {
   // Subscription state
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus | null>(null);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeTrigger, setUpgradeTrigger] = useState<'limit_reached' | 'batch_upload' | 'zip_download' | 'general'>('general');
+  const [upgradeTrigger, setUpgradeTrigger] = useState<UpgradeModalTrigger>('general');
 
   // Skills modal state
   const [showSkillsModal, setShowSkillsModal] = useState(false);
@@ -305,10 +371,10 @@ export default function AppPage() {
       'mass_applicant': `💪 25 tailored applications! Unlocked "Mass Applicant" badge. Playing the numbers game right! #JobHunting #UmukoziHR #Persistence`,
       'interview_magnet': `🧲 Unlocked "Interview Magnet" badge with 5 interviews! My resume game is strong! #Interviews #UmukoziHR #CareerSuccess`,
       'choice_maker': `🎁 3 job offers! Unlocked "Choice Maker" badge. What a great problem to have! #JobOffers #UmukoziHR #InDemand`,
-      'thirty_day_champion': `👑 30-DAY STREAK! Unlocked "30-Day Champion" Pro badge. Dedication pays off! #JobSearch #UmukoziHR #ProPlayer`,
-      'century_club': `💯 100 tailored applications! Unlocked "Century Club" Pro badge. Persistence is my superpower! #JobHunting #UmukoziHR #ProUser`,
-      'interview_master': `🎯 10 interviews! Unlocked "Interview Master" Pro badge. My profile must be fire! #Interviews #UmukoziHR #ProAchiever`,
-      'multi_hired': `🏅 Unlocked "Multi-Hired" Pro badge - landed 3 different jobs! Career flexibility unlocked! #MultipleOffers #UmukoziHR #ProSuccess`
+      'thirty_day_champion': `👑 30-DAY STREAK! Unlocked the "30-Day Champion" Bounty badge. Dedication pays off! #JobSearch #UmukoziHR #BountyTier`,
+      'century_club': `💯 100 tailored applications! Unlocked the "Century Club" Bounty badge. Persistence is my superpower! #JobHunting #UmukoziHR #BountyTier`,
+      'interview_master': `🎯 10 interviews! Unlocked the "Interview Master" Bounty badge. The momentum is real! #Interviews #UmukoziHR #BountyTier`,
+      'multi_hired': `🏅 Unlocked the "Multi-Hired" Bounty badge - landed 3 different jobs! Career flexibility unlocked! #MultipleOffers #UmukoziHR #BountyTier`
     };
     return texts[achievement.id] || `🏆 Just unlocked "${achievement.name}" badge on UmukoziHR! ${achievement.description} #Achievement #UmukoziHR #JobSearch`;
   };
@@ -656,7 +722,7 @@ export default function AppPage() {
 
   const handleAddJob = (job: JobQueue) => {
     // Check if user is trying to add multiple jobs without batch permission
-    if (jobQueue.length >= 1 && subscriptionStatus?.is_live && !subscriptionStatus?.features?.batch_upload) {
+    if (jobQueue.length >= 1 && subscriptionStatus && !subscriptionStatus.features?.batch_upload) {
       // User is trying batch upload but doesn't have permission
       setUpgradeTrigger('batch_upload');
       setShowUpgradeModal(true);
@@ -686,9 +752,15 @@ export default function AppPage() {
       return;
     }
 
+    if (subscriptionStatus?.is_verified === false) {
+      setUpgradeTrigger('verification_required');
+      setShowUpgradeModal(true);
+      return;
+    }
+
     // Check generation limit before proceeding
-    if (subscriptionStatus?.is_live && !subscriptionStatus?.can_generate) {
-      setUpgradeTrigger('limit_reached');
+    if (subscriptionStatus?.can_generate === false) {
+      setUpgradeTrigger(getUpgradeTriggerForSubscription(subscriptionStatus));
       setShowUpgradeModal(true);
       return;
     }
@@ -714,6 +786,7 @@ export default function AppPage() {
       setCurrentRun(response.data);
       setJobQueue([]);
       loadHistory();
+      loadSubscriptionStatus();
       
       // Occasionally show profile share prompt (1 in 4 chance, after at least 3 generations)
       const historyCount = historyTotal + 1;
@@ -726,6 +799,11 @@ export default function AppPage() {
       }
     } catch (error: any) {
       toast.dismiss('generation-progress');
+      const trigger = getUpgradeTriggerFromError(error, subscriptionStatus);
+      if (trigger) {
+        setUpgradeTrigger(trigger);
+        setShowUpgradeModal(true);
+      }
       toast.error(getFriendlyGenerationErrorMessage(error, 'generate'));
     } finally {
       setIsGenerating(false);
@@ -734,6 +812,18 @@ export default function AppPage() {
   };
 
   const handleRegenerate = async (runId: string) => {
+    if (subscriptionStatus?.is_verified === false) {
+      setUpgradeTrigger('verification_required');
+      setShowUpgradeModal(true);
+      return;
+    }
+
+    if (subscriptionStatus?.can_generate === false) {
+      setUpgradeTrigger(getUpgradeTriggerForSubscription(subscriptionStatus));
+      setShowUpgradeModal(true);
+      return;
+    }
+
     toast.loading('Regenerating...');
     try {
       const response = await historyApi.regenerate(runId);
@@ -741,9 +831,15 @@ export default function AppPage() {
       toast.dismiss();
       toast.success('Regenerated successfully!');
       loadHistory();
+      loadSubscriptionStatus();
       setActiveTab('generate');
     } catch (error: any) {
       toast.dismiss();
+      const trigger = getUpgradeTriggerFromError(error, subscriptionStatus);
+      if (trigger) {
+        setUpgradeTrigger(trigger);
+        setShowUpgradeModal(true);
+      }
       toast.error(getFriendlyGenerationErrorMessage(error, 'regenerate'));
     }
   };
@@ -752,7 +848,7 @@ export default function AppPage() {
     // Check if this is a ZIP download and if user has permission
     const isZipDownload = filename.includes('.zip') || url.includes('.zip');
     
-    if (isZipDownload && subscriptionStatus?.is_live && !subscriptionStatus?.features?.zip_download) {
+    if (isZipDownload && subscriptionStatus && !subscriptionStatus.features?.zip_download) {
       // User is trying to download ZIP but doesn't have permission
       setUpgradeTrigger('zip_download');
       setShowUpgradeModal(true);
@@ -1266,7 +1362,7 @@ export default function AppPage() {
                           <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 rounded-lg bg-stone-800 border border-white/10 text-xs opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-10">
                             <p className="font-semibold text-white">{achievement.name}</p>
                             <p className="text-stone-400">{achievement.description}</p>
-                            {achievement.pro_only && <p className="text-orange-400 mt-1">Pro Only</p>}
+                            {achievement.pro_only && <p className="text-orange-400 mt-1">Bounty Only</p>}
                           </div>
                         </motion.div>
                       ))}
@@ -1319,7 +1415,7 @@ export default function AppPage() {
                           )}
                           {challenge.pro_only && (
                             <p className="text-xs text-orange-400 flex items-center gap-1">
-                              <Lock className="h-3 w-3" /> Unlock with Pro
+                              <Lock className="h-3 w-3" /> Unlock with Bounty
                             </p>
                           )}
                         </div>
@@ -1722,7 +1818,7 @@ export default function AppPage() {
               
               {currentRun && currentRun.artifacts ? (
                 <div className="space-y-4">
-                  {/* Download Bundle Button - Only show ZIP for Pro users */}
+                  {/* Download Bundle Button - Only show ZIP for eligible users */}
                   {currentRun.zip && (
                     <div className="glass-subtle p-4 rounded-xl border border-green-500/20 bg-green-500/5">
                       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -1738,7 +1834,7 @@ export default function AppPage() {
                           </div>
                         </div>
                         {/* Show ZIP button only if user has zip_download permission */}
-                        {(!subscriptionStatus?.is_live || subscriptionStatus?.features?.zip_download) ? (
+                        {subscriptionStatus?.features?.zip_download ? (
                           <button
                             onClick={() => handleDownload(currentRun.zip, 'documents_bundle.zip')}
                             className="btn-primary flex items-center justify-center gap-2 w-full sm:w-auto"
@@ -1748,7 +1844,7 @@ export default function AppPage() {
                           </button>
                         ) : (
                           <div className="flex items-center gap-2 text-xs text-stone-400">
-                            <span className="badge badge-stone">ZIP bundling is Pro</span>
+                            <span className="badge badge-stone">ZIP bundling is Bounty</span>
                           </div>
                         )}
                       </div>

@@ -130,6 +130,10 @@ export const auth = {
     api.post('/auth/signup', { email, password }),
   login: (email: string, password: string) =>
     api.post('/auth/login', { email, password }),
+  verifyEmail: (token: string) =>
+    api.get('/auth/verify-email', { params: { token } }),
+  resendVerification: () =>
+    api.post('/auth/resend-verification'),
   // OAuth sync - exchanges Supabase token for our backend token
   oauthSync: (supabaseToken: string, provider: string) =>
     api.post('/auth/oauth-sync', { token: supabaseToken, provider }),
@@ -304,17 +308,21 @@ export const journey = {
 };
 
 // v1.4 Subscription endpoints
+export type SubscriptionTier = 'free' | 'launch' | 'bounty' | 'pro' | string;
+
 export interface SubscriptionStatus {
   is_live: boolean;
-  tier: string;
+  tier: SubscriptionTier;
   status: string;
-  is_pro: boolean;
+  is_pro?: boolean;
+  is_verified?: boolean;
   started_at: string | null;
   expires_at: string | null;
   generations_used: number;
   generations_limit: number;
   generations_remaining: number;
   can_generate: boolean;
+  usage_reset_at?: string | null;
   usage_resets_at: string | null;
   features: {
     batch_upload: boolean;
@@ -330,7 +338,7 @@ export interface SubscriptionStatus {
 }
 
 export interface SubscriptionPlan {
-  tier: string;
+  tier: SubscriptionTier;
   name: string;
   description: string;
   features: string[];
@@ -364,16 +372,27 @@ export const subscription = {
   
   // Check if user can generate
   canGenerate: (count: number = 1) =>
-    api.get<{ can_generate: boolean; is_limited: boolean; remaining: number; message: string | null }>(
+    api.get<{
+      can_generate: boolean;
+      is_limited: boolean;
+      remaining: number;
+      message: string | null;
+      reason_code?: string | null;
+      upgrade_target?: string | null;
+      is_verified?: boolean;
+    }>(
       '/subscription/can-generate',
       { params: { count } }
     ),
   
-  // Create upgrade intent (will return checkout URL when payment is live)
-  createUpgradeIntent: (tier: string = 'pro') =>
+  // Create upgrade intent (will return checkout URL when payment is available)
+  createUpgradeIntent: (tier: string = 'launch') =>
     api.post<{ success: boolean; redirect_url: string | null; message: string; requires_payment_setup: boolean }>(
       '/subscription/upgrade-intent',
       null,
       { params: { tier } }
     ),
+
+  trackUpgradeImpression: (trigger: string, remaining?: number) =>
+    api.post('/subscription/upgrade-impression', { trigger, remaining }),
 };

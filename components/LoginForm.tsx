@@ -60,7 +60,7 @@ export default function LoginForm({ onLogin }: LoginFormProps) {
       localStorage.setItem('token', access_token);
 
       toast.success(
-        isLogin ? 'Welcome back!' : 'Account created successfully!',
+        isLogin ? 'Welcome back!' : (response.data.message || 'Account created successfully!'),
         { id: loadingToast }
       );
 
